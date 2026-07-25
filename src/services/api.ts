@@ -35,17 +35,35 @@ async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T>
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers
+    });
+  } catch (netErr) {
+    console.error('API connection error:', netErr);
+    throw new Error('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.');
+  }
 
   if (!response.ok) {
-    let errorMessage = 'Erro ao se comunicar com o servidor Bytecas.';
+    let errorMessage = 'E-mail ou senha incorretos.';
     try {
       const errObj = await response.json();
-      if (errObj.error) errorMessage = errObj.error;
-    } catch {}
+      if (errObj && errObj.error) {
+        errorMessage = errObj.error;
+      }
+    } catch {
+      if (response.status === 401) {
+        errorMessage = 'E-mail ou senha incorretos.';
+      } else if (response.status === 403) {
+        errorMessage = 'Você não possui permissão para realizar esta operação.';
+      } else if (response.status === 404) {
+        errorMessage = 'Recurso não encontrado no sistema.';
+      } else {
+        errorMessage = 'Falha ao processar a requisição no servidor.';
+      }
+    }
     throw new Error(errorMessage);
   }
 

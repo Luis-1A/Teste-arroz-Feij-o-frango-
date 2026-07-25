@@ -92,9 +92,12 @@ async function startServer() {
       return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
     }
 
-    const user = db.getUserByEmail(email);
-    if (!user || user.senha_hash !== senha) {
-      return res.status(401).json({ error: 'Credenciais inválidas. Verifique o e-mail e a senha.' });
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanSenha = (senha || '').trim();
+
+    const user = db.getUserByEmail(cleanEmail);
+    if (!user || user.senha_hash.trim() !== cleanSenha) {
+      return res.status(401).json({ error: 'E-mail ou senha incorretos. Verifique os dados digitados.' });
     }
 
     db.addHistory(user.nome, 'LOGIN', `Acesso efetuado no sistema (${user.cargo}).`, req.ip);

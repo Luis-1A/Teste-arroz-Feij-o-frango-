@@ -382,10 +382,6 @@ export const SalesPanel: React.FC = () => {
                   <Camera className="w-4 h-4 text-blue-600" />
                   <span>Escanear Código</span>
                 </button>
-
-                <span className="hidden sm:inline-block px-2.5 py-1 bg-slate-100 text-slate-500 text-xs font-mono font-bold rounded-lg border border-slate-200">
-                  [F2] Pesquisar
-                </span>
               </div>
             </div>
 
@@ -397,7 +393,7 @@ export const SalesPanel: React.FC = () => {
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                placeholder="Pesquise um produto pelo nome, código interno ou código de barras... [F2]"
+                placeholder="Pesquise um produto pelo nome, código interno ou código de barras..."
                 className="w-full pl-4 pr-12 py-4 text-base sm:text-lg font-bold text-slate-900 border-2 border-slate-200/90 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-600 bg-slate-50/50 focus:bg-white transition-all shadow-2xs"
                 autoFocus
               />
@@ -492,70 +488,6 @@ export const SalesPanel: React.FC = () => {
                   </p>
                 </div>
               )}
-            </div>
-          </div>
-
-
-          {/* HIGH TURNOVER SHORTCUT CARDS GRID */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center space-x-2">
-                <Tag className="w-4 h-4 text-blue-600" />
-                <span>Atalhos Rápidos de Alta Rotatividade</span>
-              </h3>
-              <span className="text-xs text-slate-400 font-medium">Clique para adicionar 1 un</span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {products.slice(0, 8).map(p => {
-                const isOutOfStock = p.estoque <= 0;
-
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => addItem(p)}
-                    disabled={isOutOfStock}
-                    className="p-3.5 rounded-2xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 text-left transition-all active:scale-[0.98] disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:bg-transparent group relative bg-slate-50/50 hover:bg-white flex flex-col justify-between"
-                  >
-                    <div>
-                      <span className="text-[10px] font-mono font-bold text-slate-400 block mb-0.5">
-                        {p.codigo}
-                      </span>
-                      <p className="font-bold text-slate-900 text-xs line-clamp-2 group-hover:text-blue-600 leading-snug">
-                        {p.nome}
-                      </p>
-                    </div>
-
-                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                      <span className="text-slate-500 font-medium truncate max-w-[85px]">{p.categoria}</span>
-                      <span
-                        className={`font-bold px-2 py-0.5 rounded-md text-[10px] ${
-                          isOutOfStock
-                            ? 'bg-rose-100 text-rose-700'
-                            : 'bg-slate-200/80 text-slate-700'
-                        }`}
-                      >
-                        {p.estoque} UN
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-
-          {/* KEYBOARD SHORTCUTS GUIDE FOOTER BAR */}
-          <div className="bg-slate-100/90 p-3.5 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-3">
-            <div className="flex items-center space-x-2 font-medium">
-              <Keyboard className="w-4 h-4 text-slate-500" />
-              <span>Atalhos Rápidos de Operação:</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-4">
-              <span><kbd className="bg-white px-2 py-0.5 rounded-md border border-slate-300 font-mono text-xs font-bold text-slate-800 shadow-2xs">F2</kbd> Pesquisar</span>
-              <span><kbd className="bg-white px-2 py-0.5 rounded-md border border-slate-300 font-mono text-xs font-bold text-slate-800 shadow-2xs">F10</kbd> Confirmar Registros</span>
-              <span><kbd className="bg-white px-2 py-0.5 rounded-md border border-slate-300 font-mono text-xs font-bold text-slate-800 shadow-2xs">ESC</kbd> Fechar / Cancelar</span>
             </div>
           </div>
 
@@ -706,7 +638,7 @@ export const SalesPanel: React.FC = () => {
                 className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-xl font-extrabold text-sm shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center space-x-2 active:scale-[0.99]"
               >
                 <CheckCircle2 className="w-5 h-5" />
-                <span>Confirmar Registros de Saída [F10]</span>
+                <span>Confirmar Registros de Saída</span>
               </button>
             </div>
 
@@ -800,7 +732,7 @@ export const SalesPanel: React.FC = () => {
                 onClick={() => setIsConfirmModalOpen(false)}
                 className="px-4 py-2.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl transition-colors"
               >
-                Cancelar [ESC]
+                Cancelar
               </button>
 
               <button

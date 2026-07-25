@@ -195,65 +195,6 @@ export const Login: React.FC = () => {
                   )}
                 </button>
               </form>
-
-              {/* Quick Demo Login Switcher including Luis Fernando */}
-              <div className="mt-6 pt-5 border-t border-slate-100">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2.5">
-                  Acesso Rápido Especial (1 Clique)
-                </p>
-
-                {/* Special Luis Fernando Login Banner */}
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('luisfernandosantossilva1940@gmail.com', '@Luisoo5')}
-                  className="w-full mb-3 p-3 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-indigo-500/10 border-2 border-amber-400/80 rounded-2xl hover:border-amber-500 transition-all text-left flex items-center justify-between group cursor-pointer shadow-2xs"
-                >
-                  <div className="flex items-center space-x-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-xs shadow-xs">
-                      <Crown className="w-4 h-4 text-amber-100" />
-                    </div>
-                    <div>
-                      <div className="font-extrabold text-xs text-slate-900 group-hover:text-amber-700 transition-colors flex items-center space-x-1">
-                        <span>Luis Fernando</span>
-                        <span className="text-[10px] px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded-md font-bold">Especial</span>
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-mono">
-                        luisfernandosantossilva1940@gmail.com
-                      </div>
-                    </div>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-amber-600 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin('admin@bytecas.com', 'admin123')}
-                    className="p-2 border border-slate-200/80 rounded-xl text-center hover:border-indigo-400 hover:bg-indigo-50/60 transition-all text-[11px] font-medium text-slate-700 bg-slate-50/40"
-                  >
-                    <div className="font-bold text-indigo-700">Supremo</div>
-                    <div className="text-[9px] text-slate-400 font-medium">admin@</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin('gerente@bytecas.com', 'gerente123')}
-                    className="p-2 border border-slate-200/80 rounded-xl text-center hover:border-blue-400 hover:bg-blue-50/60 transition-all text-[11px] font-medium text-slate-700 bg-slate-50/40"
-                  >
-                    <div className="font-bold text-blue-700">Gerente</div>
-                    <div className="text-[9px] text-slate-400 font-medium">gerente@</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin('funcionario@bytecas.com', 'func123')}
-                    className="p-2 border border-slate-200/80 rounded-xl text-center hover:border-emerald-400 hover:bg-emerald-50/60 transition-all text-[11px] font-medium text-slate-700 bg-slate-50/40"
-                  >
-                    <div className="font-bold text-emerald-700">Funcionário</div>
-                    <div className="text-[9px] text-slate-400 font-medium">func@</div>
-                  </button>
-                </div>
-              </div>
             </>
           ) : (
             <>
