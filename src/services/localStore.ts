@@ -1,0 +1,730 @@
+import {
+  User,
+  Category,
+  Product,
+  Movement,
+  AuditLog,
+  AIInsight,
+  DashboardStats,
+  TopMovedProduct,
+  CustomerDemand
+} from '../types';
+
+const USERS_KEY = 'bytecas_local_users';
+const PRODUCTS_KEY = 'bytecas_local_products';
+const CATEGORIES_KEY = 'bytecas_local_categories';
+const MOVEMENTS_KEY = 'bytecas_local_movements';
+const HISTORY_KEY = 'bytecas_local_history';
+const DEMANDS_KEY = 'bytecas_local_demands';
+
+const initialUsers: (User & { senha_hash: string })[] = [
+  {
+    id: 'usr_luis',
+    nome: 'Luis Fernando Silva',
+    email: 'luisfernandosantossilva1940@gmail.com',
+    senha_hash: '@Luisoo5',
+    cargo: 'admin_supremo',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'usr_supremo',
+    nome: 'Administrador Supremo',
+    email: 'admin@bytecas.com',
+    senha_hash: 'admin123',
+    cargo: 'admin_supremo',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'usr_gerente',
+    nome: 'Carlos Gerente',
+    email: 'gerente@bytecas.com',
+    senha_hash: 'gerente123',
+    cargo: 'gerente',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'usr_funcionario',
+    nome: 'Ana Funcionária',
+    email: 'funcionario@bytecas.com',
+    senha_hash: 'func123',
+    cargo: 'funcionario',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
+
+const initialCategories: Category[] = [
+  { id: 'cat_1', nome: 'Acessórios e Cabos', created_at: new Date().toISOString() },
+  { id: 'cat_2', nome: 'Proteção e Capas', created_at: new Date().toISOString() },
+  { id: 'cat_3', nome: 'Carregadores e Fontes', created_at: new Date().toISOString() },
+  { id: 'cat_4', nome: 'Áudio e Fones', created_at: new Date().toISOString() }
+];
+
+const initialProducts: Product[] = [
+  {
+    id: 'prod_1',
+    nome: 'Cabo USB-C Turbo 1.5m Nylon Trançado',
+    categoria: 'Acessórios e Cabos',
+    marca: 'Bytecas Pro',
+    codigo: 'CAB-USBC-01',
+    codigo_barras: '7891234560012',
+    estoque: 35,
+    estoque_minimo: 10,
+    localizacao: 'Prateleira A1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_2',
+    nome: 'Película de Vidro 3D Armored para iPhone 15',
+    categoria: 'Proteção e Capas',
+    marca: 'GlassShield',
+    codigo: 'PEL-3D-IP15',
+    codigo_barras: '7891234560029',
+    estoque: 8,
+    estoque_minimo: 15,
+    localizacao: 'Gaveta B2',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_3',
+    nome: 'Carregador de Parede Fast Charge 30W Duo',
+    categoria: 'Carregadores e Fontes',
+    marca: 'PowerTech',
+    codigo: 'CAR-30W-DUO',
+    codigo_barras: '7891234560036',
+    estoque: 14,
+    estoque_minimo: 8,
+    localizacao: 'Prateleira A3',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_4',
+    nome: 'Fone de Ouvido Bluetooth Noise Cancelling',
+    categoria: 'Áudio e Fones',
+    marca: 'SoundPro',
+    codigo: 'FON-BT-NC1',
+    codigo_barras: '7891234560043',
+    estoque: 3,
+    estoque_minimo: 5,
+    localizacao: 'Vitrine V1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_5',
+    nome: 'Capa Magsafe Transparente Silicone Anti-Queda',
+    categoria: 'Proteção e Capas',
+    marca: 'ArmorCase',
+    codigo: 'CAP-MAG-CLR',
+    codigo_barras: '7891234560050',
+    estoque: 0,
+    estoque_minimo: 12,
+    localizacao: 'Prateleira C1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
+
+function getStored<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error(`Error reading ${key} from localStorage`, e);
+  }
+  return fallback;
+}
+
+function setStored<T>(key: string, value: T): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.error(`Error writing ${key} to localStorage`, e);
+  }
+}
+
+// Ensure default users exist
+function getUsers(): (User & { senha_hash: string })[] {
+  const users = getStored(USERS_KEY, initialUsers);
+  // Ensure Luis Fernando is always present
+  if (!users.some(u => u.email.toLowerCase() === 'luisfernandosantossilva1940@gmail.com')) {
+    users.unshift(initialUsers[0]);
+    setStored(USERS_KEY, users);
+  }
+  return users;
+}
+
+function getProducts(): Product[] {
+  return getStored(PRODUCTS_KEY, initialProducts);
+}
+
+function getCategories(): Category[] {
+  return getStored(CATEGORIES_KEY, initialCategories);
+}
+
+function getMovements(): Movement[] {
+  return getStored(MOVEMENTS_KEY, []);
+}
+
+function getHistory(): AuditLog[] {
+  return getStored(HISTORY_KEY, []);
+}
+
+function getDemands(): CustomerDemand[] {
+  return getStored(DEMANDS_KEY, []);
+}
+
+export const localStore = {
+  login: (email: string, senha: string): { token: string; user: User } => {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanSenha = (senha || '').trim();
+    const users = getUsers();
+
+    const found = users.find(u => u.email.toLowerCase() === cleanEmail && u.ativo);
+    if (!found) {
+      throw new Error('E-mail ou senha incorretos. Verifique os dados digitados.');
+    }
+
+    if (found.senha_hash.trim() !== cleanSenha) {
+      throw new Error('E-mail ou senha incorretos. Verifique a senha digitada.');
+    }
+
+    const user: User = {
+      id: found.id,
+      nome: found.nome,
+      email: found.email,
+      cargo: found.cargo,
+      ativo: found.ativo,
+      created_at: found.created_at,
+      updated_at: found.updated_at
+    };
+
+    const token = `local-token-${found.id}-${Date.now()}`;
+    return { token, user };
+  },
+
+  register: (userData: { nome: string; email: string; senha: string; cargo?: string }): { token: string; user: User } => {
+    const users = getUsers();
+    const cleanEmail = userData.email.trim().toLowerCase();
+
+    if (users.some(u => u.email.toLowerCase() === cleanEmail)) {
+      throw new Error('E-mail já cadastrado no sistema.');
+    }
+
+    const now = new Date().toISOString();
+    const newUserRecord: User & { senha_hash: string } = {
+      id: `usr_${Date.now()}`,
+      nome: userData.nome.trim(),
+      email: cleanEmail,
+      senha_hash: userData.senha.trim(),
+      cargo: (userData.cargo as any) || 'funcionario',
+      ativo: true,
+      created_at: now,
+      updated_at: now
+    };
+
+    users.push(newUserRecord);
+    setStored(USERS_KEY, users);
+
+    const user: User = {
+      id: newUserRecord.id,
+      nome: newUserRecord.nome,
+      email: newUserRecord.email,
+      cargo: newUserRecord.cargo,
+      ativo: newUserRecord.ativo,
+      created_at: newUserRecord.created_at,
+      updated_at: newUserRecord.updated_at
+    };
+
+    const token = `local-token-${user.id}-${Date.now()}`;
+    return { token, user };
+  },
+
+  getMe: (token: string | null): { user: User } => {
+    const users = getUsers();
+    if (token) {
+      const parts = token.split('-');
+      if (parts.length >= 3) {
+        const uid = parts[2];
+        const found = users.find(u => u.id === uid);
+        if (found) {
+          return {
+            user: {
+              id: found.id,
+              nome: found.nome,
+              email: found.email,
+              cargo: found.cargo,
+              ativo: found.ativo,
+              created_at: found.created_at,
+              updated_at: found.updated_at
+            }
+          };
+        }
+      }
+    }
+    // Fallback default user (Luis Fernando or Supremo)
+    const fallback = users[0];
+    return {
+      user: {
+        id: fallback.id,
+        nome: fallback.nome,
+        email: fallback.email,
+        cargo: fallback.cargo,
+        ativo: fallback.ativo,
+        created_at: fallback.created_at,
+        updated_at: fallback.updated_at
+      }
+    };
+  },
+
+  getUsersList: (): User[] => {
+    return getUsers().filter(u => u.ativo).map(({ senha_hash, ...rest }) => rest);
+  },
+
+  createUser: (userData: { nome: string; email: string; senha: string; cargo: string }): User => {
+    const users = getUsers();
+    const cleanEmail = userData.email.trim().toLowerCase();
+    if (users.some(u => u.email.toLowerCase() === cleanEmail)) {
+      throw new Error('E-mail já cadastrado.');
+    }
+    const now = new Date().toISOString();
+    const newUserRecord = {
+      id: `usr_${Date.now()}`,
+      nome: userData.nome.trim(),
+      email: cleanEmail,
+      senha_hash: userData.senha.trim(),
+      cargo: userData.cargo as any,
+      ativo: true,
+      created_at: now,
+      updated_at: now
+    };
+    users.push(newUserRecord);
+    setStored(USERS_KEY, users);
+    const { senha_hash, ...rest } = newUserRecord;
+    return rest;
+  },
+
+  updateUser: (id: string, userData: Partial<User & { senha?: string }>): User => {
+    const users = getUsers();
+    const idx = users.findIndex(u => u.id === id);
+    if (idx === -1) throw new Error('Usuário não encontrado');
+    const existing = users[idx];
+    const updated = {
+      ...existing,
+      ...userData,
+      senha_hash: userData.senha ? userData.senha.trim() : existing.senha_hash,
+      updated_at: new Date().toISOString()
+    };
+    users[idx] = updated;
+    setStored(USERS_KEY, users);
+    const { senha_hash, ...rest } = updated;
+    return rest;
+  },
+
+  deleteUser: (id: string): { message: string } => {
+    const users = getUsers();
+    const idx = users.findIndex(u => u.id === id);
+    if (idx !== -1) {
+      users[idx].ativo = false;
+      setStored(USERS_KEY, users);
+    }
+    return { message: 'Usuário removido com sucesso' };
+  },
+
+  getCategoriesList: (): Category[] => {
+    return getCategories();
+  },
+
+  createCategory: (nome: string): Category => {
+    const categories = getCategories();
+    const newCat: Category = {
+      id: `cat_${Date.now()}`,
+      nome: nome.trim(),
+      created_at: new Date().toISOString()
+    };
+    categories.push(newCat);
+    setStored(CATEGORIES_KEY, categories);
+    return newCat;
+  },
+
+  getProductsList: (search?: string, categoria?: string): Product[] => {
+    let list = getProducts().filter(p => p.ativo);
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        p =>
+          p.nome.toLowerCase().includes(q) ||
+          p.codigo.toLowerCase().includes(q) ||
+          (p.codigo_barras && p.codigo_barras.toLowerCase().includes(q)) ||
+          p.marca.toLowerCase().includes(q)
+      );
+    }
+    if (categoria && categoria !== 'Todas') {
+      list = list.filter(p => p.categoria.toLowerCase() === categoria.toLowerCase());
+    }
+    return list;
+  },
+
+  getProductById: (id: string): Product => {
+    const p = getProducts().find(prod => prod.id === id && prod.ativo);
+    if (!p) throw new Error('Produto não encontrado');
+    return p;
+  },
+
+  createProduct: (data: Omit<Product, 'id' | 'ativo' | 'created_at' | 'updated_at'>): Product => {
+    const products = getProducts();
+    const now = new Date().toISOString();
+    const newProd: Product = {
+      ...data,
+      id: `prod_${Date.now()}`,
+      ativo: true,
+      created_at: now,
+      updated_at: now
+    };
+    products.push(newProd);
+    setStored(PRODUCTS_KEY, products);
+    return newProd;
+  },
+
+  updateProduct: (id: string, data: Partial<Product>): Product => {
+    const products = getProducts();
+    const idx = products.findIndex(p => p.id === id);
+    if (idx === -1) throw new Error('Produto não encontrado');
+    const updated = {
+      ...products[idx],
+      ...data,
+      updated_at: new Date().toISOString()
+    };
+    products[idx] = updated;
+    setStored(PRODUCTS_KEY, products);
+    return updated;
+  },
+
+  deleteProduct: (id: string): { message: string } => {
+    const products = getProducts();
+    const idx = products.findIndex(p => p.id === id);
+    if (idx !== -1) {
+      products[idx].ativo = false;
+      setStored(PRODUCTS_KEY, products);
+    }
+    return { message: 'Produto removido com sucesso' };
+  },
+
+  addStockEntry: (produto_id: string, quantidade: number, observacao?: string): Product => {
+    const products = getProducts();
+    const idx = products.findIndex(p => p.id === produto_id);
+    if (idx === -1) throw new Error('Produto não encontrado');
+
+    products[idx].estoque += quantidade;
+    products[idx].updated_at = new Date().toISOString();
+    setStored(PRODUCTS_KEY, products);
+
+    const movements = getMovements();
+    movements.unshift({
+      id: `mov_${Date.now()}`,
+      produto_id,
+      produto_nome: products[idx].nome,
+      produto_codigo: products[idx].codigo,
+      usuario_id: 'usr_current',
+      usuario_nome: 'Operador',
+      tipo: 'entrada',
+      quantidade,
+      observacao,
+      created_at: new Date().toISOString()
+    });
+    setStored(MOVEMENTS_KEY, movements);
+
+    return products[idx];
+  },
+
+  addStockExit: (items: { produtoId: string; quantidade: number }[], observacao?: string): { message: string; movements: Movement[] } => {
+    const products = getProducts();
+    const movements = getMovements();
+    const createdMovements: Movement[] = [];
+
+    for (const item of items) {
+      const idx = products.findIndex(p => p.id === item.produtoId);
+      if (idx !== -1) {
+        if (products[idx].estoque < item.quantidade) {
+          throw new Error(`Estoque insuficiente para "${products[idx].nome}". Disponível: ${products[idx].estoque} UN.`);
+        }
+        products[idx].estoque -= item.quantidade;
+        products[idx].updated_at = new Date().toISOString();
+
+        const mov: Movement = {
+          id: `mov_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+          produto_id: item.produtoId,
+          produto_nome: products[idx].nome,
+          produto_codigo: products[idx].codigo,
+          usuario_id: 'usr_current',
+          usuario_nome: 'Operador',
+          tipo: 'saida',
+          quantidade: item.quantidade,
+          observacao,
+          created_at: new Date().toISOString()
+        };
+        movements.unshift(mov);
+        createdMovements.push(mov);
+      }
+    }
+
+    setStored(PRODUCTS_KEY, products);
+    setStored(MOVEMENTS_KEY, movements);
+
+    return { message: 'Saída registrada com sucesso', movements: createdMovements };
+  },
+
+  getDashboardStats: (): DashboardStats => {
+    const products = getProducts().filter(p => p.ativo);
+    const totalItens = products.reduce((acc, p) => acc + p.estoque, 0);
+    const produtosZerados = products.filter(p => p.estoque <= 0).length;
+    const produtosCriticos = products.filter(p => p.estoque > 0 && p.estoque <= p.estoque_minimo).length;
+
+    const movements = getMovements();
+
+    const alertas: DashboardStats['alertas'] = [];
+    if (produtosZerados > 0) {
+      alertas.push({
+        id: 'alt_1',
+        tipo: 'critico',
+        mensagem: `${produtosZerados} produto(s) com estoque completamente zerado!`,
+        data: new Date().toISOString()
+      });
+    }
+
+    return {
+      total_produtos: products.length,
+      total_unidades: totalItens,
+      produtos_em_falta: produtosZerados,
+      produtos_proximos_minimo: produtosCriticos,
+      ultimas_movimentacoes: movements.slice(0, 5),
+      produtos_recentes: products.slice(0, 5),
+      alertas
+    };
+  },
+
+  getOutOfStock: (): (Product & { prioridade: string; ultima_venda: string })[] => {
+    const products = getProducts().filter(p => p.ativo && p.estoque <= p.estoque_minimo);
+    return products.map(p => ({
+      ...p,
+      prioridade: p.estoque <= 0 ? 'ALTA' : 'MEDIA',
+      ultima_venda: 'Recente'
+    }));
+  },
+
+  getTopMoved: (periodo: string): TopMovedProduct[] => {
+    const movements = getMovements().filter(m => m.tipo === 'saida');
+    const counts: Record<string, { id: string; nome: string; codigo: string; categoria: string; total: number; estoque: number }> = {};
+
+    movements.forEach(m => {
+      if (!counts[m.produto_id]) {
+        counts[m.produto_id] = {
+          id: m.produto_id,
+          nome: m.produto_nome,
+          codigo: m.produto_codigo,
+          categoria: 'Geral',
+          total: 0,
+          estoque: 10
+        };
+      }
+      counts[m.produto_id].total += m.quantidade;
+    });
+
+    return Object.values(counts)
+      .map((val, idx) => ({
+        id: val.id,
+        nome: val.nome,
+        codigo: val.codigo,
+        categoria: val.categoria,
+        quantidade_movimentada: val.total,
+        estoque_atual: val.estoque,
+        velocidade_saida: (val.total > 10 ? 'Alta' : val.total > 5 ? 'Média' : 'Baixa') as any,
+        ranking: idx + 1
+      }))
+      .sort((a, b) => b.quantidade_movimentada - a.quantidade_movimentada)
+      .slice(0, 10);
+  },
+
+  getHistory: (): AuditLog[] => {
+    const history = getHistory();
+    if (history.length === 0) {
+      return [
+        {
+          id: 'hist_1',
+          usuario: 'Luis Fernando Silva',
+          acao: 'LOGIN',
+          descricao: 'Acesso efetuado no sistema (admin_supremo).',
+          created_at: new Date().toISOString()
+        }
+      ];
+    }
+    return history;
+  },
+
+  getRestockAnalysis: () => {
+    const products = getProducts().filter(p => p.ativo && p.estoque <= p.estoque_minimo);
+    let totalUnidades = 0;
+    const items = products.map(p => {
+      const sugerida = Math.max(0, p.estoque_minimo * 2 - p.estoque);
+      totalUnidades += sugerida;
+      return {
+        id: p.id,
+        nome: p.nome,
+        codigo: p.codigo,
+        categoria: p.categoria,
+        marca: p.marca,
+        localizacao: p.localizacao,
+        estoque_atual: p.estoque,
+        estoque_minimo: p.estoque_minimo,
+        quantidade_sugerida: sugerida,
+        nivel_risco: (p.estoque === 0 ? 'CRITICO' : 'ALERTA') as any
+      };
+    });
+
+    return {
+      total_produtos_criticos: products.length,
+      total_unidades_sugeridas: totalUnidades,
+      items,
+      source: 'Análise Local de Estoque'
+    };
+  },
+
+  getAIInsights: (): { insights: AIInsight[]; source: string } => {
+    const products = getProducts().filter(p => p.ativo);
+    const zerados = products.filter(p => p.estoque === 0);
+    const criticos = products.filter(p => p.estoque > 0 && p.estoque <= p.estoque_minimo);
+
+    const insights: AIInsight[] = [];
+
+    if (zerados.length > 0) {
+      insights.push({
+        id: 'ins_1',
+        tipo: 'reposicao_urgente',
+        titulo: 'Produtos com Estoque Zerado',
+        descricao: `Existem ${zerados.length} produto(s) sem nenhuma unidade disponível. Priorize a reposição imediata.`,
+        prioridade: 'alta',
+        data_analise: new Date().toISOString()
+      });
+    }
+
+    if (criticos.length > 0) {
+      insights.push({
+        id: 'ins_2',
+        tipo: 'reposicao_urgente',
+        titulo: 'Produtos em Nível Crítico',
+        descricao: `${criticos.length} produto(s) atingiram ou estão abaixo do estoque mínimo de segurança.`,
+        prioridade: 'media',
+        data_analise: new Date().toISOString()
+      });
+    }
+
+    insights.push({
+      id: 'ins_3',
+      tipo: 'otimizacao',
+      titulo: 'Giro de Estoque Estável',
+      descricao: 'Monitore o fluxo de entrada e saída no painel para evitar perdas ou rupturas.',
+      prioridade: 'baixa',
+      data_analise: new Date().toISOString()
+    });
+
+    return { insights, source: 'Análise de Indicadores de Estoque' };
+  },
+
+  getCustomerDemands: (): CustomerDemand[] => {
+    return getDemands();
+  },
+
+  registerCustomerDemand: (data: {
+    produto_nome: string;
+    produto_id?: string;
+    solicitante_nome?: string;
+    confirmou_erro_contagem?: boolean;
+  }) => {
+    const products = getProducts().filter(p => p.ativo);
+    const demands = getDemands();
+
+    const prod = products.find(
+      p => p.nome.toLowerCase() === data.produto_nome.trim().toLowerCase() || p.id === data.produto_id
+    );
+
+    if (prod) {
+      if (prod.estoque > 0 && !data.confirmou_erro_contagem) {
+        return {
+          status_code: 'EXISTS_HAS_STOCK_AWAITING_CONFIRMATION' as const,
+          message: `O produto "${prod.nome}" possui ${prod.estoque} UN no sistema. Confirma divergência de contagem?`,
+          product: prod
+        };
+      }
+
+      if (data.confirmou_erro_contagem && prod.estoque > 0) {
+        prod.estoque = 0;
+        setStored(PRODUCTS_KEY, products);
+      }
+
+      const demand: CustomerDemand = {
+        id: `dem_${Date.now()}`,
+        produto_id: prod.id,
+        produto_nome: prod.nome,
+        cadastrado: true,
+        quantidade_solicitacoes: 1,
+        estoque_no_momento: prod.estoque,
+        solicitante_nome: data.solicitante_nome,
+        status: prod.estoque === 0 ? 'sem_estoque' : 'estoque_zerado_por_divergencia',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      demands.unshift(demand);
+      setStored(DEMANDS_KEY, demands);
+
+      return {
+        status_code: 'EXISTS_STOCK_ZEROED' as const,
+        message: `Solicitação registrada. Estoque de "${prod.nome}" ajustado para 0 UN.`,
+        product: prod,
+        demand
+      };
+    }
+
+    const demand: CustomerDemand = {
+      id: `dem_${Date.now()}`,
+      produto_nome: data.produto_nome.trim(),
+      cadastrado: false,
+      quantidade_solicitacoes: 1,
+      estoque_no_momento: 0,
+      solicitante_nome: data.solicitante_nome,
+      status: 'nao_cadastrado',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    demands.unshift(demand);
+    setStored(DEMANDS_KEY, demands);
+
+    return {
+      status_code: 'NOT_REGISTERED_SAVED' as const,
+      message: `Demanda de produto não cadastrado "${data.produto_nome}" registrada com sucesso.`,
+      demand
+    };
+  },
+
+  deleteCustomerDemand: (id: string): { message: string } => {
+    const demands = getDemands().filter(d => d.id !== id);
+    setStored(DEMANDS_KEY, demands);
+    return { message: 'Registro removido com sucesso.' };
+  }
+};
