@@ -1,0 +1,48 @@
+{
+  "users": [
+    {
+      "id": "usr_luis",
+      "nome": "Luis Fernando Silva",
+      "email": "luisfernandosantossilva1940@gmail.com",
+      "senha_hash": "@Luisoo5",
+      "cargo": "admin_supremo",
+      "ativo": true,
+      "created_at": "2026-01-01T08:00:00.000Z",
+      "updated_at": "2026-01-01T08:00:00.000Z"
+    },
+    {
+      "id": "usr_supremo",
+      "nome": "Administrador Supremo",
+      "email": "admin@bytecas.com",
+      "senha_hash": "admin123",
+      "cargo": "admin_supremo",
+      "ativo": true,
+      "created_at": "2026-01-01T08:00:00.000Z",
+      "updated_at": "2026-01-01T08:00:00.000Z"
+    },
+    {
+      "id": "usr_gerente",
+      "nome": "Carlos Gerente",
+      "email": "gerente@bytecas.com",
+      "senha_hash": "gerente123",
+      "cargo": "gerente",
+      "ativo": true,
+      "created_at": "2026-01-02T09:00:00.000Z",
+      "updated_at": "2026-01-02T09:00:00.000Z"
+    },
+    {
+      "id": "usr_funcionario",
+      "nome": "Ana Funcionária",
+      "email": "funcionario@bytecas.com",
+      "senha_hash": "func123",
+      "cargo": "funcionario",
+      "ativo": true,
+      "created_at": "2026-01-03T10:00:00.000Z",
+      "updated_at": "2026-01-03T10:00:00.000Z"
+    }
+  ],
+  "categories": [],
+  "products": [],
+  "movements": [],
+  "history": []
+}

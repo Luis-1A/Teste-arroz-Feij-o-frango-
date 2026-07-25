@@ -1,0 +1,96 @@
+{
+  "entities": {
+    "users": {
+      "title": "users",
+      "description": "User accounts and permissions",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "email": { "type": "string" },
+        "senha_hash": { "type": "string" },
+        "cargo": { "type": "string" },
+        "ativo": { "type": "boolean" },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" }
+      },
+      "required": ["nome", "email", "cargo"]
+    },
+    "categories": {
+      "title": "categories",
+      "description": "Product categories",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["nome"]
+    },
+    "products": {
+      "title": "products",
+      "description": "Inventory products",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "categoria": { "type": "string" },
+        "marca": { "type": "string" },
+        "codigo": { "type": "string" },
+        "codigo_barras": { "type": "string" },
+        "estoque": { "type": "number" },
+        "estoque_minimo": { "type": "number" },
+        "localizacao": { "type": "string" },
+        "observacao": { "type": "string" },
+        "ativo": { "type": "boolean" },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" }
+      },
+      "required": ["nome", "categoria", "codigo", "estoque"]
+    },
+    "movements": {
+      "title": "movements",
+      "description": "Stock entry and exit movements",
+      "type": "object",
+      "properties": {
+        "produto_id": { "type": "string" },
+        "produto_nome": { "type": "string" },
+        "produto_codigo": { "type": "string" },
+        "usuario_id": { "type": "string" },
+        "usuario_nome": { "type": "string" },
+        "tipo": { "type": "string" },
+        "quantidade": { "type": "number" },
+        "observacao": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["produto_id", "tipo", "quantidade"]
+    },
+    "history": {
+      "title": "history",
+      "description": "Audit logs for system activities",
+      "type": "object",
+      "properties": {
+        "usuario": { "type": "string" },
+        "acao": { "type": "string" },
+        "descricao": { "type": "string" },
+        "ip": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["usuario", "acao", "descricao"]
+    },
+    "unfulfilled_demands": {
+      "title": "unfulfilled_demands",
+      "description": "Lost sales requests when a customer looks for a product not available or not registered",
+      "type": "object",
+      "properties": {
+        "produto_id": { "type": "string" },
+        "produto_nome": { "type": "string" },
+        "cadastrado": { "type": "boolean" },
+        "quantidade_solicitacoes": { "type": "number" },
+        "estoque_no_momento": { "type": "number" },
+        "solicitante_nome": { "type": "string" },
+        "status": { "type": "string" },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" }
+      },
+      "required": ["produto_nome", "cadastrado", "quantidade_solicitacoes"]
+    }
+  }
+}
