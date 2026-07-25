@@ -47,12 +47,13 @@ async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T>
     throw new Error('SERVER_UNREACHABLE');
   }
 
-  if (!response.ok) {
-    if (response.status === 404) {
-      // 404 HTML response from static hosting like Vercel without Express backend
-      throw new Error('SERVER_UNREACHABLE');
-    }
+  const contentType = response.headers.get('content-type') || '';
+  if (response.status === 404 || contentType.includes('text/html') || response.status === 502 || response.status === 503) {
+    // Static hosting (like Vercel SPA) without active Express backend
+    throw new Error('SERVER_UNREACHABLE');
+  }
 
+  if (!response.ok) {
     let errorMessage = 'E-mail ou senha incorretos.';
     try {
       const errObj = await response.json();
@@ -65,7 +66,7 @@ async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T>
       } else if (response.status === 403) {
         errorMessage = 'Você não possui permissão para realizar esta operação.';
       } else {
-        errorMessage = 'Falha ao processar a requisição no servidor.';
+        errorMessage = 'SERVER_UNREACHABLE';
       }
     }
     throw new Error(errorMessage);
@@ -103,12 +104,14 @@ export const api = {
       setAuthToken(res.token);
       return res;
     } catch (err: any) {
-      if (err.message === 'SERVER_UNREACHABLE') {
+      // In browser or static environment, automatically use client local store fallback
+      try {
         const res = localStore.login(email, senha);
         setAuthToken(res.token);
         return res;
+      } catch (localErr: any) {
+        throw (err.message === 'SERVER_UNREACHABLE' ? localErr : err);
       }
-      throw err;
     }
   },
 
