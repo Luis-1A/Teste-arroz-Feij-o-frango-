@@ -98,13 +98,13 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({ isOpen, onClos
             </div>
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-400/20 text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-400/30">
-                Instalador Android & iOS
+                Aplicativo Android Nativo (WebAPK)
               </span>
-              <h2 className="text-xl font-black text-white leading-tight">Instalar Aplicativo APK</h2>
+              <h2 className="text-xl font-black text-white leading-tight">Instalar Aplicativo (APK)</h2>
             </div>
           </div>
           <p className="text-xs text-blue-100 font-medium leading-relaxed mt-1">
-            Transforme o Bytecas Estoque em um aplicativo nativo no seu celular ou computador sem ocupar memória!
+            Instale o aplicativo oficial do Bytecas Estoque no Android. O sistema Android compila e gera um pacote WebAPK (.apk) nativo na gaveta de apps!
           </p>
         </div>
 
@@ -165,33 +165,32 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({ isOpen, onClos
             {/* Tab Instructions Content */}
             {activeTab === 'android' && (
               <div className="space-y-3 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-                <h4 className="text-xs font-bold text-emerald-900 flex items-center space-x-1.5">
+                <div className="bg-emerald-600 text-white p-3 rounded-xl flex items-start space-x-2.5 shadow-xs">
+                  <Sparkles className="w-4 h-4 text-emerald-200 shrink-0 mt-0.5" />
+                  <div className="text-xs">
+                    <p className="font-bold">Como funciona o WebAPK do Android?</p>
+                    <p className="text-emerald-100 mt-0.5 leading-snug">
+                      Ao clicar em "Instalar", o Google Play Services gera um <strong>pacote APK nativo completo (.apk)</strong> registrado em Configurações &gt; Aplicativos do Android, com tela cheia, splash screen e sem barra do navegador!
+                    </p>
+                  </div>
+                </div>
+
+                <h4 className="text-xs font-bold text-emerald-900 flex items-center space-x-1.5 pt-1">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Passo a Passo no Android (Chrome):</span>
+                  <span>Passo a Passo para Instalar o APK no Android:</span>
                 </h4>
                 <ol className="text-xs text-slate-700 space-y-2 font-medium list-decimal list-inside pl-1">
                   <li>
-                    Abra este link no navegador <strong className="text-slate-900">Google Chrome</strong> do seu celular.
+                    Abra este link no navegador <strong className="text-slate-900">Google Chrome</strong> do seu smartphone Android.
                   </li>
                   <li>
-                    Toque no menu de três pontos <strong className="text-slate-900">(⋮)</strong> no canto superior direito.
+                    Clique no botão azul acima <strong className="text-blue-600 font-bold">"Instalar Agora"</strong> ou no menu do Chrome <strong className="text-slate-900">(⋮)</strong>.
                   </li>
                   <li>
-                    Selecione a opção <strong className="text-emerald-700 bg-emerald-100/80 px-1.5 py-0.5 rounded font-bold">"Instalar Aplicativo"</strong> ou <strong className="text-emerald-700 bg-emerald-100/80 px-1.5 py-0.5 rounded font-bold">"Adicionar à tela inicial"</strong>.
+                    Selecione a opção <strong className="text-emerald-700 bg-emerald-100/80 px-1.5 py-0.5 rounded font-bold">"Instalar Aplicativo"</strong>.
                   </li>
-                  <li>O ícone do Bytecas Estoque aparecerá na sua lista de aplicativos do celular!</li>
+                  <li>O Android compilará o WebAPK e o aplicativo "Bytecas Estoque" aparecerá na sua gaveta de apps!</li>
                 </ol>
-
-                <div className="pt-2 border-t border-emerald-200/60 flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-emerald-800">Baixar atalho de inicialização:</span>
-                  <button
-                    onClick={handleDownloadApkShortcut}
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center space-x-1.5 shadow-xs"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Baixar Atalho .APK</span>
-                  </button>
-                </div>
               </div>
             )}
 
