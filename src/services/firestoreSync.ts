@@ -11,7 +11,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Product, Category, Movement, AuditLog, CustomerDemand, POSConfig, SystemTestReport, HeatingProgressMetrics, MegaSweepProgressMetrics, AutoHealResult } from '../types';
+import { Product, Category, Movement, AuditLog, CustomerDemand, POSConfig } from '../types';
 
 import { DEFAULT_POS_CONFIG } from '../config/posDefault';
 import { localStore } from './localStore';
@@ -50,6 +50,9 @@ class FirestoreSyncService {
   public async initRealtimeListeners() {
     if (this.isInitialized) return;
     this.isInitialized = true;
+
+    // Run background cleanup of bot items
+    this.purgeAllBotData().catch(() => {});
 
     // 1. Sync POS Config
     try {
@@ -90,7 +93,10 @@ class FirestoreSyncService {
           } else {
             const products: Product[] = [];
             snapshot.forEach((docSnap) => {
-              products.push({ id: docSnap.id, ...docSnap.data() } as Product);
+              const p = { id: docSnap.id, ...docSnap.data() } as Product;
+              if (!p.id.startsWith('test_prod_') && (!p.nome || !p.nome.includes('[BOT_TEST]'))) {
+                products.push(p);
+              }
             });
             localStore.saveProductsToLocal(products);
             this.notifyProducts(products);
@@ -136,7 +142,13 @@ class FirestoreSyncService {
         async (snapshot) => {
           const movements: Movement[] = [];
           snapshot.forEach((docSnap) => {
-            movements.push({ id: docSnap.id, ...docSnap.data() } as Movement);
+            const m = { id: docSnap.id, ...docSnap.data() } as Movement;
+            if (
+              (!m.observacao || !m.observacao.includes('[BOT_TEST]')) &&
+              (!m.produto_nome || !m.produto_nome.includes('[BOT_TEST]'))
+            ) {
+              movements.push(m);
+            }
           });
           // Sort newest first
           movements.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -157,7 +169,13 @@ class FirestoreSyncService {
         (snapshot) => {
           const demands: CustomerDemand[] = [];
           snapshot.forEach((docSnap) => {
-            demands.push({ id: docSnap.id, ...docSnap.data() } as CustomerDemand);
+            const d = { id: docSnap.id, ...docSnap.data() } as CustomerDemand;
+            if (
+              !d.id.startsWith('dem_') &&
+              (!d.produto_nome || (!d.produto_nome.includes('[BOT_TEST]') && !d.produto_nome.includes('Produto Solicitado')))
+            ) {
+              demands.push(d);
+            }
           });
           demands.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
           localStore.saveDemandsToLocal(demands);
@@ -380,6 +398,129 @@ class FirestoreSyncService {
     return result;
   }
 
+  public async zeroAllProductsStock(): Promise<{ updatedCount: number }> {
+    localStore.zeroAllProductsStock();
+    let updatedCount = 0;
+
+    try {
+      const snap = await getDocs(collection(db, 'products'));
+      for (const docSnap of snap.docs) {
+        await updateDoc(doc(db, 'products', docSnap.id), {
+          estoque: 0,
+          updated_at: new Date().toISOString()
+        }).catch(() => {});
+        updatedCount++;
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'products');
+    }
+
+    return { updatedCount };
+  }
+
+  public async purgeAllBotData(): Promise<{ deletedCount: number }> {
+    let deletedCount = 0;
+    try {
+      // 1. Delete bot products
+      const snapProds = await getDocs(collection(db, 'products'));
+      for (const docSnap of snapProds.docs) {
+        const data = docSnap.data();
+        if (docSnap.id.startsWith('test_prod_') || (data.nome && data.nome.includes('[BOT_TEST]'))) {
+          await deleteDoc(doc(db, 'products', docSnap.id)).catch(() => {});
+          deletedCount++;
+        }
+      }
+
+      // 2. Delete bot movements
+      const snapMovs = await getDocs(collection(db, 'movements'));
+      for (const docSnap of snapMovs.docs) {
+        const data = docSnap.data();
+        if (
+          (data.observacao && data.observacao.includes('[BOT_TEST]')) ||
+          (data.produto_nome && data.produto_nome.includes('[BOT_TEST]'))
+        ) {
+          await deleteDoc(doc(db, 'movements', docSnap.id)).catch(() => {});
+          deletedCount++;
+        }
+      }
+
+      // 3. Delete bot demands in 'demands' and 'customer_demands'
+      const snapDemands = await getDocs(collection(db, 'demands'));
+      for (const docSnap of snapDemands.docs) {
+        const data = docSnap.data();
+        if (
+          docSnap.id.startsWith('dem_') ||
+          (data.produto_nome && (data.produto_nome.includes('[BOT_TEST]') || data.produto_nome.includes('Produto Solicitado')))
+        ) {
+          await deleteDoc(doc(db, 'demands', docSnap.id)).catch(() => {});
+          deletedCount++;
+        }
+      }
+
+      const snapCustDemands = await getDocs(collection(db, 'customer_demands'));
+      for (const docSnap of snapCustDemands.docs) {
+        const data = docSnap.data();
+        if (
+          docSnap.id.startsWith('dem_') ||
+          (data.produto_nome && (data.produto_nome.includes('[BOT_TEST]') || data.produto_nome.includes('Produto Solicitado')))
+        ) {
+          await deleteDoc(doc(db, 'customer_demands', docSnap.id)).catch(() => {});
+          deletedCount++;
+        }
+      }
+
+      // 4. Delete test heat load docs
+      const snapHeat = await getDocs(collection(db, 'system_test_heat_load'));
+      for (const docSnap of snapHeat.docs) {
+        await deleteDoc(doc(db, 'system_test_heat_load', docSnap.id)).catch(() => {});
+        deletedCount++;
+      }
+
+      // 5. Delete test reports
+      const snapReports = await getDocs(collection(db, 'system_test_reports'));
+      for (const docSnap of snapReports.docs) {
+        await deleteDoc(doc(db, 'system_test_reports', docSnap.id)).catch(() => {});
+        deletedCount++;
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, 'purge_bot_data');
+    }
+
+    return { deletedCount };
+  }
+
+  public async clearAllDataAndResetStock(): Promise<{ message: string }> {
+    localStore.clearAllDataAndResetStock();
+    await this.purgeAllBotData();
+
+    try {
+      // Zero all real product stocks in Firestore
+      const snapProds = await getDocs(collection(db, 'products'));
+      for (const docSnap of snapProds.docs) {
+        await updateDoc(doc(db, 'products', docSnap.id), {
+          estoque: 0,
+          updated_at: new Date().toISOString()
+        }).catch(() => {});
+      }
+
+      // Clear all movements in Firestore
+      const snapMovs = await getDocs(collection(db, 'movements'));
+      for (const docSnap of snapMovs.docs) {
+        await deleteDoc(doc(db, 'movements', docSnap.id)).catch(() => {});
+      }
+
+      // Clear all demands in Firestore
+      const snapDemands = await getDocs(collection(db, 'demands'));
+      for (const docSnap of snapDemands.docs) {
+        await deleteDoc(doc(db, 'demands', docSnap.id)).catch(() => {});
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, 'bulk_cleanup');
+    }
+
+    return { message: 'Estoque zerado e todas as movimentações e dados do bot foram totalmente limpos!' };
+  }
+
   public async createCategory(nome: string): Promise<Category> {
     const newCat = localStore.createCategory(nome);
     try {
@@ -431,679 +572,6 @@ class FirestoreSyncService {
         deleteTimeMs: 0,
         error: err?.message || String(err)
       };
-    }
-  }
-
-  // --- 2-MINUTE EXTREME DATABASE HEATING / STRESS ENGINE ---
-  public async runExtremeDatabaseHeating(
-    durationSeconds = 120,
-    onProgress: (metrics: HeatingProgressMetrics) => void,
-    shouldStopSignal?: () => boolean
-  ): Promise<HeatingProgressMetrics> {
-    const startTime = Date.now();
-    const endTime = startTime + durationSeconds * 1000;
-
-    let totalOps = 0;
-    let writesOps = 0;
-    let readsOps = 0;
-    let deletesOps = 0;
-    let writeTimesMs: number[] = [];
-    let readTimesMs: number[] = [];
-    let peakLatencyMs = 0;
-    let errorCount = 0;
-    let bytesTransferred = 0;
-
-    const createdDocIds: string[] = [];
-
-    while (Date.now() < endTime) {
-      if (shouldStopSignal && shouldStopSignal()) {
-        break;
-      }
-
-      const elapsedSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
-      const docId = `heat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      const docRef = doc(db, 'system_test_heat_load', docId);
-
-      try {
-        // Heavy Payload generation (1.5 KB JSON payload)
-        const heavyPayload = {
-          botId: 'BYTECAS_DATABASE_HEATING_ENGINE',
-          cycle: totalOps + 1,
-          timestamp: new Date().toISOString(),
-          simulatedCart: Array.from({ length: 10 }).map((_, i) => ({
-            id: `item_${i}`,
-            qty: Math.floor(Math.random() * 50) + 1,
-            price: (Math.random() * 200).toFixed(2),
-            hash: Math.random().toString(36).substring(2)
-          })),
-          largeBuffer: 'A'.repeat(1024)
-        };
-
-        // 1. Heavy Write
-        const wStart = Date.now();
-        await setDoc(docRef, heavyPayload);
-        const wDuration = Date.now() - wStart;
-        writeTimesMs.push(wDuration);
-        writesOps++;
-        totalOps++;
-        createdDocIds.push(docId);
-        if (wDuration > peakLatencyMs) peakLatencyMs = wDuration;
-        bytesTransferred += 1500;
-
-        // 2. Heavy Read
-        const rStart = Date.now();
-        const snap = await getDoc(docRef);
-        const rDuration = Date.now() - rStart;
-        readTimesMs.push(rDuration);
-        readsOps++;
-        totalOps++;
-        if (rDuration > peakLatencyMs) peakLatencyMs = rDuration;
-        bytesTransferred += 1500;
-
-        // 3. Delete every 3 items to keep DB clean
-        if (createdDocIds.length >= 3) {
-          const toDeleteId = createdDocIds.shift();
-          if (toDeleteId) {
-            await deleteDoc(doc(db, 'system_test_heat_load', toDeleteId)).catch(() => {});
-            deletesOps++;
-            totalOps++;
-          }
-        }
-      } catch (err) {
-        errorCount++;
-      }
-
-      // Compute metrics
-      const avgWriteMs = writeTimesMs.length > 0 ? Math.round(writeTimesMs.reduce((a, b) => a + b, 0) / writeTimesMs.length) : 0;
-      const avgReadMs = readTimesMs.length > 0 ? Math.round(readTimesMs.reduce((a, b) => a + b, 0) / readTimesMs.length) : 0;
-      const currentIops = Math.round((totalOps / elapsedSec) * 10) / 10;
-      const successRate = totalOps > 0 ? Math.round(((totalOps - errorCount) / totalOps) * 100) : 100;
-
-      let tempLevel: HeatingProgressMetrics['temperatureLevel'] = 'Normal';
-      if (elapsedSec > 90) tempLevel = 'Superaquecido';
-      else if (elapsedSec > 60) tempLevel = 'Quente';
-      else if (elapsedSec > 20) tempLevel = 'Aquecendo';
-
-      if (peakLatencyMs > 2500 || errorCount > 5) {
-        tempLevel = 'Crítico';
-      }
-
-      const currentMetrics: HeatingProgressMetrics = {
-        timeElapsedSec: elapsedSec,
-        totalTimeSec: durationSeconds,
-        totalOps,
-        writesOps,
-        readsOps,
-        deletesOps,
-        avgWriteMs,
-        avgReadMs,
-        peakLatencyMs,
-        currentIops,
-        errorCount,
-        successRate,
-        bytesTransferredKb: Math.round(bytesTransferred / 1024),
-        temperatureLevel: tempLevel
-      };
-
-      onProgress(currentMetrics);
-
-      // Brief pause to allow UI repaint & avoid browser lockup
-      await new Promise((r) => setTimeout(r, 60));
-    }
-
-    // Cleanup remaining test documents
-    for (const dId of createdDocIds) {
-      deleteDoc(doc(db, 'system_test_heat_load', dId)).catch(() => {});
-    }
-
-    const finalElapsed = Math.max(1, Math.round((Date.now() - startTime) / 1000));
-    const finalMetrics: HeatingProgressMetrics = {
-      timeElapsedSec: finalElapsed,
-      totalTimeSec: durationSeconds,
-      totalOps,
-      writesOps,
-      readsOps,
-      deletesOps,
-      avgWriteMs: writeTimesMs.length > 0 ? Math.round(writeTimesMs.reduce((a, b) => a + b, 0) / writeTimesMs.length) : 0,
-      avgReadMs: readTimesMs.length > 0 ? Math.round(readTimesMs.reduce((a, b) => a + b, 0) / readTimesMs.length) : 0,
-      peakLatencyMs,
-      currentIops: Math.round((totalOps / finalElapsed) * 10) / 10,
-      errorCount,
-      successRate: totalOps > 0 ? Math.round(((totalOps - errorCount) / totalOps) * 100) : 100,
-      bytesTransferredKb: Math.round(bytesTransferred / 1024),
-      temperatureLevel: 'Normal'
-    };
-
-    return finalMetrics;
-  }
-
-  // --- MEGA VARREDURA EXTREMA (3 a 6 MINUTOS / 10.000+ OPERAÇÕES) ---
-  public async runMegaE2EStressSweep(
-    durationSeconds = 180,
-    onProgress: (metrics: MegaSweepProgressMetrics) => void,
-    shouldStopSignal?: () => boolean
-  ): Promise<{ report: SystemTestReport; metrics: MegaSweepProgressMetrics }> {
-    const startTime = Date.now();
-    const endTime = startTime + durationSeconds * 1000;
-
-    let totalOps = 0;
-    let productsCreated = 0;
-    let productsEdited = 0;
-    let productsDeleted = 0;
-    let salesSimulated = 0;
-    let demandsTested = 0;
-    let reportsGenerated = 0;
-    let bugsDiscovered = 0;
-    let autoFixesApplied = 0;
-    let latencies: number[] = [];
-
-    const bugLog: string[] = [];
-    const testDocIds: string[] = [];
-
-    let currentPhase = 'Iniciando Megavarredura Extrema de 10.000 Funções...';
-
-    while (Date.now() < endTime) {
-      if (shouldStopSignal && shouldStopSignal()) {
-        break;
-      }
-
-      const elapsedSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
-      const loopIndex = totalOps + 1;
-
-      try {
-        // --- STEP 1: CREATE & SAVE SYNTHETIC PRODUCT ---
-        currentPhase = 'Testando Cadastro & Persistência Extremas de Produtos...';
-        const pStart = Date.now();
-        const fakeId = `test_prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-        const testBarcode = `789${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 90 + 10)}`;
-        const fakePrice = Math.round((Math.random() * 100 + 0.5) * 100) / 100;
-        const fakeCost = Math.round(fakePrice * 0.5 * 100) / 100;
-
-        const fakeProduct: Product = {
-          id: fakeId,
-          nome: `[BOT_TEST] Item Auto-${loopIndex}`,
-          codigo: `TST-${loopIndex}`,
-          codigo_barras: testBarcode,
-          categoria: 'Geral',
-          marca: 'Marca Generica',
-          preco: fakePrice,
-          preco_custo: fakeCost,
-          estoque: Math.floor(Math.random() * 100) + 1,
-          estoque_minimo: 5,
-          localizacao: 'Gaiola A1',
-          ativo: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          data_modificacao: new Date().toISOString()
-        };
-
-        await setDoc(doc(db, 'products', fakeId), fakeProduct);
-        testDocIds.push(fakeId);
-        productsCreated++;
-        totalOps++;
-        latencies.push(Date.now() - pStart);
-
-        // --- STEP 2: VERIFY & EDIT PRODUCT ---
-        currentPhase = 'Auditando Atualização de Preços e Ponto Flutuante...';
-        const editStart = Date.now();
-        fakeProduct.preco = Math.round((fakePrice + 2.5) * 100) / 100;
-        fakeProduct.estoque += 10;
-        await setDoc(doc(db, 'products', fakeId), fakeProduct, { merge: true });
-        productsEdited++;
-        totalOps++;
-        latencies.push(Date.now() - editStart);
-
-        // --- STEP 3: SIMULATE E2E POS CART SALE TRANSACTION ---
-        currentPhase = 'Simulando Vendas E2E no Frente de Caixa (POS)...';
-        const saleStart = Date.now();
-        const movementId = `mov_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-        const fakeMovement: Movement = {
-          id: movementId,
-          tipo: 'saida',
-          produto_id: fakeId,
-          produto_nome: fakeProduct.nome,
-          produto_codigo: fakeProduct.codigo,
-          usuario_id: 'bot_id',
-          usuario_nome: 'Bot Teste POS',
-          quantidade: 2,
-          preco_unitario: fakeProduct.preco,
-          valor_total: (fakeProduct.preco || 10) * 2,
-          forma_pagamento: 'Dinheiro',
-          observacao: '[BOT_TEST] Venda Automatizada de Estresse',
-          data_movimentacao: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        };
-        await setDoc(doc(db, 'movements', movementId), fakeMovement);
-        testDocIds.push(`mov:${movementId}`);
-        salesSimulated++;
-        totalOps++;
-        latencies.push(Date.now() - saleStart);
-
-        // --- STEP 4: TEST CUSTOMER DEMAND ("NÃO TINHA") ---
-        currentPhase = 'Testando Registro de Demandas de Clientes ("Não Tinha")...';
-        const demStart = Date.now();
-        const demandId = `dem_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-        const fakeDemand: CustomerDemand = {
-          id: demandId,
-          produto_nome: `Produto Solicitado ${loopIndex}`,
-          cadastrado: false,
-          quantidade_solicitacoes: Math.floor(Math.random() * 5) + 1,
-          estoque_no_momento: 0,
-          status: 'sem_estoque',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        await setDoc(doc(db, 'customer_demands', demandId), fakeDemand);
-        testDocIds.push(`dem:${demandId}`);
-        demandsTested++;
-        totalOps++;
-        latencies.push(Date.now() - demStart);
-
-        // --- STEP 5: CLEANUP & DELETE TEST ITEMS (EVERY 5 CYCLES) ---
-        if (testDocIds.length >= 5) {
-          currentPhase = 'Executando Limpeza & Exclusão de Registros Temporários...';
-          const delTarget = testDocIds.shift();
-          if (delTarget) {
-            if (delTarget.startsWith('mov:')) {
-              await deleteDoc(doc(db, 'movements', delTarget.replace('mov:', ''))).catch(() => {});
-            } else if (delTarget.startsWith('dem:')) {
-              await deleteDoc(doc(db, 'customer_demands', delTarget.replace('dem:', ''))).catch(() => {});
-            } else {
-              await deleteDoc(doc(db, 'products', delTarget)).catch(() => {});
-              productsDeleted++;
-            }
-            totalOps++;
-          }
-        }
-
-        // --- STEP 6: VERIFY FINANCIAL REPORT GENERATION ---
-        if (loopIndex % 10 === 0) {
-          currentPhase = 'Verificando Integridade do Balanço & Relatórios Financeiros...';
-          reportsGenerated++;
-          totalOps++;
-        }
-
-      } catch (err: any) {
-        bugsDiscovered++;
-        bugLog.push(`Erro na operação ${totalOps}: ${err?.message || err}`);
-      }
-
-      // Compute metrics
-      const currentIops = Math.round((totalOps / elapsedSec) * 10) / 10;
-      const avgLatencyMs = latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 0;
-
-      const currentMetrics: MegaSweepProgressMetrics = {
-        timeElapsedSec: elapsedSec,
-        totalTimeSec: durationSeconds,
-        totalOps,
-        productsCreated,
-        productsEdited,
-        productsDeleted,
-        salesSimulated,
-        demandsTested,
-        reportsGenerated,
-        bugsDiscovered,
-        autoFixesApplied,
-        currentIops,
-        avgLatencyMs,
-        statusPhase: currentPhase
-      };
-
-      onProgress(currentMetrics);
-
-      // Brief pause to maintain UI responsiveness
-      await new Promise((r) => setTimeout(r, 40));
-    }
-
-    // Cleanup remaining test documents
-    for (const item of testDocIds) {
-      if (item.startsWith('mov:')) {
-        deleteDoc(doc(db, 'movements', item.replace('mov:', ''))).catch(() => {});
-      } else if (item.startsWith('dem:')) {
-        deleteDoc(doc(db, 'customer_demands', item.replace('dem:', ''))).catch(() => {});
-      } else {
-        deleteDoc(doc(db, 'products', item)).catch(() => {});
-      }
-    }
-
-    // Generate Final System Report
-    const finalElapsed = Math.max(1, Math.round((Date.now() - startTime) / 1000));
-    const finalMetrics: MegaSweepProgressMetrics = {
-      timeElapsedSec: finalElapsed,
-      totalTimeSec: durationSeconds,
-      totalOps,
-      productsCreated,
-      productsEdited,
-      productsDeleted,
-      salesSimulated,
-      demandsTested,
-      reportsGenerated,
-      bugsDiscovered,
-      autoFixesApplied,
-      currentIops: Math.round((totalOps / finalElapsed) * 10) / 10,
-      avgLatencyMs: latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 0,
-      statusPhase: 'Megavarredura Concluída com Sucesso.'
-    };
-
-    const report: SystemTestReport = {
-      id: `report_mega_${Date.now()}`,
-      timestamp: new Date().toLocaleString('pt-BR'),
-      executor: 'Bot de Testes Bytecas POS (Mega E2E)',
-      testMode: 'mega_extremo_5min',
-      status: bugsDiscovered > 0 ? 'ALERTA' : 'SUCESSO',
-      totalTests: totalOps,
-      passedTests: totalOps - bugsDiscovered,
-      failedTests: bugsDiscovered,
-      warningTests: 0,
-      durationTotalMs: Date.now() - startTime,
-      results: [
-        {
-          id: 'mega_e2e_crud',
-          moduleName: 'Mega Varredura Extrema de CRUD e Frente de Caixa',
-          category: 'BANCO_DADOS',
-          status: bugsDiscovered > 0 ? 'WARNING' : 'PASSED',
-          summary: `Executadas ${totalOps} operações em ${finalElapsed}s (${productsCreated} prods criados, ${productsEdited} edições, ${salesSimulated} vendas E2E, ${demandsTested} demandas).`,
-          errorDetails: bugLog.length > 0 ? bugLog.join('\n') : undefined,
-          durationMs: Date.now() - startTime
-        }
-      ],
-      savedInDatabase: false
-    };
-
-    return { report, metrics: finalMetrics };
-  }
-
-  // --- AUTOMATED ERROR DIAGNOSTIC & AUTO-HEALING ENGINE ---
-  public async autoHealSystemIssues(report: SystemTestReport, executorName: string): Promise<AutoHealResult[]> {
-    const actionsTaken: AutoHealResult[] = [];
-
-    // 1. Fix Negative Stocks
-    const localProds = localStore.getProducts();
-    const negativeStockProds = localProds.filter((p) => Number(p.estoque) < 0);
-
-    if (negativeStockProds.length > 0) {
-      const fixedNames: string[] = [];
-      for (const prod of negativeStockProds) {
-        const originalEstoque = prod.estoque;
-        prod.estoque = 0; // Heal to 0
-        await setDoc(doc(db, 'products', prod.id), prod, { merge: true }).catch(() => {});
-        fixedNames.push(`${prod.nome} (Corrigido de ${originalEstoque} para 0)`);
-      }
-      localStore.saveProductsToLocal(localProds);
-
-      actionsTaken.push({
-        actionType: 'STOCK_FIX',
-        itemsFixed: negativeStockProds.length,
-        details: fixedNames,
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    // 2. Fix Zero or Invalid Product Prices
-    const zeroPriceProds = localProds.filter((p) => Number((p as any).preco || (p as any).preco_venda || 0) <= 0);
-    if (zeroPriceProds.length > 0) {
-      const fixedNames: string[] = [];
-      for (const prod of zeroPriceProds) {
-        (prod as any).preco = 1.0; // Heal to minimum base price R$ 1,00
-        (prod as any).preco_venda = 1.0;
-        await setDoc(doc(db, 'products', prod.id), prod, { merge: true }).catch(() => {});
-        fixedNames.push(`${prod.nome} (Ajustado preço de R$ 0,00 para R$ 1,00)`);
-      }
-      localStore.saveProductsToLocal(localProds);
-
-      actionsTaken.push({
-        actionType: 'PRICE_FIX',
-        itemsFixed: zeroPriceProds.length,
-        details: fixedNames,
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    // 3. Fix Duplicate Barcodes
-    const barcodes = localProds.map((p) => p.codigo_barras).filter(Boolean);
-    const duplicates = barcodes.filter((code, idx) => barcodes.indexOf(code) !== idx);
-
-    if (duplicates.length > 0) {
-      const fixedCodes: string[] = [];
-      const seen = new Set<string>();
-
-      for (const prod of localProds) {
-        if (prod.codigo_barras && seen.has(prod.codigo_barras)) {
-          const newCode = `789${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 90 + 10)}`;
-          const oldCode = prod.codigo_barras;
-          prod.codigo_barras = newCode;
-          await setDoc(doc(db, 'products', prod.id), prod, { merge: true }).catch(() => {});
-          fixedCodes.push(`${prod.nome}: Código ${oldCode} -> ${newCode}`);
-        } else if (prod.codigo_barras) {
-          seen.add(prod.codigo_barras);
-        }
-      }
-      localStore.saveProductsToLocal(localProds);
-
-      if (fixedCodes.length > 0) {
-        actionsTaken.push({
-          actionType: 'BARCODE_FIX',
-          itemsFixed: fixedCodes.length,
-          details: fixedCodes,
-          timestamp: new Date().toISOString()
-        });
-      }
-    }
-
-    // 4. Fix POS Layout Configuration if invalid
-    try {
-      const currentConfig = await new Promise<any>((resolve) => {
-        let unsubFn: (() => void) | null = null;
-        unsubFn = this.subscribeConfig((cfg) => {
-          if (unsubFn) unsubFn();
-          else setTimeout(() => unsubFn?.(), 0);
-          resolve(cfg);
-        });
-      });
-
-      const isHexColor = (col: string) => /^#([0-9A-F]{3}){1,2}$/i.test(col);
-      if (!currentConfig?.primaryColor || !isHexColor(currentConfig.primaryColor)) {
-        await this.updatePOSConfig(DEFAULT_POS_CONFIG, executorName);
-        actionsTaken.push({
-          actionType: 'POS_CONFIG_FIX',
-          itemsFixed: 1,
-          details: ['Configuração de Layout do Caixa restaurada para os padrões oficiais.'],
-          timestamp: new Date().toISOString()
-        });
-      }
-    } catch (e) {}
-
-    // 5. Fix Missing Categories
-    try {
-      const categories = await new Promise<any[]>((resolve) => {
-        let unsubFn: (() => void) | null = null;
-        unsubFn = this.subscribeCategories((c) => {
-          if (unsubFn) unsubFn();
-          else setTimeout(() => unsubFn?.(), 0);
-          resolve(c || []);
-        });
-      });
-
-      if (categories.length === 0) {
-        await this.createCategory('Geral');
-        actionsTaken.push({
-          actionType: 'CATEGORY_FIX',
-          itemsFixed: 1,
-          details: ['Categoria "Geral" criada automaticamente no Firestore DB.'],
-          timestamp: new Date().toISOString()
-        });
-      }
-    } catch (e) {}
-
-    // 6. Fix Orphaned Product Categories
-    try {
-      const categories = await new Promise<any[]>((resolve) => {
-        let unsubFn: (() => void) | null = null;
-        unsubFn = this.subscribeCategories((c) => {
-          if (unsubFn) unsubFn();
-          else setTimeout(() => unsubFn?.(), 0);
-          resolve(c || []);
-        });
-      });
-      const validCategoryNames = new Set(categories.map((c) => c.nome.toLowerCase().trim()));
-      validCategoryNames.add('geral');
-
-      const orphanedProds = localProds.filter(
-        (p) => !p.categoria || p.categoria.trim() === '' || !validCategoryNames.has(p.categoria.toLowerCase().trim())
-      );
-
-      if (orphanedProds.length > 0) {
-        const fixedDetails: string[] = [];
-        for (const prod of orphanedProds) {
-          const oldCat = prod.categoria || 'Vazia';
-          prod.categoria = 'Geral';
-          await setDoc(doc(db, 'products', prod.id), prod, { merge: true }).catch(() => {});
-          fixedDetails.push(`${prod.nome}: Categoria "${oldCat}" -> "Geral"`);
-        }
-        localStore.saveProductsToLocal(localProds);
-
-        actionsTaken.push({
-          actionType: 'ORPHAN_CATEGORY_FIX',
-          itemsFixed: orphanedProds.length,
-          details: fixedDetails,
-          timestamp: new Date().toISOString()
-        });
-      }
-    } catch (e) {}
-
-    // 7. Fix Zero or Inconsistent Cost Prices (Preço de Custo)
-    try {
-      const zeroCostProds = localProds.filter((p) => {
-        const cost = Number((p as any).preco_custo || 0);
-        const price = Number((p as any).preco || (p as any).preco_venda || 0);
-        return cost <= 0 || cost >= price;
-      });
-
-      if (zeroCostProds.length > 0) {
-        const fixedDetails: string[] = [];
-        for (const prod of zeroCostProds) {
-          const price = Number((prod as any).preco || (prod as any).preco_venda || 10.0);
-          const newCost = Math.round(price * 0.6 * 100) / 100; // Default 40% markup margin
-          (prod as any).preco_custo = newCost;
-          await setDoc(doc(db, 'products', prod.id), prod, { merge: true }).catch(() => {});
-          fixedDetails.push(`${prod.nome}: Preço custo ajustado para R$ ${newCost.toFixed(2)} (Margem base 40%)`);
-        }
-        localStore.saveProductsToLocal(localProds);
-
-        actionsTaken.push({
-          actionType: 'COST_PRICE_FIX',
-          itemsFixed: zeroCostProds.length,
-          details: fixedDetails,
-          timestamp: new Date().toISOString()
-        });
-      }
-    } catch (e) {}
-
-    // 8. Fix Sync Drift (Push un-synced localStore products to Firestore)
-    try {
-      const cloudProds = await new Promise<any[]>((resolve) => {
-        let unsubFn: (() => void) | null = null;
-        unsubFn = this.subscribeProducts((p) => {
-          if (unsubFn) unsubFn();
-          else setTimeout(() => unsubFn?.(), 0);
-          resolve(p || []);
-        });
-      });
-
-      const cloudIds = new Set(cloudProds.map((p) => p.id));
-      const unsyncedProds = localProds.filter((p) => !cloudIds.has(p.id));
-
-      if (unsyncedProds.length > 0) {
-        const fixedDetails: string[] = [];
-        for (const prod of unsyncedProds) {
-          await setDoc(doc(db, 'products', prod.id), prod, { merge: true }).catch(() => {});
-          fixedDetails.push(`Produto "${prod.nome}" (ID: ${prod.id}) sincronizado com a nuvem Firestore.`);
-        }
-
-        actionsTaken.push({
-          actionType: 'SYNC_DRIFT_FIX',
-          itemsFixed: unsyncedProds.length,
-          details: fixedDetails,
-          timestamp: new Date().toISOString()
-        });
-      }
-    } catch (e) {}
-
-    // Update the report in Firestore with autoHealedActions and set status to SUCESSO
-    if (actionsTaken.length > 0) {
-      report.autoHealedActions = actionsTaken;
-      report.status = 'SUCESSO';
-      report.results = report.results.map((r) => {
-        if (r.status === 'WARNING' || r.status === 'FAILED') {
-          return {
-            ...r,
-            status: 'PASSED',
-            summary: `${r.summary} [RESOLVIDO E AUTO-CORRIGIDO PELO ROBÔ AUTÔNOMO]`
-          };
-        }
-        return r;
-      });
-
-      report.passedTests = report.results.length;
-      report.failedTests = 0;
-      report.warningTests = 0;
-
-      await this.saveTestReport(report);
-    }
-
-    return actionsTaken;
-  }
-
-  public async deleteTestReport(id: string): Promise<boolean> {
-    try {
-      await deleteDoc(doc(db, 'system_tests', id));
-      return true;
-    } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, `system_tests/${id}`);
-      return false;
-    }
-  }
-
-  public async saveTestReport(report: SystemTestReport): Promise<boolean> {
-    try {
-      const testDocRef = doc(db, 'system_tests', report.id);
-      await setDoc(testDocRef, {
-        ...report,
-        savedInDatabase: true,
-        created_at: new Date().toISOString()
-      });
-
-      // Also record in central audit logs
-      const auditDocRef = doc(db, 'audit_logs', `log_test_${report.id}`);
-      await setDoc(auditDocRef, {
-        id: `log_test_${report.id}`,
-        usuario: report.executor,
-        acao: 'CONFIG',
-        descricao: `[ROBÔ DE TESTES] Execução concluída. Status: ${report.status} (${report.passedTests}/${report.totalTests} aprovados em ${report.durationTotalMs}ms)`,
-        created_at: new Date().toISOString()
-      }).catch(() => {});
-
-      return true;
-    } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, `system_tests/${report.id}`);
-      return false;
-    }
-  }
-
-  public async getTestReportsHistory(): Promise<SystemTestReport[]> {
-    try {
-      const testsRef = collection(db, 'system_tests');
-      const snapshot = await getDocs(testsRef);
-      const reports: SystemTestReport[] = [];
-      snapshot.forEach((docSnap) => {
-        reports.push({ id: docSnap.id, ...docSnap.data() } as SystemTestReport);
-      });
-      // Newest first
-      reports.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      return reports;
-    } catch (err) {
-      handleFirestoreError(err, OperationType.GET, 'system_tests');
-      return [];
     }
   }
 }

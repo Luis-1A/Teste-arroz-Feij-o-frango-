@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   Package,
@@ -8,8 +8,10 @@ import {
   User as UserIcon,
   ShieldAlert,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  Download
 } from 'lucide-react';
+import { InstallAppModal } from './InstallAppModal';
 
 interface HeaderProps {
   onToggleSidebarMobile?: () => void;
@@ -19,6 +21,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebarMobile, onOpenMobileMenu }) => {
   const handleMenuClick = onToggleSidebarMobile || onOpenMobileMenu;
   const { user, logout, isMobileSimulated, toggleMobileSimulated } = useAuth();
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
 
   const getRoleBadge = (cargo?: string) => {
     switch (cargo) {
@@ -83,7 +86,18 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebarMobile, onOpenMob
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          {/* Install APK / App Button */}
+          <button
+            onClick={() => setIsInstallModalOpen(true)}
+            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-black flex items-center space-x-1.5 shadow-sm shadow-emerald-600/20 transition-all active:scale-95"
+            title="Instalar Aplicativo (APK / Android / iOS)"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Instalar App (APK)</span>
+            <span className="sm:hidden">APK</span>
+          </button>
+
           {/* Mobile View / Web Desktop Simulator Toggle */}
           <button
             onClick={toggleMobileSimulated}
@@ -138,6 +152,11 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebarMobile, onOpenMob
           )}
         </div>
       </div>
+
+      <InstallAppModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+      />
     </header>
   );
 };

@@ -16,8 +16,10 @@ import {
   ChevronLeft,
   ChevronRight,
   PackageMinus,
-  Bot
+  Smartphone,
+  Download
 } from 'lucide-react';
+import { InstallAppModal } from './InstallAppModal';
 
 export type TabType =
   | 'dashboard'
@@ -30,8 +32,7 @@ export type TabType =
   | 'restock-list'
   | 'history'
   | 'users'
-  | 'pos-customization'
-  | 'system-bot';
+  | 'pos-customization';
 
 
 interface SidebarProps {
@@ -49,6 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { user } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
 
   const navGroups = [
     {
@@ -132,13 +134,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: Sliders,
           badge: 'SUPREMO',
           roles: ['admin_supremo']
-        },
-        {
-          id: 'system-bot' as TabType,
-          label: 'Bot de Testes & Diagnóstico',
-          icon: Bot,
-          badge: 'BOT',
-          roles: ['admin_supremo', 'gerente', 'funcionario']
         },
         {
           id: 'users' as TabType,
@@ -233,6 +228,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </div>
 
+      {/* Install App Promo Card / Button */}
+      <div className="p-3 border-t border-slate-100 bg-emerald-50/50">
+        {!isCollapsed ? (
+          <button
+            onClick={() => setIsInstallModalOpen(true)}
+            className="w-full p-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs transition shadow-md shadow-emerald-600/20 flex items-center justify-between group active:scale-98"
+          >
+            <div className="flex items-center space-x-2 truncate">
+              <Smartphone className="w-4 h-4 shrink-0 text-emerald-200" />
+              <span className="truncate">Instalar App (APK)</span>
+            </div>
+            <Download className="w-4 h-4 shrink-0 opacity-80 group-hover:translate-y-0.5 transition-transform" />
+          </button>
+        ) : (
+          <button
+            onClick={() => setIsInstallModalOpen(true)}
+            className="w-full p-2.5 rounded-xl bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 transition shadow-sm"
+            title="Instalar App (APK)"
+          >
+            <Download className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
       {/* Collapse Toggle Footer */}
       <div className="p-3 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between">
         {!isCollapsed && (
@@ -248,6 +267,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       </div>
+
+      <InstallAppModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+      />
     </div>
   );
 

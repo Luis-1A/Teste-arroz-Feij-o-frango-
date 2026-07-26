@@ -20,7 +20,9 @@ import {
   Barcode,
   Calendar,
   Layers,
-  FileText
+  FileText,
+  RotateCcw,
+  RefreshCw
 } from 'lucide-react';
 
 export const Products: React.FC = () => {
@@ -173,6 +175,24 @@ export const Products: React.FC = () => {
     setSearchTerm(product.codigo_barras || product.codigo);
   };
 
+  const handleZeroAllStock = async () => {
+    if (window.confirm('⚠️ Tem certeza que deseja ZERAR O ESTOQUE de TODOS os produtos? As quantidades passarão para 0 UN.')) {
+      setLoading(true);
+      await firestoreSync.zeroAllProductsStock();
+      setLoading(false);
+      alert('Estoque de todos os produtos foi zerado com sucesso!');
+    }
+  };
+
+  const handleClearAllData = async () => {
+    if (window.confirm('🧹 ZERAR ESTOQUE E LIMPAR TUDO?\n\nIsso zerará a quantidade em estoque de todos os produtos E removerá o histórico de movimentações, vendas e demandas temporárias.')) {
+      setLoading(true);
+      await firestoreSync.clearAllDataAndResetStock();
+      setLoading(false);
+      alert('Estoque zerado e todas as movimentações foram limpas com sucesso!');
+    }
+  };
+
   return (
     <div className="space-y-6 pb-12">
       {/* Header & Controls */}
@@ -187,7 +207,25 @@ export const Products: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleZeroAllStock}
+            className="px-3 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
+            title="Zerar a quantidade em estoque de todos os produtos"
+          >
+            <RotateCcw className="w-4 h-4 text-amber-600" />
+            <span>Zerar Estoque</span>
+          </button>
+
+          <button
+            onClick={handleClearAllData}
+            className="px-3 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
+            title="Zerar estoques e apagar histórico de movimentações"
+          >
+            <Trash2 className="w-4 h-4 text-rose-600" />
+            <span>Limpar Tudo</span>
+          </button>
+
           <button
             onClick={() => setIsScannerOpen(true)}
             className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2"

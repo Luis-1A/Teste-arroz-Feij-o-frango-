@@ -16,7 +16,6 @@ import { CustomerDemandPage } from './pages/CustomerDemandPage';
 import { HistoryLogs } from './pages/HistoryLogs';
 import { UsersManagement } from './pages/UsersManagement';
 import { POSCustomization } from './pages/POSCustomization';
-import { SystemBotTester } from './pages/SystemBotTester';
 
 
 const AppContent: React.FC = () => {
@@ -70,7 +69,6 @@ const AppContent: React.FC = () => {
           {activeTab === 'history' && <HistoryLogs />}
           {activeTab === 'users' && <UsersManagement />}
           {activeTab === 'pos-customization' && <POSCustomization />}
-          {activeTab === 'system-bot' && <SystemBotTester />}
         </main>
 
 

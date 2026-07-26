@@ -174,7 +174,14 @@ function getUsers(): (User & { senha_hash: string })[] {
 }
 
 function getProducts(): Product[] {
-  return getStored(PRODUCTS_KEY, initialProducts);
+  const prods = getStored<Product[]>(PRODUCTS_KEY, initialProducts);
+  const clean = prods.filter(
+    (p) => !p.id.startsWith('test_prod_') && !p.nome.includes('[BOT_TEST]')
+  );
+  if (clean.length !== prods.length) {
+    setStored(PRODUCTS_KEY, clean);
+  }
+  return clean;
 }
 
 function getCategories(): Category[] {
@@ -182,7 +189,14 @@ function getCategories(): Category[] {
 }
 
 function getMovements(): Movement[] {
-  return getStored(MOVEMENTS_KEY, []);
+  const movs = getStored<Movement[]>(MOVEMENTS_KEY, []);
+  const clean = movs.filter(
+    (m) => !m.observacao?.includes('[BOT_TEST]') && !m.produto_nome?.includes('[BOT_TEST]')
+  );
+  if (clean.length !== movs.length) {
+    setStored(MOVEMENTS_KEY, clean);
+  }
+  return clean;
 }
 
 function getHistory(): AuditLog[] {
@@ -190,7 +204,14 @@ function getHistory(): AuditLog[] {
 }
 
 function getDemands(): CustomerDemand[] {
-  return getStored(DEMANDS_KEY, []);
+  const demands = getStored<CustomerDemand[]>(DEMANDS_KEY, []);
+  const clean = demands.filter(
+    (d) => !d.produto_nome?.includes('[BOT_TEST]') && !d.produto_nome?.includes('Produto Solicitado')
+  );
+  if (clean.length !== demands.length) {
+    setStored(DEMANDS_KEY, clean);
+  }
+  return clean;
 }
 
 export const localStore = {
@@ -450,6 +471,29 @@ export const localStore = {
     products[idx] = updated;
     setStored(PRODUCTS_KEY, products);
     return updated;
+  },
+
+  zeroAllProductsStock: (): void => {
+    const products = getProducts();
+    const updated = products.map((p) => ({
+      ...p,
+      estoque: 0,
+      updated_at: new Date().toISOString()
+    }));
+    setStored(PRODUCTS_KEY, updated);
+  },
+
+  clearAllDataAndResetStock: (): void => {
+    const products = getProducts();
+    const zeroed = products.map((p) => ({
+      ...p,
+      estoque: 0,
+      updated_at: new Date().toISOString()
+    }));
+    setStored(PRODUCTS_KEY, zeroed);
+    setStored(MOVEMENTS_KEY, []);
+    setStored(DEMANDS_KEY, []);
+    setStored(HISTORY_KEY, []);
   },
 
   deleteProduct: (id: string): { message: string } => {
