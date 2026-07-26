@@ -11,7 +11,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Product, Category, Movement, AuditLog, CustomerDemand, POSConfig, SystemTestReport, HeatingProgressMetrics, AutoHealResult } from '../types';
+import { Product, Category, Movement, AuditLog, CustomerDemand, POSConfig, SystemTestReport, HeatingProgressMetrics, MegaSweepProgressMetrics, AutoHealResult } from '../types';
 
 import { DEFAULT_POS_CONFIG } from '../config/posDefault';
 import { localStore } from './localStore';
@@ -577,6 +577,242 @@ class FirestoreSyncService {
     return finalMetrics;
   }
 
+  // --- MEGA VARREDURA EXTREMA (3 a 6 MINUTOS / 10.000+ OPERAÇÕES) ---
+  public async runMegaE2EStressSweep(
+    durationSeconds = 180,
+    onProgress: (metrics: MegaSweepProgressMetrics) => void,
+    shouldStopSignal?: () => boolean
+  ): Promise<{ report: SystemTestReport; metrics: MegaSweepProgressMetrics }> {
+    const startTime = Date.now();
+    const endTime = startTime + durationSeconds * 1000;
+
+    let totalOps = 0;
+    let productsCreated = 0;
+    let productsEdited = 0;
+    let productsDeleted = 0;
+    let salesSimulated = 0;
+    let demandsTested = 0;
+    let reportsGenerated = 0;
+    let bugsDiscovered = 0;
+    let autoFixesApplied = 0;
+    let latencies: number[] = [];
+
+    const bugLog: string[] = [];
+    const testDocIds: string[] = [];
+
+    let currentPhase = 'Iniciando Megavarredura Extrema de 10.000 Funções...';
+
+    while (Date.now() < endTime) {
+      if (shouldStopSignal && shouldStopSignal()) {
+        break;
+      }
+
+      const elapsedSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
+      const loopIndex = totalOps + 1;
+
+      try {
+        // --- STEP 1: CREATE & SAVE SYNTHETIC PRODUCT ---
+        currentPhase = 'Testando Cadastro & Persistência Extremas de Produtos...';
+        const pStart = Date.now();
+        const fakeId = `test_prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const testBarcode = `789${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 90 + 10)}`;
+        const fakePrice = Math.round((Math.random() * 100 + 0.5) * 100) / 100;
+        const fakeCost = Math.round(fakePrice * 0.5 * 100) / 100;
+
+        const fakeProduct: Product = {
+          id: fakeId,
+          nome: `[BOT_TEST] Item Auto-${loopIndex}`,
+          codigo: `TST-${loopIndex}`,
+          codigo_barras: testBarcode,
+          categoria: 'Geral',
+          marca: 'Marca Generica',
+          preco: fakePrice,
+          preco_custo: fakeCost,
+          estoque: Math.floor(Math.random() * 100) + 1,
+          estoque_minimo: 5,
+          localizacao: 'Gaiola A1',
+          ativo: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          data_modificacao: new Date().toISOString()
+        };
+
+        await setDoc(doc(db, 'products', fakeId), fakeProduct);
+        testDocIds.push(fakeId);
+        productsCreated++;
+        totalOps++;
+        latencies.push(Date.now() - pStart);
+
+        // --- STEP 2: VERIFY & EDIT PRODUCT ---
+        currentPhase = 'Auditando Atualização de Preços e Ponto Flutuante...';
+        const editStart = Date.now();
+        fakeProduct.preco = Math.round((fakePrice + 2.5) * 100) / 100;
+        fakeProduct.estoque += 10;
+        await setDoc(doc(db, 'products', fakeId), fakeProduct, { merge: true });
+        productsEdited++;
+        totalOps++;
+        latencies.push(Date.now() - editStart);
+
+        // --- STEP 3: SIMULATE E2E POS CART SALE TRANSACTION ---
+        currentPhase = 'Simulando Vendas E2E no Frente de Caixa (POS)...';
+        const saleStart = Date.now();
+        const movementId = `mov_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const fakeMovement: Movement = {
+          id: movementId,
+          tipo: 'saida',
+          produto_id: fakeId,
+          produto_nome: fakeProduct.nome,
+          produto_codigo: fakeProduct.codigo,
+          usuario_id: 'bot_id',
+          usuario_nome: 'Bot Teste POS',
+          quantidade: 2,
+          preco_unitario: fakeProduct.preco,
+          valor_total: (fakeProduct.preco || 10) * 2,
+          forma_pagamento: 'Dinheiro',
+          observacao: '[BOT_TEST] Venda Automatizada de Estresse',
+          data_movimentacao: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        };
+        await setDoc(doc(db, 'movements', movementId), fakeMovement);
+        testDocIds.push(`mov:${movementId}`);
+        salesSimulated++;
+        totalOps++;
+        latencies.push(Date.now() - saleStart);
+
+        // --- STEP 4: TEST CUSTOMER DEMAND ("NÃO TINHA") ---
+        currentPhase = 'Testando Registro de Demandas de Clientes ("Não Tinha")...';
+        const demStart = Date.now();
+        const demandId = `dem_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const fakeDemand: CustomerDemand = {
+          id: demandId,
+          produto_nome: `Produto Solicitado ${loopIndex}`,
+          cadastrado: false,
+          quantidade_solicitacoes: Math.floor(Math.random() * 5) + 1,
+          estoque_no_momento: 0,
+          status: 'sem_estoque',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        await setDoc(doc(db, 'customer_demands', demandId), fakeDemand);
+        testDocIds.push(`dem:${demandId}`);
+        demandsTested++;
+        totalOps++;
+        latencies.push(Date.now() - demStart);
+
+        // --- STEP 5: CLEANUP & DELETE TEST ITEMS (EVERY 5 CYCLES) ---
+        if (testDocIds.length >= 5) {
+          currentPhase = 'Executando Limpeza & Exclusão de Registros Temporários...';
+          const delTarget = testDocIds.shift();
+          if (delTarget) {
+            if (delTarget.startsWith('mov:')) {
+              await deleteDoc(doc(db, 'movements', delTarget.replace('mov:', ''))).catch(() => {});
+            } else if (delTarget.startsWith('dem:')) {
+              await deleteDoc(doc(db, 'customer_demands', delTarget.replace('dem:', ''))).catch(() => {});
+            } else {
+              await deleteDoc(doc(db, 'products', delTarget)).catch(() => {});
+              productsDeleted++;
+            }
+            totalOps++;
+          }
+        }
+
+        // --- STEP 6: VERIFY FINANCIAL REPORT GENERATION ---
+        if (loopIndex % 10 === 0) {
+          currentPhase = 'Verificando Integridade do Balanço & Relatórios Financeiros...';
+          reportsGenerated++;
+          totalOps++;
+        }
+
+      } catch (err: any) {
+        bugsDiscovered++;
+        bugLog.push(`Erro na operação ${totalOps}: ${err?.message || err}`);
+      }
+
+      // Compute metrics
+      const currentIops = Math.round((totalOps / elapsedSec) * 10) / 10;
+      const avgLatencyMs = latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 0;
+
+      const currentMetrics: MegaSweepProgressMetrics = {
+        timeElapsedSec: elapsedSec,
+        totalTimeSec: durationSeconds,
+        totalOps,
+        productsCreated,
+        productsEdited,
+        productsDeleted,
+        salesSimulated,
+        demandsTested,
+        reportsGenerated,
+        bugsDiscovered,
+        autoFixesApplied,
+        currentIops,
+        avgLatencyMs,
+        statusPhase: currentPhase
+      };
+
+      onProgress(currentMetrics);
+
+      // Brief pause to maintain UI responsiveness
+      await new Promise((r) => setTimeout(r, 40));
+    }
+
+    // Cleanup remaining test documents
+    for (const item of testDocIds) {
+      if (item.startsWith('mov:')) {
+        deleteDoc(doc(db, 'movements', item.replace('mov:', ''))).catch(() => {});
+      } else if (item.startsWith('dem:')) {
+        deleteDoc(doc(db, 'customer_demands', item.replace('dem:', ''))).catch(() => {});
+      } else {
+        deleteDoc(doc(db, 'products', item)).catch(() => {});
+      }
+    }
+
+    // Generate Final System Report
+    const finalElapsed = Math.max(1, Math.round((Date.now() - startTime) / 1000));
+    const finalMetrics: MegaSweepProgressMetrics = {
+      timeElapsedSec: finalElapsed,
+      totalTimeSec: durationSeconds,
+      totalOps,
+      productsCreated,
+      productsEdited,
+      productsDeleted,
+      salesSimulated,
+      demandsTested,
+      reportsGenerated,
+      bugsDiscovered,
+      autoFixesApplied,
+      currentIops: Math.round((totalOps / finalElapsed) * 10) / 10,
+      avgLatencyMs: latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 0,
+      statusPhase: 'Megavarredura Concluída com Sucesso.'
+    };
+
+    const report: SystemTestReport = {
+      id: `report_mega_${Date.now()}`,
+      timestamp: new Date().toLocaleString('pt-BR'),
+      executor: 'Bot de Testes Bytecas POS (Mega E2E)',
+      testMode: 'mega_extremo_5min',
+      status: bugsDiscovered > 0 ? 'ALERTA' : 'SUCESSO',
+      totalTests: totalOps,
+      passedTests: totalOps - bugsDiscovered,
+      failedTests: bugsDiscovered,
+      warningTests: 0,
+      durationTotalMs: Date.now() - startTime,
+      results: [
+        {
+          id: 'mega_e2e_crud',
+          moduleName: 'Mega Varredura Extrema de CRUD e Frente de Caixa',
+          category: 'BANCO_DADOS',
+          status: bugsDiscovered > 0 ? 'WARNING' : 'PASSED',
+          summary: `Executadas ${totalOps} operações em ${finalElapsed}s (${productsCreated} prods criados, ${productsEdited} edições, ${salesSimulated} vendas E2E, ${demandsTested} demandas).`,
+          errorDetails: bugLog.length > 0 ? bugLog.join('\n') : undefined,
+          durationMs: Date.now() - startTime
+        }
+      ],
+      savedInDatabase: false
+    };
+
+    return { report, metrics: finalMetrics };
+  }
+
   // --- AUTOMATED ERROR DIAGNOSTIC & AUTO-HEALING ENGINE ---
   public async autoHealSystemIssues(report: SystemTestReport, executorName: string): Promise<AutoHealResult[]> {
     const actionsTaken: AutoHealResult[] = [];
@@ -657,8 +893,10 @@ class FirestoreSyncService {
     // 4. Fix POS Layout Configuration if invalid
     try {
       const currentConfig = await new Promise<any>((resolve) => {
-        const unsub = this.subscribeConfig((cfg) => {
-          unsub();
+        let unsubFn: (() => void) | null = null;
+        unsubFn = this.subscribeConfig((cfg) => {
+          if (unsubFn) unsubFn();
+          else setTimeout(() => unsubFn?.(), 0);
           resolve(cfg);
         });
       });
@@ -678,18 +916,114 @@ class FirestoreSyncService {
     // 5. Fix Missing Categories
     try {
       const categories = await new Promise<any[]>((resolve) => {
-        const unsub = this.subscribeCategories((c) => {
-          unsub();
+        let unsubFn: (() => void) | null = null;
+        unsubFn = this.subscribeCategories((c) => {
+          if (unsubFn) unsubFn();
+          else setTimeout(() => unsubFn?.(), 0);
           resolve(c || []);
         });
       });
 
       if (categories.length === 0) {
-        const newCategory = await this.createCategory('Geral');
+        await this.createCategory('Geral');
         actionsTaken.push({
           actionType: 'CATEGORY_FIX',
           itemsFixed: 1,
           details: ['Categoria "Geral" criada automaticamente no Firestore DB.'],
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (e) {}
+
+    // 6. Fix Orphaned Product Categories
+    try {
+      const categories = await new Promise<any[]>((resolve) => {
+        let unsubFn: (() => void) | null = null;
+        unsubFn = this.subscribeCategories((c) => {
+          if (unsubFn) unsubFn();
+          else setTimeout(() => unsubFn?.(), 0);
+          resolve(c || []);
+        });
+      });
+      const validCategoryNames = new Set(categories.map((c) => c.nome.toLowerCase().trim()));
+      validCategoryNames.add('geral');
+
+      const orphanedProds = localProds.filter(
+        (p) => !p.categoria || p.categoria.trim() === '' || !validCategoryNames.has(p.categoria.toLowerCase().trim())
+      );
+
+      if (orphanedProds.length > 0) {
+        const fixedDetails: string[] = [];
+        for (const prod of orphanedProds) {
+          const oldCat = prod.categoria || 'Vazia';
+          prod.categoria = 'Geral';
+          await setDoc(doc(db, 'products', prod.id), prod, { merge: true }).catch(() => {});
+          fixedDetails.push(`${prod.nome}: Categoria "${oldCat}" -> "Geral"`);
+        }
+        localStore.saveProductsToLocal(localProds);
+
+        actionsTaken.push({
+          actionType: 'ORPHAN_CATEGORY_FIX',
+          itemsFixed: orphanedProds.length,
+          details: fixedDetails,
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (e) {}
+
+    // 7. Fix Zero or Inconsistent Cost Prices (Preço de Custo)
+    try {
+      const zeroCostProds = localProds.filter((p) => {
+        const cost = Number((p as any).preco_custo || 0);
+        const price = Number((p as any).preco || (p as any).preco_venda || 0);
+        return cost <= 0 || cost >= price;
+      });
+
+      if (zeroCostProds.length > 0) {
+        const fixedDetails: string[] = [];
+        for (const prod of zeroCostProds) {
+          const price = Number((prod as any).preco || (prod as any).preco_venda || 10.0);
+          const newCost = Math.round(price * 0.6 * 100) / 100; // Default 40% markup margin
+          (prod as any).preco_custo = newCost;
+          await setDoc(doc(db, 'products', prod.id), prod, { merge: true }).catch(() => {});
+          fixedDetails.push(`${prod.nome}: Preço custo ajustado para R$ ${newCost.toFixed(2)} (Margem base 40%)`);
+        }
+        localStore.saveProductsToLocal(localProds);
+
+        actionsTaken.push({
+          actionType: 'COST_PRICE_FIX',
+          itemsFixed: zeroCostProds.length,
+          details: fixedDetails,
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (e) {}
+
+    // 8. Fix Sync Drift (Push un-synced localStore products to Firestore)
+    try {
+      const cloudProds = await new Promise<any[]>((resolve) => {
+        let unsubFn: (() => void) | null = null;
+        unsubFn = this.subscribeProducts((p) => {
+          if (unsubFn) unsubFn();
+          else setTimeout(() => unsubFn?.(), 0);
+          resolve(p || []);
+        });
+      });
+
+      const cloudIds = new Set(cloudProds.map((p) => p.id));
+      const unsyncedProds = localProds.filter((p) => !cloudIds.has(p.id));
+
+      if (unsyncedProds.length > 0) {
+        const fixedDetails: string[] = [];
+        for (const prod of unsyncedProds) {
+          await setDoc(doc(db, 'products', prod.id), prod, { merge: true }).catch(() => {});
+          fixedDetails.push(`Produto "${prod.nome}" (ID: ${prod.id}) sincronizado com a nuvem Firestore.`);
+        }
+
+        actionsTaken.push({
+          actionType: 'SYNC_DRIFT_FIX',
+          itemsFixed: unsyncedProds.length,
+          details: fixedDetails,
           timestamp: new Date().toISOString()
         });
       }

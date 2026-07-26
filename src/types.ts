@@ -23,11 +23,15 @@ export interface Product {
   marca: string;
   codigo: string;
   codigo_barras?: string;
+  preco?: number;
+  preco_custo?: number;
+  preco_venda?: number;
   estoque: number;
   estoque_minimo: number;
   localizacao: string;
   observacao?: string;
   ativo: boolean;
+  data_modificacao?: string;
   created_at: string;
   updated_at: string;
 }
@@ -43,6 +47,10 @@ export interface Movement {
   usuario_nome: string;
   tipo: MovementType;
   quantidade: number;
+  preco_unitario?: number;
+  valor_total?: number;
+  forma_pagamento?: string;
+  data_movimentacao?: string;
   observacao?: string;
   created_at: string;
 }
@@ -179,7 +187,7 @@ export interface SystemTestModuleResult {
   stackTrace?: string;
   recommendation?: string;
   autoHealAvailable?: boolean;
-  autoHealType?: 'STOCK_FIX' | 'PRICE_FIX' | 'BARCODE_FIX' | 'POS_CONFIG_FIX' | 'CATEGORY_FIX';
+  autoHealType?: 'STOCK_FIX' | 'PRICE_FIX' | 'BARCODE_FIX' | 'POS_CONFIG_FIX' | 'CATEGORY_FIX' | 'ORPHAN_CATEGORY_FIX' | 'COST_PRICE_FIX' | 'SYNC_DRIFT_FIX' | 'USER_RBAC_FIX';
   durationMs: number;
 }
 
@@ -207,11 +215,28 @@ export interface HeatingProgressMetrics {
   temperatureLevel: 'Normal' | 'Aquecendo' | 'Quente' | 'Superaquecido' | 'Crítico';
 }
 
+export interface MegaSweepProgressMetrics {
+  timeElapsedSec: number;
+  totalTimeSec: number;
+  totalOps: number;
+  productsCreated: number;
+  productsEdited: number;
+  productsDeleted: number;
+  salesSimulated: number;
+  demandsTested: number;
+  reportsGenerated: number;
+  bugsDiscovered: number;
+  autoFixesApplied: number;
+  currentIops: number;
+  avgLatencyMs: number;
+  statusPhase: string;
+}
+
 export interface SystemTestReport {
   id: string;
   timestamp: string;
   executor: string;
-  testMode: 'rapido' | 'completo' | 'estresse' | 'estresse_2min' | 'caos';
+  testMode: 'rapido' | 'completo' | 'estresse' | 'estresse_2min' | 'mega_extremo_5min' | 'caos';
   status: 'SUCESSO' | 'ALERTA' | 'ERRO';
   totalTests: number;
   passedTests: number;
