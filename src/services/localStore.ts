@@ -7,8 +7,10 @@ import {
   AIInsight,
   DashboardStats,
   TopMovedProduct,
-  CustomerDemand
+  CustomerDemand,
+  POSConfig
 } from '../types';
+import { DEFAULT_POS_CONFIG } from '../config/posDefault';
 
 const USERS_KEY = 'bytecas_local_users';
 const PRODUCTS_KEY = 'bytecas_local_products';
@@ -16,6 +18,8 @@ const CATEGORIES_KEY = 'bytecas_local_categories';
 const MOVEMENTS_KEY = 'bytecas_local_movements';
 const HISTORY_KEY = 'bytecas_local_history';
 const DEMANDS_KEY = 'bytecas_local_demands';
+const POS_CONFIG_KEY = 'bytecas_local_pos_config';
+
 
 const initialUsers: (User & { senha_hash: string })[] = [
   {
@@ -759,5 +763,66 @@ export const localStore = {
     const demands = getDemands().filter(d => d.id !== id);
     setStored(DEMANDS_KEY, demands);
     return { message: 'Registro removido com sucesso.' };
+  },
+
+  getPOSConfig: (): POSConfig => {
+    const cfg = getStored<POSConfig | null>(POS_CONFIG_KEY, null);
+    if (!cfg) return DEFAULT_POS_CONFIG;
+    return { ...DEFAULT_POS_CONFIG, ...cfg };
+  },
+
+  setPOSConfig: (config: POSConfig): POSConfig => {
+    setStored(POS_CONFIG_KEY, config);
+    return config;
+  },
+
+  getUsers: (): (User & { senha_hash: string })[] => {
+    return getStored(USERS_KEY, initialUsers);
+  },
+
+  getProducts: (): Product[] => {
+    return getProducts().filter(p => p.ativo);
+  },
+
+  getCategories: (): Category[] => {
+    return getCategories();
+  },
+
+  getMovements: (): Movement[] => {
+    return getMovements();
+  },
+
+  getDemands: (): CustomerDemand[] => {
+    return getDemands();
+  },
+
+  registerSaida: (productId: string, quantity: number, user: { id: string; nome: string }, observacao?: string) => {
+    return localStore.addStockExit([{ produtoId: productId, quantidade: quantity }], observacao);
+  },
+
+  updateProductStock: (productId: string, newStock: number, user: { id: string; nome: string }, tipo: 'entrada' | 'saida', quantidadeAlterada: number, observacao?: string): Product | null => {
+    try {
+      return localStore.updateProduct(productId, { estoque: newStock });
+    } catch {
+      return null;
+    }
+  },
+
+  saveProductsToLocal: (products: Product[]) => {
+    setStored(PRODUCTS_KEY, products);
+  },
+
+  saveCategoriesToLocal: (categories: Category[]) => {
+    setStored(CATEGORIES_KEY, categories);
+  },
+
+  saveMovementsToLocal: (movements: Movement[]) => {
+    setStored(MOVEMENTS_KEY, movements);
+  },
+
+  saveDemandsToLocal: (demands: CustomerDemand[]) => {
+    setStored(DEMANDS_KEY, demands);
   }
 };
+
+

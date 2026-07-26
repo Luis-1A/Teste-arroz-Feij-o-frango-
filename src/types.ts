@@ -107,3 +107,127 @@ export interface CustomerDemand {
   updated_at: string;
 }
 
+export interface POSConfig {
+  // Theme & Appearance
+  theme: 'light' | 'dark';
+  primaryColor: string; // e.g. '#1e40af' (Blue), '#4f46e5' (Indigo), '#059669' (Emerald), '#0f172a' (Slate), '#7c3aed' (Violet)
+  borderRadius: 'sharp' | 'soft' | 'rounded' | 'pill'; // sharp: rounded-none, soft: rounded-lg, rounded: rounded-2xl, pill: rounded-3xl
+  fontSize: 'compact' | 'standard' | 'enlarged'; // compact, standard, enlarged
+  buttonSize: 'compact' | 'standard' | 'large'; // compact, standard, large
+  
+  // Layout & Visibility
+  showHeader: boolean;
+  headerHeight: number; // 70, 80, 90
+  
+  showSidebar: boolean;
+  sidebarPosition: 'left' | 'right';
+  sidebarStyle: 'collapsible' | 'fixed';
+  sidebarWidth: number; // 220, 260, 300
+  
+  showSearch: boolean;
+  searchPlaceholder: string;
+  autoFocusSearch: boolean;
+  
+  showShortcutCards: boolean;
+  shortcutTabDefault: 'movimentados' | 'favoritos' | 'recentes';
+  shortcutCardCount: number; // 3, 6, 9, 12
+  
+  showSelectedList: boolean;
+  
+  showRightPanel: boolean;
+  rightPanelPosition: 'right' | 'left';
+  rightPanelWidth: number; // 300, 360, 400
+  
+  showFooter: boolean;
+  
+  // Product Badges
+  showProductImage: boolean;
+  showProductCode: boolean;
+  showProductCategory: boolean;
+  showProductBrand: boolean;
+  showProductLocation: boolean;
+  showStockRemainingBadge: boolean;
+
+  // Shortcuts
+  shortcutKeys: {
+    search: string;
+    clear: string;
+    refresh: string;
+    register: string;
+    cancel: string;
+  };
+
+  // Custom Actions
+  customActionButtons: {
+    id: string;
+    label: string;
+    tipoSaida: 'venda' | 'uso_interno' | 'transferencia' | 'descarte';
+    color: string;
+  }[];
+
+  updated_at?: string;
+  updated_by?: string;
+}
+
+export interface SystemTestModuleResult {
+  id: string;
+  moduleName: string;
+  category?: 'BANCO_DADOS' | 'ESTOQUE' | 'SEGURANCA' | 'PERFORMANCE' | 'LAYOUT' | 'DISPOSITIVO';
+  status: 'PASSED' | 'FAILED' | 'WARNING';
+  summary: string;
+  errorDetails?: string; // Protected details accessible only with password
+  stackTrace?: string;
+  recommendation?: string;
+  autoHealAvailable?: boolean;
+  autoHealType?: 'STOCK_FIX' | 'PRICE_FIX' | 'BARCODE_FIX' | 'POS_CONFIG_FIX' | 'CATEGORY_FIX';
+  durationMs: number;
+}
+
+export interface AutoHealResult {
+  actionType: string;
+  itemsFixed: number;
+  details: string[];
+  timestamp: string;
+}
+
+export interface HeatingProgressMetrics {
+  timeElapsedSec: number;
+  totalTimeSec: number;
+  totalOps: number;
+  writesOps: number;
+  readsOps: number;
+  deletesOps: number;
+  avgWriteMs: number;
+  avgReadMs: number;
+  peakLatencyMs: number;
+  currentIops: number;
+  errorCount: number;
+  successRate: number;
+  bytesTransferredKb: number;
+  temperatureLevel: 'Normal' | 'Aquecendo' | 'Quente' | 'Superaquecido' | 'Crítico';
+}
+
+export interface SystemTestReport {
+  id: string;
+  timestamp: string;
+  executor: string;
+  testMode: 'rapido' | 'completo' | 'estresse' | 'estresse_2min' | 'caos';
+  status: 'SUCESSO' | 'ALERTA' | 'ERRO';
+  totalTests: number;
+  passedTests: number;
+  failedTests: number;
+  warningTests: number;
+  durationTotalMs: number;
+  results: SystemTestModuleResult[];
+  savedInDatabase: boolean;
+  autoHealedActions?: AutoHealResult[];
+  systemMetrics?: {
+    dbLatencyMs: number;
+    memoryHeapMb: number;
+    storageUsedKb: number;
+    totalProducts: number;
+    totalMovements: number;
+  };
+}
+
+

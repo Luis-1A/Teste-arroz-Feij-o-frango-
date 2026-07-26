@@ -7,9 +7,12 @@ import {
   AIInsight,
   DashboardStats,
   TopMovedProduct,
-  CustomerDemand
+  CustomerDemand,
+  POSConfig
 } from '../types';
 import { localStore } from './localStore';
+import { firestoreSync } from './firestoreSync';
+
 
 const TOKEN_KEY = 'bytecas_token';
 
@@ -206,86 +209,28 @@ export const api = {
   },
 
   createCategory: async (nome: string) => {
-    try {
-      return await apiRequest<Category>('/api/categories', {
-        method: 'POST',
-        body: JSON.stringify({ nome })
-      });
-    } catch (err: any) {
-      if (err.message === 'SERVER_UNREACHABLE') {
-        return localStore.createCategory(nome);
-      }
-      throw err;
-    }
+    return firestoreSync.createCategory(nome);
   },
 
   // Products
   getProducts: async (search?: string, categoria?: string) => {
-    try {
-      const params = new URLSearchParams();
-      if (search) params.append('search', search);
-      if (categoria && categoria !== 'Todas') params.append('categoria', categoria);
-      
-      const query = params.toString() ? `?${params.toString()}` : '';
-      return await apiRequest<Product[]>(`/api/products${query}`);
-    } catch (err: any) {
-      if (err.message === 'SERVER_UNREACHABLE') {
-        return localStore.getProductsList(search, categoria);
-      }
-      throw err;
-    }
+    return localStore.getProductsList(search, categoria);
   },
 
   getProductById: async (id: string) => {
-    try {
-      return await apiRequest<Product>(`/api/products/${id}`);
-    } catch (err: any) {
-      if (err.message === 'SERVER_UNREACHABLE') {
-        return localStore.getProductById(id);
-      }
-      throw err;
-    }
+    return localStore.getProductById(id) || null;
   },
 
   createProduct: async (productData: Omit<Product, 'id' | 'ativo' | 'created_at' | 'updated_at'>) => {
-    try {
-      return await apiRequest<Product>('/api/products', {
-        method: 'POST',
-        body: JSON.stringify(productData)
-      });
-    } catch (err: any) {
-      if (err.message === 'SERVER_UNREACHABLE') {
-        return localStore.createProduct(productData);
-      }
-      throw err;
-    }
+    return firestoreSync.createProduct(productData);
   },
 
   updateProduct: async (id: string, productData: Partial<Product>) => {
-    try {
-      return await apiRequest<Product>(`/api/products/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(productData)
-      });
-    } catch (err: any) {
-      if (err.message === 'SERVER_UNREACHABLE') {
-        return localStore.updateProduct(id, productData);
-      }
-      throw err;
-    }
+    return firestoreSync.updateProduct(id, productData);
   },
 
   deleteProduct: async (id: string) => {
-    try {
-      return await apiRequest<{ message: string }>(`/api/products/${id}`, {
-        method: 'DELETE'
-      });
-    } catch (err: any) {
-      if (err.message === 'SERVER_UNREACHABLE') {
-        return localStore.deleteProduct(id);
-      }
-      throw err;
-    }
+    return firestoreSync.deleteProduct(id);
   },
 
   // Stock Entry & Exit
@@ -452,5 +397,23 @@ export const api = {
       }
       throw err;
     }
+  },
+
+  getPOSConfig: async (): Promise<POSConfig> => {
+    return localStore.getPOSConfig();
+  },
+
+  updatePOSConfig: async (config: POSConfig, userEmail?: string): Promise<POSConfig> => {
+    return firestoreSync.updatePOSConfig(config, userEmail);
+  },
+
+  registerStockExit: async (
+    items: { productId: string; quantity: number }[],
+    user: { id: string; nome: string },
+    observacao?: string,
+    tipoSaida: string = 'venda'
+  ): Promise<void> => {
+    return firestoreSync.registerStockExit(items, user, observacao, tipoSaida);
   }
 };
+

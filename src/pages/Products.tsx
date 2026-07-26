@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { firestoreSync } from '../services/firestoreSync';
 import { Product, Category } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { BarcodeScannerModal } from '../components/BarcodeScannerModal';
@@ -54,24 +55,36 @@ export const Products: React.FC = () => {
   // Delete Confirmation Modal
   const [deleteProductCandidate, setDeleteProductCandidate] = useState<Product | null>(null);
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [prodRes, catRes] = await Promise.all([
-        api.getProducts(searchTerm, selectedCategory),
-        api.getCategories()
-      ]);
-      setProducts(prodRes);
-      setCategories(catRes);
-    } catch (err) {
-      console.error('Erro ao carregar lista de estoque:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadData();
+    setLoading(true);
+    const unsubProds = firestoreSync.subscribeProducts((allProds) => {
+      let filtered = allProds.filter((p) => p.ativo);
+      if (selectedCategory && selectedCategory !== 'Todas') {
+        filtered = filtered.filter((p) => p.categoria === selectedCategory);
+      }
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        filtered = filtered.filter(
+          (p) =>
+            p.nome.toLowerCase().includes(term) ||
+            p.marca.toLowerCase().includes(term) ||
+            p.codigo.toLowerCase().includes(term) ||
+            p.localizacao.toLowerCase().includes(term) ||
+            (p.codigo_barras && p.codigo_barras.toLowerCase().includes(term))
+        );
+      }
+      setProducts(filtered);
+      setLoading(false);
+    });
+
+    const unsubCats = firestoreSync.subscribeCategories((cats) => {
+      setCategories(cats);
+    });
+
+    return () => {
+      unsubProds();
+      unsubCats();
+    };
   }, [searchTerm, selectedCategory]);
 
   const openAddModal = () => {
@@ -141,7 +154,6 @@ export const Products: React.FC = () => {
       }
 
       setIsModalOpen(false);
-      loadData();
     } catch (err: any) {
       setFormError(err.message || 'Erro ao salvar produto.');
     }
@@ -152,7 +164,6 @@ export const Products: React.FC = () => {
     try {
       await api.deleteProduct(deleteProductCandidate.id);
       setDeleteProductCandidate(null);
-      loadData();
     } catch (err: any) {
       alert(err.message || 'Erro ao excluir produto.');
     }

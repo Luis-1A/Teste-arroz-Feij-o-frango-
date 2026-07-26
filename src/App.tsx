@@ -15,8 +15,12 @@ import { RestockList } from './pages/RestockList';
 import { CustomerDemandPage } from './pages/CustomerDemandPage';
 import { HistoryLogs } from './pages/HistoryLogs';
 import { UsersManagement } from './pages/UsersManagement';
+import { POSCustomization } from './pages/POSCustomization';
+import { SystemBotTester } from './pages/SystemBotTester';
+
 
 const AppContent: React.FC = () => {
+
   const { user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -65,7 +69,11 @@ const AppContent: React.FC = () => {
           )}
           {activeTab === 'history' && <HistoryLogs />}
           {activeTab === 'users' && <UsersManagement />}
+          {activeTab === 'pos-customization' && <POSCustomization />}
+          {activeTab === 'system-bot' && <SystemBotTester />}
         </main>
+
+
       </div>
 
       {/* Mobile Bottom Navigation */}

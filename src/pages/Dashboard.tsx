@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/api';
-import { DashboardStats, TopMovedProduct } from '../types';
+import { firestoreSync } from '../services/firestoreSync';
+import { DashboardStats, TopMovedProduct, Product, Movement } from '../types';
 import {
   Boxes,
   PackageCheck,
@@ -20,32 +21,70 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [movements, setMovements] = useState<Movement[]>([]);
   const [topMoved, setTopMoved] = useState<TopMovedProduct[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadDashboardData = async () => {
-    setLoading(true);
-    try {
-      const [resStats, resTop, resProducts] = await Promise.all([
-        api.getDashboardStats(),
-        api.getTopMoved('mes'),
-        api.getProducts()
-      ]);
-      setStats(resStats);
-      setTopMoved(resTop);
-      setProducts(resProducts);
-    } catch (err) {
-      console.error('Erro ao carregar dados do dashboard:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadDashboardData();
+    // Subscribe to real-time Firestore Products and Movements
+    const unsubProducts = firestoreSync.subscribeProducts((prods) => {
+      setProducts(prods || []);
+      setLoading(false);
+    });
+
+    const unsubMovements = firestoreSync.subscribeMovements((movs) => {
+      setMovements(movs || []);
+    });
+
+    // Fetch top moved ranking
+    api.getTopMoved('mes').then(resTop => {
+      setTopMoved(resTop || []);
+    }).catch(err => {
+      console.warn('Erro ao carregar top moved:', err);
+    });
+
+    return () => {
+      unsubProducts();
+      unsubMovements();
+    };
   }, []);
+
+  // Compute live stats directly from real-time products and movements
+  const stats: DashboardStats = useMemo(() => {
+    const activeProducts = products.filter(p => p.ativo !== false);
+    const total_produtos = activeProducts.length;
+    const total_unidades = activeProducts.reduce((acc, p) => acc + (Number(p.estoque) || 0), 0);
+    const produtos_em_falta = activeProducts.filter(p => p.estoque <= 0).length;
+    const produtos_proximos_minimo = activeProducts.filter(p => p.estoque > 0 && p.estoque <= (p.estoque_minimo || 5)).length;
+
+    const alertas: DashboardStats['alertas'] = [];
+    if (produtos_em_falta > 0) {
+      alertas.push({
+        id: 'alt_falta',
+        tipo: 'critico',
+        mensagem: `${produtos_em_falta} produto(s) com estoque zerado!`,
+        data: new Date().toISOString()
+      });
+    }
+    if (produtos_proximos_minimo > 0) {
+      alertas.push({
+        id: 'alt_minimo',
+        tipo: 'atencao',
+        mensagem: `${produtos_proximos_minimo} produto(s) próximo(s) do estoque mínimo!`,
+        data: new Date().toISOString()
+      });
+    }
+
+    return {
+      total_produtos,
+      total_unidades,
+      produtos_em_falta,
+      produtos_proximos_minimo,
+      alertas,
+      ultimas_movimentacoes: (movements || []).slice(0, 8) as any
+    };
+  }, [products, movements]);
 
   if (loading) {
     return (
