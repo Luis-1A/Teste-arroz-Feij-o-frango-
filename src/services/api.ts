@@ -235,31 +235,29 @@ export const api = {
 
   // Stock Entry & Exit
   addStockEntry: async (produto_id: string, quantidade: number, observacao?: string) => {
-    try {
-      return await apiRequest<Product>('/api/stock/entry', {
-        method: 'POST',
-        body: JSON.stringify({ produto_id, quantidade, observacao })
-      });
-    } catch (err: any) {
-      if (err.message === 'SERVER_UNREACHABLE') {
-        return localStore.addStockEntry(produto_id, quantidade, observacao);
-      }
-      throw err;
-    }
+    const product = localStore.getProductById(produto_id);
+    if (!product) throw new Error('Produto não encontrado');
+    const newStock = product.estoque + quantidade;
+    const res = await firestoreSync.updateProductStock(
+      produto_id,
+      newStock,
+      { id: 'usr_1', nome: 'Usuário' },
+      'entrada',
+      quantidade,
+      observacao
+    );
+    return res || product;
   },
 
   addStockExit: async (items: { produtoId: string; quantidade: number }[], observacao?: string) => {
-    try {
-      return await apiRequest<{ message: string; movements: Movement[] }>('/api/stock/exit', {
-        method: 'POST',
-        body: JSON.stringify({ items, observacao })
-      });
-    } catch (err: any) {
-      if (err.message === 'SERVER_UNREACHABLE') {
-        return localStore.addStockExit(items, observacao);
-      }
-      throw err;
-    }
+    const formattedItems = items.map(i => ({ productId: i.produtoId, quantity: i.quantidade }));
+    await firestoreSync.registerStockExit(
+      formattedItems,
+      { id: 'usr_1', nome: 'Usuário' },
+      observacao,
+      'venda'
+    );
+    return { message: 'Saída realizada com sucesso', movements: [] };
   },
 
   // Dashboard & Reports

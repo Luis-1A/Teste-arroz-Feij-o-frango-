@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { firestoreSync } from '../services/firestoreSync';
 import { Product, CustomerDemand } from '../types';
 import {
   ClipboardList,
@@ -53,7 +54,7 @@ export const RestockList: React.FC<RestockListProps> = ({
         api.getCustomerDemands()
       ]);
       setProducts(allProducts);
-      setCategories(allCategories.map(c => c.nome));
+      setCategories(allCategories.map((c) => c.nome));
       setDemands(allDemands);
     } catch (err) {
       console.error('Erro ao carregar dados de reposição:', err);
@@ -63,7 +64,23 @@ export const RestockList: React.FC<RestockListProps> = ({
   };
 
   useEffect(() => {
-    loadData();
+    setLoading(true);
+    const unsubProds = firestoreSync.subscribeProducts((allProducts) => {
+      setProducts(allProducts || []);
+      setLoading(false);
+    });
+    const unsubCats = firestoreSync.subscribeCategories((allCats) => {
+      setCategories((allCats || []).map((c) => c.nome));
+    });
+    const unsubDemands = firestoreSync.subscribeDemands((allDemands) => {
+      setDemands(allDemands || []);
+    });
+
+    return () => {
+      unsubProds();
+      unsubCats();
+      unsubDemands();
+    };
   }, []);
 
   // Filter products that need restock mathematically (estoque <= estoque_minimo)

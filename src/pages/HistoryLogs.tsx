@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { firestoreSync } from '../services/firestoreSync';
 import { AuditLog } from '../types';
 import {
   History,
@@ -22,20 +23,20 @@ export const HistoryLogs: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAction, setFilterAction] = useState('TODAS');
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const data = await api.getHistory();
-      setLogs(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadData();
+    setLoading(true);
+    const unsub = firestoreSync.subscribeMovements((movs) => {
+      const convertedLogs: AuditLog[] = (movs || []).map((m) => ({
+        id: m.id,
+        usuario: m.usuario_nome || 'Sistema',
+        acao: m.tipo === 'entrada' ? 'ENTRADA' : 'SAIDA',
+        descricao: `${m.tipo === 'entrada' ? 'Entrada' : 'Saída'} de ${m.quantidade} UN - ${m.produto_nome} (${m.observacao || 'Sem observação'})`,
+        created_at: m.created_at
+      }));
+      setLogs(convertedLogs);
+      setLoading(false);
+    });
+    return () => unsub();
   }, []);
 
   const filteredLogs = logs.filter(log => {

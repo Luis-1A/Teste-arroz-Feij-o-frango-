@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { firestoreSync } from '../services/firestoreSync';
 import { Product } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { BarcodeScannerModal } from '../components/BarcodeScannerModal';
@@ -30,17 +31,15 @@ export const StockEntry: React.FC = () => {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   useEffect(() => {
-    loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
-    try {
-      const list = await api.getProducts();
-      setProducts(list);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    const unsub = firestoreSync.subscribeProducts((prods) => {
+      setProducts(prods || []);
+      if (selectedProduct) {
+        const updated = (prods || []).find(p => p.id === selectedProduct.id);
+        if (updated) setSelectedProduct(updated);
+      }
+    });
+    return () => unsub();
+  }, [selectedProduct?.id]);
 
   const filteredProducts = products.filter(p =>
     p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -72,7 +71,6 @@ export const StockEntry: React.FC = () => {
       setSelectedProduct(updatedProduct);
       setQuantidadeRecebida(10);
       setObservacao('');
-      loadProducts();
     } catch (err: any) {
       setErrorMsg(err.message || 'Erro ao registrar entrada.');
     } finally {

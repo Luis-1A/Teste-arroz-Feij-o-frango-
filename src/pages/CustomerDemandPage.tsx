@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { firestoreSync } from '../services/firestoreSync';
 import { Product, CustomerDemand } from '../types';
 import {
   UserX,
@@ -82,26 +83,24 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
   const [activeTab, setActiveTab] = useState<'nao_cadastrados' | 'cadastrados_sem_estoque'>('nao_cadastrados');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [demandsData, productsData, categoriesData] = await Promise.all([
-        api.getCustomerDemands(),
-        api.getProducts(),
-        api.getCategories()
-      ]);
-      setDemands(demandsData);
-      setProducts(productsData);
-      setCategories(categoriesData.map(c => c.nome));
-    } catch (err) {
-      console.error('Erro ao carregar dados de procura de clientes:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadData();
+    setLoading(true);
+    const unsubDemands = firestoreSync.subscribeDemands((dems) => {
+      setDemands(dems || []);
+      setLoading(false);
+    });
+    const unsubProds = firestoreSync.subscribeProducts((prods) => {
+      setProducts(prods || []);
+    });
+    const unsubCats = firestoreSync.subscribeCategories((cats) => {
+      setCategories((cats || []).map((c) => c.nome));
+    });
+
+    return () => {
+      unsubDemands();
+      unsubProds();
+      unsubCats();
+    };
   }, []);
 
   // Filtered autocomplete options
@@ -173,9 +172,6 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
           text: res.message
         });
       }
-
-      // Reload list
-      await loadData();
     } catch (err: any) {
       setFeedback({
         type: 'error',
@@ -231,7 +227,6 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
         type: 'success',
         text: `Produto "${newProdForm.nome}" cadastrado com sucesso no estoque!`
       });
-      await loadData();
     } catch (err: any) {
       alert(err.message || 'Erro ao cadastrar produto.');
     }

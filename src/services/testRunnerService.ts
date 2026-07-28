@@ -253,7 +253,7 @@ class TestRunnerService {
         ];
         const chosen = itemNames[Math.floor(Math.random() * itemNames.length)];
         
-        localStore.registerCustomerDemand({
+        await firestoreSync.registerCustomerDemand({
           produto_nome: chosen,
           solicitante_nome: `Cliente simulado por ${botUser.nome}`
         });

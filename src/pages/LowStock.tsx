@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { firestoreSync } from '../services/firestoreSync';
 import { Product } from '../types';
 import {
   AlertOctagon,
@@ -23,8 +24,18 @@ export const LowStock: React.FC<LowStockProps> = ({ onNavigateToEntry }) => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await api.getOutOfStock();
-      setItems(data);
+      const prods = await api.getProducts();
+      const outOfStockItems = (prods || [])
+        .filter((p) => p.ativo !== false && p.estoque <= (p.estoque_minimo || 5))
+        .map((p) => {
+          const isZero = p.estoque === 0;
+          return {
+            ...p,
+            prioridade: isZero ? 'URGENTE (CRÍTICO)' : 'ALERTA (BAIXO)',
+            ultima_venda: p.updated_at ? new Date(p.updated_at).toLocaleString('pt-BR') : 'Sem registro'
+          };
+        });
+      setItems(outOfStockItems);
     } catch (err) {
       console.error(err);
     } finally {
@@ -33,7 +44,22 @@ export const LowStock: React.FC<LowStockProps> = ({ onNavigateToEntry }) => {
   };
 
   useEffect(() => {
-    loadData();
+    setLoading(true);
+    const unsub = firestoreSync.subscribeProducts((prods) => {
+      const outOfStockItems = (prods || [])
+        .filter((p) => p.ativo !== false && p.estoque <= (p.estoque_minimo || 5))
+        .map((p) => {
+          const isZero = p.estoque === 0;
+          return {
+            ...p,
+            prioridade: isZero ? 'URGENTE (CRÍTICO)' : 'ALERTA (BAIXO)',
+            ultima_venda: p.updated_at ? new Date(p.updated_at).toLocaleString('pt-BR') : 'Sem registro'
+          };
+        });
+      setItems(outOfStockItems);
+      setLoading(false);
+    });
+    return () => unsub();
   }, []);
 
   return (

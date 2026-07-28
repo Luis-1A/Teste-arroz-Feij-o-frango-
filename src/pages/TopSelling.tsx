@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { firestoreSync } from '../services/firestoreSync';
+import { localStore } from '../services/localStore';
 import { TopMovedProduct } from '../types';
 import {
   TrendingUp,
@@ -16,20 +18,59 @@ export const TopSelling: React.FC = () => {
   const [items, setItems] = useState<TopMovedProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const list = await api.getTopMoved(periodo);
-      setItems(list);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadData();
+    setLoading(true);
+    const unsubMovements = firestoreSync.subscribeMovements((movs) => {
+      const now = new Date();
+      const filteredMovs = (movs || []).filter((m) => {
+        if (m.tipo !== 'saida') return false;
+        const movDate = new Date(m.created_at);
+        if (periodo === 'hoje') {
+          return movDate.toDateString() === now.toDateString();
+        } else if (periodo === 'semana') {
+          const diffDays = (now.getTime() - movDate.getTime()) / (1000 * 3600 * 24);
+          return diffDays <= 7;
+        } else if (periodo === 'mes') {
+          return movDate.getMonth() === now.getMonth() && movDate.getFullYear() === now.getFullYear();
+        }
+        return true;
+      });
+
+      const counts: { [prodId: string]: { nome: string; total_saidas: number; total_unidades: number } } = {};
+      filteredMovs.forEach((m) => {
+        if (!counts[m.produto_id]) {
+          counts[m.produto_id] = { nome: m.produto_nome, total_saidas: 0, total_unidades: 0 };
+        }
+        counts[m.produto_id].total_saidas += 1;
+        counts[m.produto_id].total_unidades += m.quantidade || 1;
+      });
+
+      const prods = localStore.getProductsList();
+      const prodMap = new Map(prods.map(p => [p.id, p]));
+
+      const sorted: TopMovedProduct[] = Object.entries(counts)
+        .map(([id, data], idx) => {
+          const prod = prodMap.get(id);
+          const totalQty = data.total_unidades;
+          return {
+            id,
+            nome: data.nome,
+            codigo: prod?.codigo || 'PROD',
+            categoria: prod?.categoria || 'Acessórios',
+            quantidade_movimentada: totalQty,
+            estoque_atual: prod?.estoque ?? 0,
+            velocidade_saida: (totalQty >= 10 ? 'Alta' : totalQty >= 4 ? 'Média' : 'Baixa') as 'Alta' | 'Média' | 'Baixa',
+            ranking: idx + 1,
+            ultima_saida: new Date().toISOString()
+          };
+        })
+        .sort((a, b) => b.quantidade_movimentada - a.quantidade_movimentada);
+
+      setItems(sorted);
+      setLoading(false);
+    });
+
+    return () => unsubMovements();
   }, [periodo]);
 
   return (

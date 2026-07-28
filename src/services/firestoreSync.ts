@@ -53,9 +53,6 @@ class FirestoreSyncService {
     if (this.isInitialized) return;
     this.isInitialized = true;
 
-    // Run background cleanup of bot items
-    this.purgeAllBotData().catch(() => {});
-
     // 1. Sync POS Config
     try {
       const configDocRef = doc(db, 'config', 'pos_layout');
@@ -96,9 +93,7 @@ class FirestoreSyncService {
             const products: Product[] = [];
             snapshot.forEach((docSnap) => {
               const p = { id: docSnap.id, ...docSnap.data() } as Product;
-              if (!p.id.startsWith('test_prod_') && (!p.nome || !p.nome.includes('[BOT_TEST]'))) {
-                products.push(p);
-              }
+              products.push(p);
             });
             localStore.saveProductsToLocal(products);
             this.notifyProducts(products);
@@ -419,6 +414,8 @@ class FirestoreSyncService {
       // Also perform local update in localStore so immediate state is updated
       localStore.registerSaida(product.id, item.quantity, user, observacao);
     }
+    this.notifyProducts(localStore.getProducts());
+    this.notifyMovements(localStore.getMovements());
   }
 
   public async updateProductStock(
@@ -462,11 +459,15 @@ class FirestoreSyncService {
       handleFirestoreError(err, OperationType.WRITE, `movements/${newMovement.id}`);
     }
 
-    return localStore.updateProductStock(productId, newStock, user, tipo, quantidadeAlterada, observacao);
+    const updatedProd = localStore.updateProductStock(productId, newStock, user, tipo, quantidadeAlterada, observacao);
+    this.notifyProducts(localStore.getProducts());
+    this.notifyMovements(localStore.getMovements());
+    return updatedProd;
   }
 
   public async createProduct(productData: Omit<Product, 'id' | 'ativo' | 'created_at' | 'updated_at'>): Promise<Product> {
     const newProd = localStore.createProduct(productData);
+    this.notifyProducts(localStore.getProducts());
     try {
       await setDoc(doc(db, 'products', newProd.id), newProd);
     } catch (err) {
@@ -477,6 +478,7 @@ class FirestoreSyncService {
 
   public async updateProduct(id: string, productData: Partial<Product>): Promise<Product> {
     const updated = localStore.updateProduct(id, productData);
+    this.notifyProducts(localStore.getProducts());
     try {
       await updateDoc(doc(db, 'products', id), {
         ...productData,
@@ -490,6 +492,7 @@ class FirestoreSyncService {
 
   public async deleteProduct(id: string): Promise<{ message: string }> {
     const result = localStore.deleteProduct(id);
+    this.notifyProducts(localStore.getProducts());
     try {
       await deleteDoc(doc(db, 'products', id)).catch(async () => {
         await updateDoc(doc(db, 'products', id), {
@@ -501,6 +504,26 @@ class FirestoreSyncService {
       handleFirestoreError(err, OperationType.DELETE, `products/${id}`);
     }
     return result;
+  }
+
+  public async registerCustomerDemand(demandData: {
+    produto_nome: string;
+    produto_id?: string;
+    observacao?: string;
+    solicitante_nome?: string;
+    confirmou_erro_contagem?: boolean;
+  }) {
+    const res = localStore.registerCustomerDemand(demandData);
+    this.notifyDemands(localStore.getDemands());
+    this.notifyProducts(localStore.getProducts());
+    if (res.demand) {
+      try {
+        await setDoc(doc(db, 'demands', res.demand.id), res.demand);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `demands/${res.demand.id}`);
+      }
+    }
+    return res;
   }
 
   public async deleteUser(id: string): Promise<{ message: string }> {
