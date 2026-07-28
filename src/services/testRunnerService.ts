@@ -25,6 +25,42 @@ class TestRunnerService {
 
   constructor() {
     this.active = localStorage.getItem('bytecas_system_test_active') === 'true';
+
+    // Subscribe to Firestore System Test Status
+    firestoreSync.subscribeSystemTestStatus((status) => {
+      const wasActive = this.active;
+      this.active = status.active;
+      localStorage.setItem('bytecas_system_test_active', status.active ? 'true' : 'false');
+
+      if (this.active) {
+        if (!this.intervalId) {
+          this.startLoop();
+        }
+      } else {
+        if (this.intervalId) {
+          clearInterval(this.intervalId);
+          this.intervalId = null;
+        }
+      }
+
+      if (wasActive !== this.active) {
+        this.notify();
+      }
+    });
+
+    // Subscribe to Firestore System Test Logs
+    firestoreSync.subscribeSystemTestLogs((remoteLogs) => {
+      if (remoteLogs && Array.isArray(remoteLogs)) {
+        this.logs = remoteLogs.map(l => ({
+          id: l.id || `log_${Math.random()}`,
+          time: l.time || new Date().toLocaleTimeString('pt-BR'),
+          text: l.text || '',
+          type: l.type || 'info'
+        }));
+        this.notify();
+      }
+    });
+
     if (this.active) {
       this.startLoop();
     }
@@ -61,13 +97,32 @@ class TestRunnerService {
     };
     this.logs = [...this.logs.slice(-150), newLog]; // keep last 150
     this.notify();
+
+    // Persist log to Firestore so other devices see real-time updates
+    firestoreSync.addSystemTestLog({ time, text, type }).catch(() => {});
   }
 
   public async startTest(): Promise<void> {
     this.active = true;
     localStorage.setItem('bytecas_system_test_active', 'true');
+
+    // Save initial stock snapshot to preserve real inventory state
+    await firestoreSync.saveStockSnapshot();
+
+    // Update central database (Firestore & Express Backend)
+    await firestoreSync.setSystemTestStatus(true, 'admin_supremo');
+    fetch('/api/system-test/toggle', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('bytecas_auth_token') || ''}`
+      },
+      body: JSON.stringify({ active: true })
+    }).catch(() => {});
+
     this.addLog('🚀 MODO DE TESTE CONTINUO DO SISTEMA INICIADO COM SUCESSO', 'success');
-    this.addLog('🔒 Bloqueio ativo para contas de Gerentes e Funcionários.', 'warn');
+    this.addLog('📸 Snapshot do estoque real salvo antes do início do teste.', 'info');
+    this.addLog('🔒 Bloqueio ativo no Banco de Dados para Gerentes e Funcionários.', 'warn');
     this.addLog('🤖 Robôs simuladores de balcão e estoque disparados em tempo real.', 'info');
     this.startLoop();
     this.notify();
@@ -84,13 +139,25 @@ class TestRunnerService {
       this.intervalId = null;
     }
 
-    this.addLog('🧹 Encerrando simulação e iniciando limpeza dos dados de teste...', 'warn');
+    this.addLog('🧹 Encerrando simulação e iniciando limpeza dos dados de teste no banco de dados...', 'warn');
     this.active = false;
     localStorage.setItem('bytecas_system_test_active', 'false');
+
+    // Update central database (Firestore & Express Backend)
+    await firestoreSync.setSystemTestStatus(false);
+    fetch('/api/system-test/toggle', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('bytecas_auth_token') || ''}`
+      },
+      body: JSON.stringify({ active: false, password })
+    }).catch(() => {});
 
     // Purge test simulation data
     try {
       await firestoreSync.purgeAllBotData();
+      await firestoreSync.clearSystemTestLogs();
       this.addLog('✅ Purga de produtos temporários e registros de teste concluída!', 'success');
     } catch (e) {
       console.warn('Erro ao purgar dados de teste:', e);

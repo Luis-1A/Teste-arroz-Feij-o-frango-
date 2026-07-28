@@ -33,16 +33,6 @@ const initialUsers: (User & { senha_hash: string })[] = [
     updated_at: new Date().toISOString()
   },
   {
-    id: 'usr_supremo',
-    nome: 'Administrador Supremo',
-    email: 'admin@bytecas.com',
-    senha_hash: 'admin123',
-    cargo: 'admin_supremo',
-    ativo: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
     id: 'usr_gerente',
     nome: 'Carlos Gerente',
     email: 'gerente@bytecas.com',
@@ -162,14 +152,29 @@ function setStored<T>(key: string, value: T): void {
   }
 }
 
-// Ensure default users exist
+// Ensure default users exist and enforce single supremo rule
 function getUsers(): (User & { senha_hash: string })[] {
-  const users = getStored(USERS_KEY, initialUsers);
-  // Ensure Luis Fernando is always present
+  let users = getStored(USERS_KEY, initialUsers);
+
+  // Clean up any other user assigned as admin_supremo if email isn't luisfernandosantossilva1940@gmail.com
+  let supremoFound = false;
+  users = users.map(u => {
+    if (u.cargo === 'admin_supremo') {
+      if (u.email.toLowerCase() === 'luisfernandosantossilva1940@gmail.com' && !supremoFound) {
+        supremoFound = true;
+      } else {
+        return { ...u, cargo: 'funcionario' as const };
+      }
+    }
+    return u;
+  });
+
+  // Ensure Luis Fernando is always present as the single Administrador Supremo
   if (!users.some(u => u.email.toLowerCase() === 'luisfernandosantossilva1940@gmail.com')) {
     users.unshift(initialUsers[0]);
-    setStored(USERS_KEY, users);
   }
+
+  setStored(USERS_KEY, users);
   return users;
 }
 
@@ -284,13 +289,31 @@ export const localStore = {
       throw new Error('E-mail já cadastrado no sistema.');
     }
 
+    const requestedCargo = userData.cargo || 'funcionario';
+    if (requestedCargo === 'admin_supremo') {
+      if (cleanEmail !== 'luisfernandosantossilva1940@gmail.com') {
+        throw new Error('O cargo de Administrador Supremo é exclusivo do e-mail "luisfernandosantossilva1940@gmail.com".');
+      }
+      const existingSupremo = users.find(u => u.cargo === 'admin_supremo' && u.ativo);
+      if (existingSupremo) {
+        throw new Error('O sistema permite apenas 1 Administrador Supremo ativo (luisfernandosantossilva1940@gmail.com).');
+      }
+    }
+
+    if (requestedCargo === 'gerente') {
+      const currentGerente = users.find(u => u.cargo === 'gerente' && u.ativo);
+      if (currentGerente) {
+        throw new Error(`O sistema permite apenas 1 Gerente ativo. Já existe o gerente "${currentGerente.nome}".`);
+      }
+    }
+
     const now = new Date().toISOString();
     const newUserRecord: User & { senha_hash: string } = {
       id: `usr_${Date.now()}`,
       nome: userData.nome.trim(),
       email: cleanEmail,
       senha_hash: userData.senha.trim(),
-      cargo: (userData.cargo as any) || 'funcionario',
+      cargo: requestedCargo as any,
       ativo: true,
       created_at: now,
       updated_at: now
@@ -360,6 +383,15 @@ export const localStore = {
     if (users.some(u => u.email.toLowerCase() === cleanEmail)) {
       throw new Error('E-mail já cadastrado.');
     }
+    if (userData.cargo === 'admin_supremo') {
+      if (cleanEmail !== 'luisfernandosantossilva1940@gmail.com') {
+        throw new Error('O cargo de Administrador Supremo é exclusivo do e-mail "luisfernandosantossilva1940@gmail.com".');
+      }
+      const currentSupremo = users.find(u => u.cargo === 'admin_supremo' && u.ativo);
+      if (currentSupremo) {
+        throw new Error(`O sistema permite apenas 1 Administrador Supremo ativo ("${currentSupremo.email}").`);
+      }
+    }
     if (userData.cargo === 'gerente') {
       const currentGerente = users.find(u => u.cargo === 'gerente' && u.ativo);
       if (currentGerente) {
@@ -388,6 +420,18 @@ export const localStore = {
     const idx = users.findIndex(u => u.id === id);
     if (idx === -1) throw new Error('Usuário não encontrado');
     const existing = users[idx];
+
+    if (userData.cargo === 'admin_supremo') {
+      const targetEmail = (userData.email || existing.email).trim().toLowerCase();
+      if (targetEmail !== 'luisfernandosantossilva1940@gmail.com') {
+        throw new Error('O cargo de Administrador Supremo é exclusivo do e-mail "luisfernandosantossilva1940@gmail.com".');
+      }
+      const currentSupremo = users.find(u => u.cargo === 'admin_supremo' && u.ativo && u.id !== id);
+      if (currentSupremo) {
+        throw new Error(`O sistema permite apenas 1 Administrador Supremo ativo ("${currentSupremo.email}").`);
+      }
+    }
+
     if (userData.cargo === 'gerente' && existing.cargo !== 'gerente') {
       const currentGerente = users.find(u => u.cargo === 'gerente' && u.ativo && u.id !== id);
       if (currentGerente) {
@@ -883,6 +927,70 @@ export const localStore = {
 
   saveDemandsToLocal: (demands: CustomerDemand[]) => {
     setStored(DEMANDS_KEY, demands);
+  },
+
+  saveStockSnapshot: (): Record<string, number> => {
+    const products = getProducts();
+    const snapshot: Record<string, number> = {};
+    for (const p of products) {
+      if (
+        !p.nome.includes('[TESTE]') &&
+        !p.nome.includes('[BOT_TEST]') &&
+        !p.codigo.includes('TST-') &&
+        p.marca !== 'Bytecas TestLab'
+      ) {
+        snapshot[p.id] = p.estoque;
+      }
+    }
+    setStored('bytecas_stock_snapshot', snapshot);
+    return snapshot;
+  },
+
+  purgeAllBotDataAndRestoreStock: () => {
+    const snapshot = getStored<Record<string, number>>('bytecas_stock_snapshot', {});
+
+    // 1. Restore real products stock to pre-test level
+    let products = getProducts();
+    products = products.map(p => {
+      if (snapshot[p.id] !== undefined) {
+        return { ...p, estoque: snapshot[p.id], updated_at: new Date().toISOString() };
+      }
+      return p;
+    });
+
+    // 2. Remove test products
+    products = products.filter(p =>
+      !p.nome.includes('[TESTE]') &&
+      !p.nome.includes('[BOT_TEST]') &&
+      !p.codigo.includes('TST-') &&
+      !p.id.startsWith('test_prod_') &&
+      p.marca !== 'Bytecas TestLab'
+    );
+    setStored(PRODUCTS_KEY, products);
+
+    // 3. Remove test movements
+    let movements = getMovements();
+    movements = movements.filter(m =>
+      !(m.observacao && (m.observacao.includes('[TESTE]') || m.observacao.includes('[BOT_TEST]'))) &&
+      !(m.produto_nome && (m.produto_nome.includes('[TESTE]') || m.produto_nome.includes('[BOT_TEST]')))
+    );
+    setStored(MOVEMENTS_KEY, movements);
+
+    // 4. Remove test demands
+    let demands = getDemands();
+    demands = demands.filter(d =>
+      !(d.produto_nome && (d.produto_nome.includes('[TESTE]') || d.produto_nome.includes('[BOT_TEST]'))) &&
+      !(d.solicitante_nome && (d.solicitante_nome.includes('simulado') || d.solicitante_nome.includes('[TESTE]')))
+    );
+    setStored(DEMANDS_KEY, demands);
+
+    // 5. Remove test categories
+    let categories = getCategories();
+    categories = categories.filter(c => !c.nome.startsWith('Categoria Teste #'));
+    setStored(CATEGORIES_KEY, categories);
+
+    localStorage.removeItem('bytecas_stock_snapshot');
+    return { success: true };
   }
 };
 

@@ -82,6 +82,12 @@ interface DatabaseSchema {
   movements: MovementRecord[];
   history: AuditRecord[];
   unfulfilled_demands?: UnfulfilledDemandRecord[];
+  system_test_status?: {
+    active: boolean;
+    started_at?: string;
+    updated_at?: string;
+    stock_snapshot?: Record<string, number>;
+  };
 }
 
 const initialData: DatabaseSchema = {
@@ -91,16 +97,6 @@ const initialData: DatabaseSchema = {
       nome: 'Luis Fernando Silva',
       email: 'luisfernandosantossilva1940@gmail.com',
       senha_hash: '@Luisoo5',
-      cargo: 'admin_supremo',
-      ativo: true,
-      created_at: '2026-01-01T08:00:00.000Z',
-      updated_at: '2026-01-01T08:00:00.000Z'
-    },
-    {
-      id: 'usr_supremo',
-      nome: 'Administrador Supremo',
-      email: 'admin@bytecas.com',
-      senha_hash: 'admin123',
       cargo: 'admin_supremo',
       ativo: true,
       created_at: '2026-01-01T08:00:00.000Z',
@@ -797,6 +793,91 @@ class LocalDatabase {
       return true;
     }
     return false;
+  }
+
+  getSystemTestStatus() {
+    return this.db.system_test_status || { active: false };
+  }
+
+  saveStockSnapshot() {
+    const snapshot: Record<string, number> = {};
+    for (const p of this.db.products) {
+      if (
+        !p.nome.includes('[TESTE]') &&
+        !p.nome.includes('[BOT_TEST]') &&
+        !p.codigo.includes('TST-') &&
+        p.marca !== 'Bytecas TestLab'
+      ) {
+        snapshot[p.id] = p.estoque;
+      }
+    }
+    if (!this.db.system_test_status) {
+      this.db.system_test_status = { active: true };
+    }
+    this.db.system_test_status.stock_snapshot = snapshot;
+    this.saveData(this.db);
+    return snapshot;
+  }
+
+  purgeBotDataAndRestoreStock() {
+    const snapshot = this.db.system_test_status?.stock_snapshot || {};
+
+    // 1. Restore real product stocks to pre-test levels
+    for (const p of this.db.products) {
+      if (snapshot[p.id] !== undefined) {
+        p.estoque = snapshot[p.id];
+        p.updated_at = new Date().toISOString();
+      }
+    }
+
+    // 2. Remove test products
+    this.db.products = this.db.products.filter(p =>
+      !p.nome.includes('[TESTE]') &&
+      !p.nome.includes('[BOT_TEST]') &&
+      !p.codigo.includes('TST-') &&
+      !p.id.startsWith('test_prod_') &&
+      p.marca !== 'Bytecas TestLab'
+    );
+
+    // 3. Remove test movements
+    this.db.movements = this.db.movements.filter(m =>
+      !(m.observacao && (m.observacao.includes('[TESTE]') || m.observacao.includes('[BOT_TEST]'))) &&
+      !(m.produto_nome && (m.produto_nome.includes('[TESTE]') || m.produto_nome.includes('[BOT_TEST]')))
+    );
+
+    // 4. Remove test demands
+    if (this.db.unfulfilled_demands) {
+      this.db.unfulfilled_demands = this.db.unfulfilled_demands.filter(d =>
+        !(d.produto_nome && (d.produto_nome.includes('[TESTE]') || d.produto_nome.includes('[BOT_TEST]'))) &&
+        !(d.solicitante_nome && (d.solicitante_nome.includes('simulado') || d.solicitante_nome.includes('[TESTE]')))
+      );
+    }
+
+    // 5. Remove test categories
+    this.db.categories = this.db.categories.filter(c => !c.nome.startsWith('Categoria Teste #'));
+
+    if (this.db.system_test_status) {
+      delete this.db.system_test_status.stock_snapshot;
+    }
+
+    this.saveData(this.db);
+    return { success: true };
+  }
+
+  setSystemTestStatus(active: boolean) {
+    if (active) {
+      this.saveStockSnapshot();
+    } else {
+      this.purgeBotDataAndRestoreStock();
+    }
+
+    this.db.system_test_status = {
+      active,
+      started_at: active ? (this.db.system_test_status?.started_at || new Date().toISOString()) : undefined,
+      updated_at: new Date().toISOString()
+    };
+    this.saveData(this.db);
+    return this.db.system_test_status;
   }
 }
 

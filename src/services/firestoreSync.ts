@@ -39,6 +39,8 @@ class FirestoreSyncService {
   private configListeners: Listener<POSConfig>[] = [];
   private categoriesListeners: Listener<Category[]>[] = [];
   private demandsListeners: Listener<CustomerDemand[]>[] = [];
+  private systemTestStatusListeners: Listener<{ active: boolean; started_at?: string; started_by?: string }>[] = [];
+  private systemTestLogsListeners: Listener<any[]>[] = [];
 
   private isInitialized = false;
   private currentConfig: POSConfig = DEFAULT_POS_CONFIG;
@@ -186,6 +188,45 @@ class FirestoreSyncService {
     } catch (e) {
       console.warn('Failed to attach Demands listener', e);
     }
+
+    // 6. Sync System Test Status
+    try {
+      const systemTestDocRef = doc(db, 'system_test', 'status');
+      onSnapshot(
+        systemTestDocRef,
+        (snapshot) => {
+          let testStatus = { active: false };
+          if (snapshot.exists()) {
+            testStatus = snapshot.data() as any;
+          }
+          localStorage.setItem('bytecas_system_test_active', testStatus.active ? 'true' : 'false');
+          window.dispatchEvent(new Event('bytecas_test_mode_changed'));
+          this.notifySystemTestStatus(testStatus);
+        },
+        (error) => handleFirestoreError(error, OperationType.GET, 'system_test/status')
+      );
+    } catch (e) {
+      console.warn('Failed to attach System Test status listener', e);
+    }
+
+    // 7. Sync System Test Logs
+    try {
+      const testLogsRef = collection(db, 'system_test_logs');
+      onSnapshot(
+        testLogsRef,
+        (snapshot) => {
+          const logs: any[] = [];
+          snapshot.forEach((docSnap) => {
+            logs.push({ id: docSnap.id, ...docSnap.data() });
+          });
+          logs.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+          this.notifySystemTestLogs(logs);
+        },
+        (error) => handleFirestoreError(error, OperationType.GET, 'system_test_logs')
+      );
+    } catch (e) {
+      console.warn('Failed to attach System Test logs listener', e);
+    }
   }
 
   // Subscriptions
@@ -229,6 +270,21 @@ class FirestoreSyncService {
     };
   }
 
+  public subscribeSystemTestStatus(cb: Listener<{ active: boolean; started_at?: string; started_by?: string }>): () => void {
+    this.systemTestStatusListeners.push(cb);
+    cb({ active: localStorage.getItem('bytecas_system_test_active') === 'true' });
+    return () => {
+      this.systemTestStatusListeners = this.systemTestStatusListeners.filter((l) => l !== cb);
+    };
+  }
+
+  public subscribeSystemTestLogs(cb: Listener<any[]>): () => void {
+    this.systemTestLogsListeners.push(cb);
+    return () => {
+      this.systemTestLogsListeners = this.systemTestLogsListeners.filter((l) => l !== cb);
+    };
+  }
+
   private notifyProducts(data: Product[]) {
     this.productsListeners.forEach((l) => l(data));
   }
@@ -243,6 +299,53 @@ class FirestoreSyncService {
   }
   private notifyDemands(data: CustomerDemand[]) {
     this.demandsListeners.forEach((l) => l(data));
+  }
+  private notifySystemTestStatus(data: { active: boolean; started_at?: string; started_by?: string }) {
+    this.systemTestStatusListeners.forEach((l) => l(data));
+  }
+  private notifySystemTestLogs(data: any[]) {
+    this.systemTestLogsListeners.forEach((l) => l(data));
+  }
+
+  // --- SYSTEM TEST FIRESTORE MUTATIONS ---
+
+  public async setSystemTestStatus(active: boolean, startedBy: string = 'admin_supremo'): Promise<void> {
+    const statusData = {
+      active,
+      started_by: active ? startedBy : '',
+      updated_at: new Date().toISOString()
+    };
+    localStorage.setItem('bytecas_system_test_active', active ? 'true' : 'false');
+    window.dispatchEvent(new Event('bytecas_test_mode_changed'));
+    this.notifySystemTestStatus({ active, started_by: statusData.started_by });
+
+    try {
+      await setDoc(doc(db, 'system_test', 'status'), statusData, { merge: true });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'system_test/status');
+    }
+  }
+
+  public async addSystemTestLog(log: { time: string; text: string; type: string }): Promise<void> {
+    try {
+      await addDoc(collection(db, 'system_test_logs'), {
+        ...log,
+        created_at: new Date().toISOString()
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'system_test_logs');
+    }
+  }
+
+  public async clearSystemTestLogs(): Promise<void> {
+    try {
+      const snap = await getDocs(collection(db, 'system_test_logs'));
+      for (const docSnap of snap.docs) {
+        await deleteDoc(doc(db, 'system_test_logs', docSnap.id)).catch(() => {});
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, 'system_test_logs');
+    }
   }
 
   // --- ACTIONS (Write to Firestore & Local) ---
@@ -455,39 +558,91 @@ class FirestoreSyncService {
     return { updatedCount };
   }
 
+  public async saveStockSnapshot(): Promise<Record<string, number>> {
+    const snapshot = localStore.saveStockSnapshot();
+    try {
+      await setDoc(doc(db, 'system_test', 'stock_snapshot'), {
+        snapshot,
+        created_at: new Date().toISOString()
+      });
+    } catch (err) {
+      console.warn('Failed to save stock snapshot to Firestore:', err);
+    }
+    return snapshot;
+  }
+
   public async purgeAllBotData(): Promise<{ deletedCount: number }> {
     let deletedCount = 0;
+
+    // Purge local store first and restore local stocks
+    localStore.purgeAllBotDataAndRestoreStock();
+
     try {
-      // 1. Delete bot products
+      // 1. Restore product stocks from Firestore snapshot if available
+      try {
+        const snapDoc = await getDoc(doc(db, 'system_test', 'stock_snapshot'));
+        if (snapDoc.exists()) {
+          const snapshotData = snapDoc.data().snapshot as Record<string, number>;
+          if (snapshotData) {
+            for (const [prodId, origStock] of Object.entries(snapshotData)) {
+              await updateDoc(doc(db, 'products', prodId), {
+                estoque: origStock,
+                updated_at: new Date().toISOString()
+              }).catch(() => {});
+            }
+          }
+          await deleteDoc(doc(db, 'system_test', 'stock_snapshot')).catch(() => {});
+        }
+      } catch (e) {
+        console.warn('Could not read/restore stock snapshot from Firestore:', e);
+      }
+
+      // 2. Delete bot products
       const snapProds = await getDocs(collection(db, 'products'));
       for (const docSnap of snapProds.docs) {
         const data = docSnap.data();
-        if (docSnap.id.startsWith('test_prod_') || (data.nome && data.nome.includes('[BOT_TEST]'))) {
+        if (
+          docSnap.id.startsWith('test_prod_') ||
+          (data.nome && (data.nome.includes('[BOT_TEST]') || data.nome.includes('[TESTE]'))) ||
+          (data.codigo && data.codigo.includes('TST-')) ||
+          data.marca === 'Bytecas TestLab'
+        ) {
           await deleteDoc(doc(db, 'products', docSnap.id)).catch(() => {});
           deletedCount++;
         }
       }
 
-      // 2. Delete bot movements
+      // 3. Delete bot movements
       const snapMovs = await getDocs(collection(db, 'movements'));
       for (const docSnap of snapMovs.docs) {
         const data = docSnap.data();
         if (
-          (data.observacao && data.observacao.includes('[BOT_TEST]')) ||
-          (data.produto_nome && data.produto_nome.includes('[BOT_TEST]'))
+          (data.observacao && (data.observacao.includes('[BOT_TEST]') || data.observacao.includes('[TESTE]'))) ||
+          (data.produto_nome && (data.produto_nome.includes('[BOT_TEST]') || data.produto_nome.includes('[TESTE]')))
         ) {
           await deleteDoc(doc(db, 'movements', docSnap.id)).catch(() => {});
           deletedCount++;
         }
       }
 
-      // 3. Delete bot demands in 'demands' and 'customer_demands'
+      // 4. Delete bot categories
+      const snapCats = await getDocs(collection(db, 'categories'));
+      for (const docSnap of snapCats.docs) {
+        const data = docSnap.data();
+        if (data.nome && data.nome.startsWith('Categoria Teste #')) {
+          await deleteDoc(doc(db, 'categories', docSnap.id)).catch(() => {});
+          deletedCount++;
+        }
+      }
+
+      // 5. Delete bot demands in 'demands' and 'customer_demands'
       const snapDemands = await getDocs(collection(db, 'demands'));
       for (const docSnap of snapDemands.docs) {
         const data = docSnap.data();
         if (
           docSnap.id.startsWith('dem_') ||
-          (data.produto_nome && (data.produto_nome.includes('[BOT_TEST]') || data.produto_nome.includes('Produto Solicitado')))
+          (data.produto_nome && (data.produto_nome.includes('[BOT_TEST]') || data.produto_nome.includes('[TESTE]') || data.produto_nome.includes('Produto Solicitado'))) ||
+          (data.solicitante_nome && (data.solicitante_nome.includes('simulado') || data.solicitante_nome.includes('[TESTE]')))
         ) {
           await deleteDoc(doc(db, 'demands', docSnap.id)).catch(() => {});
           deletedCount++;
@@ -499,21 +654,22 @@ class FirestoreSyncService {
         const data = docSnap.data();
         if (
           docSnap.id.startsWith('dem_') ||
-          (data.produto_nome && (data.produto_nome.includes('[BOT_TEST]') || data.produto_nome.includes('Produto Solicitado')))
+          (data.produto_nome && (data.produto_nome.includes('[BOT_TEST]') || data.produto_nome.includes('[TESTE]') || data.produto_nome.includes('Produto Solicitado'))) ||
+          (data.solicitante_nome && (data.solicitante_nome.includes('simulado') || data.solicitante_nome.includes('[TESTE]')))
         ) {
           await deleteDoc(doc(db, 'customer_demands', docSnap.id)).catch(() => {});
           deletedCount++;
         }
       }
 
-      // 4. Delete test heat load docs
+      // 6. Delete test heat load docs
       const snapHeat = await getDocs(collection(db, 'system_test_heat_load'));
       for (const docSnap of snapHeat.docs) {
         await deleteDoc(doc(db, 'system_test_heat_load', docSnap.id)).catch(() => {});
         deletedCount++;
       }
 
-      // 5. Delete test reports
+      // 7. Delete test reports
       const snapReports = await getDocs(collection(db, 'system_test_reports'));
       for (const docSnap of snapReports.docs) {
         await deleteDoc(doc(db, 'system_test_reports', docSnap.id)).catch(() => {});
@@ -556,16 +712,6 @@ class FirestoreSyncService {
     }
 
     return { message: 'Estoque zerado e todas as movimentações e dados do bot foram totalmente limpos!' };
-  }
-
-  public async createCategory(nome: string): Promise<Category> {
-    const newCat = localStore.createCategory(nome);
-    try {
-      await setDoc(doc(db, 'categories', newCat.id), newCat);
-    } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, `categories/${newCat.id}`);
-    }
-    return newCat;
   }
 
   // --- SYSTEM TEST BOT REPORT PERSISTENCE & REAL STRESS OPERATIONS ---

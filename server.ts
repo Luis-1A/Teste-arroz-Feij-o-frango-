@@ -56,17 +56,35 @@ async function startServer() {
       return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios.' });
     }
 
-    if (db.getUserByEmail(email)) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (db.getUserByEmail(cleanEmail)) {
       return res.status(400).json({ error: 'Este e-mail já está cadastrado no sistema.' });
     }
 
-    const userRole: UserRole = (cargo as UserRole) || 'gerente';
+    const requestedRole: UserRole = (cargo as UserRole) || 'funcionario';
+
+    if (requestedRole === 'admin_supremo') {
+      if (cleanEmail !== 'luisfernandosantossilva1940@gmail.com') {
+        return res.status(400).json({ error: 'O cargo de Administrador Supremo é exclusivo do e-mail "luisfernandosantossilva1940@gmail.com".' });
+      }
+      const existingSupremo = db.getUsers().find(u => u.cargo === 'admin_supremo');
+      if (existingSupremo) {
+        return res.status(400).json({ error: 'O sistema permite apenas 1 Administrador Supremo ativo.' });
+      }
+    }
+
+    if (requestedRole === 'gerente') {
+      const existingGerente = db.getUsers().find(u => u.cargo === 'gerente');
+      if (existingGerente) {
+        return res.status(400).json({ error: `O sistema permite apenas 1 Gerente ativo ("${existingGerente.nome}").` });
+      }
+    }
 
     const newUser = db.createUser({
       nome,
-      email,
+      email: cleanEmail,
       senha_hash: senha,
-      cargo: userRole,
+      cargo: requestedRole,
       ativo: true
     });
 
@@ -152,13 +170,31 @@ async function startServer() {
       return res.status(400).json({ error: 'Preencha todos os campos obrigatórios.' });
     }
 
-    if (db.getUserByEmail(email)) {
+    const cleanEmail = email.trim().toLowerCase();
+    if (db.getUserByEmail(cleanEmail)) {
       return res.status(400).json({ error: 'E-mail já cadastrado.' });
+    }
+
+    if (cargo === 'admin_supremo') {
+      if (cleanEmail !== 'luisfernandosantossilva1940@gmail.com') {
+        return res.status(400).json({ error: 'O cargo de Administrador Supremo é exclusivo do e-mail "luisfernandosantossilva1940@gmail.com".' });
+      }
+      const currentSupremo = db.getUsers().find(u => u.cargo === 'admin_supremo');
+      if (currentSupremo) {
+        return res.status(400).json({ error: `O sistema permite apenas 1 Administrador Supremo ativo ("${currentSupremo.email}").` });
+      }
+    }
+
+    if (cargo === 'gerente') {
+      const currentGerente = db.getUsers().find(u => u.cargo === 'gerente');
+      if (currentGerente) {
+        return res.status(400).json({ error: `O sistema permite apenas 1 Gerente ativo ("${currentGerente.nome}").` });
+      }
     }
 
     const newUser = db.createUser({
       nome,
-      email,
+      email: cleanEmail,
       senha_hash: senha,
       cargo: cargo as UserRole,
       ativo: true
@@ -177,6 +213,24 @@ async function startServer() {
 
     const { id } = req.params;
     const { nome, email, cargo, senha } = req.body;
+
+    if (cargo === 'admin_supremo') {
+      const targetEmail = (email || '').trim().toLowerCase();
+      if (targetEmail && targetEmail !== 'luisfernandosantossilva1940@gmail.com') {
+        return res.status(400).json({ error: 'O cargo de Administrador Supremo é exclusivo do e-mail "luisfernandosantossilva1940@gmail.com".' });
+      }
+      const currentSupremo = db.getUsers().find(u => u.cargo === 'admin_supremo' && u.id !== id);
+      if (currentSupremo) {
+        return res.status(400).json({ error: `O sistema permite apenas 1 Administrador Supremo ativo ("${currentSupremo.email}").` });
+      }
+    }
+
+    if (cargo === 'gerente') {
+      const currentGerente = db.getUsers().find(u => u.cargo === 'gerente' && u.id !== id);
+      if (currentGerente) {
+        return res.status(400).json({ error: `O sistema permite apenas 1 Gerente ativo ("${currentGerente.nome}").` });
+      }
+    }
 
     const dataToUpdate: any = {};
     if (nome) dataToUpdate.nome = nome;
@@ -444,6 +498,33 @@ async function startServer() {
     const success = db.deleteUnfulfilledDemand(id);
     if (!success) return res.status(404).json({ error: 'Item não encontrado.' });
     res.json({ message: 'Removido com sucesso.' });
+  });
+
+  // System Test Mode Central API
+  app.get('/api/system-test/status', (req, res) => {
+    res.json(db.getSystemTestStatus());
+  });
+
+  app.post('/api/system-test/toggle', authenticateUser, (req, res) => {
+    const currentUser = (req as any).user;
+    if (currentUser.cargo !== 'admin_supremo') {
+      return res.status(403).json({ error: 'Apenas o Administrador Supremo pode alterar o estado do Teste do Sistema.' });
+    }
+
+    const { active, password } = req.body;
+    if (!active && password !== '@Luisoo5') {
+      return res.status(400).json({ error: 'Senha de confirmação incorreta. O teste continuará ativo.' });
+    }
+
+    const updated = db.setSystemTestStatus(Boolean(active));
+    db.addHistory(
+      currentUser.nome,
+      'CONFIG',
+      `Modo de Teste do Sistema foi ${updated.active ? 'INICIADO (Bloqueando Gerentes e Funcionários)' : 'ENCERRADO (Acesso liberado)'}`,
+      req.ip
+    );
+
+    res.json(updated);
   });
 
   // --------------------------------------------------------------------------

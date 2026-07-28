@@ -51,6 +51,10 @@ export const Login: React.FC = () => {
       setErrorMsg('Por favor, preencha nome, e-mail e senha para se cadastrar.');
       return;
     }
+    if (regCargo === 'admin_supremo' && regEmail.trim().toLowerCase() !== 'luisfernandosantossilva1940@gmail.com') {
+      setErrorMsg('⚠️ O cargo de Administrador Supremo é exclusivo do e-mail "luisfernandosantossilva1940@gmail.com".');
+      return;
+    }
     setLoading(true);
     try {
       await register(regNome, regEmail, regSenha, regCargo);
@@ -144,7 +148,7 @@ export const Login: React.FC = () => {
 
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
                     E-mail Corporativo
                   </label>
                   <div className="relative">
@@ -154,14 +158,14 @@ export const Login: React.FC = () => {
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       placeholder="luisfernandosantossilva1940@gmail.com"
-                      className="w-full pl-10 pr-4 py-2.5 text-xs border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-slate-50/50 focus:bg-white transition-all duration-150 font-medium"
+                      className="w-full pl-10 pr-4 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all duration-150 placeholder:text-slate-400 placeholder:font-normal"
                     />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-xs font-semibold text-slate-700">Senha</label>
+                    <label className="block text-xs font-bold text-slate-800">Senha</label>
                     <button
                       type="button"
                       onClick={() => setShowForgot(true)}
@@ -177,7 +181,7 @@ export const Login: React.FC = () => {
                       value={senha}
                       onChange={e => setSenha(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-10 py-2.5 text-xs border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-slate-50/50 focus:bg-white transition-all duration-150 font-medium"
+                      className="w-full pl-10 pr-10 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all duration-150 placeholder:text-slate-400 placeholder:font-normal"
                     />
                     <button
                       type="button"
@@ -222,7 +226,7 @@ export const Login: React.FC = () => {
 
               <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-800 mb-1">
                     Nome Completo
                   </label>
                   <input
@@ -231,12 +235,12 @@ export const Login: React.FC = () => {
                     value={regNome}
                     onChange={e => setRegNome(e.target.value)}
                     placeholder="Seu Nome Completo"
-                    className="w-full px-3.5 py-2 text-xs border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 bg-slate-50/50 focus:bg-white font-medium"
+                    className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 placeholder:text-slate-400 placeholder:font-normal"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-800 mb-1">
                     Seu E-mail
                   </label>
                   <input
@@ -244,13 +248,13 @@ export const Login: React.FC = () => {
                     required
                     value={regEmail}
                     onChange={e => setRegEmail(e.target.value)}
-                    placeholder="seu.email@empresa.com"
-                    className="w-full px-3.5 py-2 text-xs border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 bg-slate-50/50 focus:bg-white font-medium"
+                    placeholder="luisfernandosantossilva1940@gmail.com"
+                    className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 placeholder:text-slate-400 placeholder:font-normal"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-800 mb-1">
                     Senha de Acesso
                   </label>
                   <div className="relative">
@@ -260,7 +264,7 @@ export const Login: React.FC = () => {
                       value={regSenha}
                       onChange={e => setRegSenha(e.target.value)}
                       placeholder="Crie uma senha segura"
-                      className="w-full pl-3.5 pr-10 py-2 text-xs border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 bg-slate-50/50 focus:bg-white font-medium"
+                      className="w-full pl-3.5 pr-10 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 placeholder:text-slate-400 placeholder:font-normal"
                     />
                     <button
                       type="button"
@@ -274,15 +278,15 @@ export const Login: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-800 mb-1">
                     Perfil / Cargo Solicitado
                   </label>
                   <select
                     value={regCargo}
                     onChange={e => setRegCargo(e.target.value as any)}
-                    className="w-full px-3.5 py-2 text-xs border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 bg-slate-50/50 text-slate-800 font-semibold"
+                    className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
                   >
-                    <option value="admin_supremo">Administrador Supremo (Acesso Total)</option>
+                    <option value="admin_supremo">Administrador Supremo (Acesso Total - luisfernandosantossilva1940@gmail.com)</option>
                     <option value="gerente">Gerente de Estoque (Edição/Saídas)</option>
                     <option value="funcionario">Funcionário (Lançamentos/Consultas)</option>
                   </select>
@@ -334,14 +338,14 @@ export const Login: React.FC = () => {
             ) : (
               <form onSubmit={handleForgotSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">E-mail</label>
+                  <label className="block text-xs font-bold text-slate-800 mb-1">E-mail</label>
                   <input
                     type="email"
                     required
                     value={forgotEmail}
                     onChange={e => setForgotEmail(e.target.value)}
-                    placeholder="exemplo@bytecas.com"
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="luisfernandosantossilva1940@gmail.com"
+                    className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-400 placeholder:font-normal"
                   />
                 </div>
                 <div className="flex space-x-2">

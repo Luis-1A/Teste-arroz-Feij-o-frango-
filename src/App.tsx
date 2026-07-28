@@ -18,6 +18,7 @@ import { UsersManagement } from './pages/UsersManagement';
 import { POSCustomization } from './pages/POSCustomization';
 import { SystemTestHub } from './pages/SystemTestHub';
 import { AdminSupremeHub } from './pages/AdminSupremeHub';
+import { testRunnerService } from './services/testRunnerService';
 import { ShieldAlert, RefreshCw, LogOut } from 'lucide-react';
 
 
@@ -30,14 +31,20 @@ const AppContent: React.FC = () => {
   });
 
   useEffect(() => {
+    const unsubscribe = testRunnerService.subscribe((active) => {
+      setIsTestModeActive(active);
+    });
+
     const checkTestMode = () => {
       setIsTestModeActive(localStorage.getItem('bytecas_system_test_active') === 'true');
     };
     window.addEventListener('storage', checkTestMode);
-    const interval = setInterval(checkTestMode, 1000);
+    window.addEventListener('bytecas_test_mode_changed', checkTestMode);
+
     return () => {
+      unsubscribe();
       window.removeEventListener('storage', checkTestMode);
-      clearInterval(interval);
+      window.removeEventListener('bytecas_test_mode_changed', checkTestMode);
     };
   }, []);
 

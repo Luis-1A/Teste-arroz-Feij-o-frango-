@@ -367,7 +367,7 @@ export const Products: React.FC = () => {
             Nenhum produto encontrado com os filtros selecionados.
           </div>
         ) : (
-          Object.entries(groupedProducts).map(([catName, prods]) => {
+          Object.entries(groupedProducts).map(([catName, prods]: [string, Product[]]) => {
             const isCollapsed = collapsedCategories[catName];
 
             return (

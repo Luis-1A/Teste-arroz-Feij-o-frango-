@@ -437,7 +437,7 @@ export const RestockList: React.FC<RestockListProps> = ({
                 </button>
               </div>
 
-              {Object.entries(groupedRestockItems).map(([catName, items]) => (
+              {Object.entries(groupedRestockItems).map(([catName, items]: [string, RestockItem[]]) => (
                 <div key={catName} className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
                   {/* Category Header */}
                   <div className="bg-slate-900 text-white p-3.5 px-4 flex items-center justify-between">

@@ -84,6 +84,19 @@ export const UsersManagement: React.FC = () => {
       return;
     }
 
+    if (cargo === 'admin_supremo') {
+      const cleanEmail = email.trim().toLowerCase();
+      if (cleanEmail !== 'luisfernandosantossilva1940@gmail.com') {
+        setFormError('⚠️ O cargo de Administrador Supremo é exclusivo do e-mail "luisfernandosantossilva1940@gmail.com".');
+        return;
+      }
+      const existingSupremo = users.find(u => u.cargo === 'admin_supremo' && u.id !== editingUser?.id);
+      if (existingSupremo) {
+        setFormError(`⚠️ O sistema permite apenas 1 Administrador Supremo ativo ("${existingSupremo.email}").`);
+        return;
+      }
+    }
+
     if (cargo === 'gerente') {
       const existingGerente = users.find(u => u.cargo === 'gerente' && u.id !== editingUser?.id);
       if (existingGerente) {
@@ -278,31 +291,31 @@ export const UsersManagement: React.FC = () => {
               )}
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Nome Completo *</label>
+                <label className="block font-bold text-slate-800 mb-1">Nome Completo *</label>
                 <input
                   type="text"
                   required
                   value={nome}
                   onChange={e => setNome(e.target.value)}
                   placeholder="Ex: Roberto Silva"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 placeholder:font-normal"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">E-mail *</label>
+                <label className="block font-bold text-slate-800 mb-1">E-mail *</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="roberto@bytecas.com"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 placeholder:font-normal"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label className="block font-bold text-slate-800 mb-1">
                   {editingUser ? 'Nova Senha (Deixe em branco para manter a atual)' : 'Senha de Acesso *'}
                 </label>
                 <input
@@ -311,25 +324,23 @@ export const UsersManagement: React.FC = () => {
                   value={senha}
                   onChange={e => setSenha(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 placeholder:font-normal"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
+                <label className="block font-bold text-slate-800 mb-1">
                   Cargo / Nível de Permissão *
                 </label>
                 <select
                   value={cargo}
                   onChange={e => setCargo(e.target.value as UserRole)}
                   disabled={editingUser?.cargo === 'admin_supremo'}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                  className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="funcionario">Funcionário (Estoque, Entradas, Saídas, Consultas)</option>
-                  <option value="gerente">Gerente (Gestão completa de estoque e relatórios)</option>
-                  {editingUser?.cargo === 'admin_supremo' && (
-                    <option value="admin_supremo">Administrador Supremo (Permissão Total)</option>
-                  )}
+                  <option value="gerente">Gerente (Gestão completa de estoque e relatórios - Máximo 1)</option>
+                  <option value="admin_supremo">Administrador Supremo (Apenas luisfernandosantossilva1940@gmail.com)</option>
                 </select>
               </div>
 
