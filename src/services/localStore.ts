@@ -360,6 +360,12 @@ export const localStore = {
     if (users.some(u => u.email.toLowerCase() === cleanEmail)) {
       throw new Error('E-mail já cadastrado.');
     }
+    if (userData.cargo === 'gerente') {
+      const currentGerente = users.find(u => u.cargo === 'gerente' && u.ativo);
+      if (currentGerente) {
+        throw new Error(`O sistema permite apenas 1 Gerente ativo. Já existe o gerente "${currentGerente.nome}".`);
+      }
+    }
     const now = new Date().toISOString();
     const newUserRecord = {
       id: `usr_${Date.now()}`,
@@ -382,6 +388,12 @@ export const localStore = {
     const idx = users.findIndex(u => u.id === id);
     if (idx === -1) throw new Error('Usuário não encontrado');
     const existing = users[idx];
+    if (userData.cargo === 'gerente' && existing.cargo !== 'gerente') {
+      const currentGerente = users.find(u => u.cargo === 'gerente' && u.ativo && u.id !== id);
+      if (currentGerente) {
+        throw new Error(`O sistema permite apenas 1 Gerente ativo. Já existe o gerente "${currentGerente.nome}".`);
+      }
+    }
     const updated = {
       ...existing,
       ...userData,
@@ -396,11 +408,12 @@ export const localStore = {
 
   deleteUser: (id: string): { message: string } => {
     const users = getUsers();
-    const idx = users.findIndex(u => u.id === id);
-    if (idx !== -1) {
-      users[idx].ativo = false;
-      setStored(USERS_KEY, users);
+    const userToDelete = users.find(u => u.id === id);
+    if (userToDelete && (userToDelete.cargo === 'admin_supremo' || userToDelete.email === 'luisfernandosantossilva1940@gmail.com')) {
+      throw new Error('Não é possível remover o Administrador Supremo do sistema.');
     }
+    const filtered = users.filter(u => u.id !== id);
+    setStored(USERS_KEY, filtered);
     return { message: 'Usuário removido com sucesso' };
   },
 
@@ -418,6 +431,13 @@ export const localStore = {
     categories.push(newCat);
     setStored(CATEGORIES_KEY, categories);
     return newCat;
+  },
+
+  deleteCategory: (id: string): { message: string } => {
+    const categories = getCategories();
+    const filtered = categories.filter(c => c.id !== id);
+    setStored(CATEGORIES_KEY, filtered);
+    return { message: 'Categoria removida com sucesso' };
   },
 
   getProductsList: (search?: string, categoria?: string): Product[] => {
@@ -498,11 +518,8 @@ export const localStore = {
 
   deleteProduct: (id: string): { message: string } => {
     const products = getProducts();
-    const idx = products.findIndex(p => p.id === id);
-    if (idx !== -1) {
-      products[idx].ativo = false;
-      setStored(PRODUCTS_KEY, products);
-    }
+    const filtered = products.filter(p => p.id !== id);
+    setStored(PRODUCTS_KEY, filtered);
     return { message: 'Produto removido com sucesso' };
   },
 

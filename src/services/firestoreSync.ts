@@ -388,14 +388,51 @@ class FirestoreSyncService {
   public async deleteProduct(id: string): Promise<{ message: string }> {
     const result = localStore.deleteProduct(id);
     try {
-      await updateDoc(doc(db, 'products', id), {
-        ativo: false,
-        updated_at: new Date().toISOString()
+      await deleteDoc(doc(db, 'products', id)).catch(async () => {
+        await updateDoc(doc(db, 'products', id), {
+          ativo: false,
+          updated_at: new Date().toISOString()
+        });
       });
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, `products/${id}`);
+      handleFirestoreError(err, OperationType.DELETE, `products/${id}`);
     }
     return result;
+  }
+
+  public async deleteUser(id: string): Promise<{ message: string }> {
+    const result = localStore.deleteUser(id);
+    try {
+      await deleteDoc(doc(db, 'users', id)).catch(async () => {
+        await updateDoc(doc(db, 'users', id), {
+          ativo: false,
+          updated_at: new Date().toISOString()
+        });
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `users/${id}`);
+    }
+    return result;
+  }
+
+  public async createCategory(nome: string): Promise<Category> {
+    const newCat = localStore.createCategory(nome);
+    try {
+      await setDoc(doc(db, 'categories', newCat.id), newCat);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `categories/${newCat.id}`);
+    }
+    return newCat;
+  }
+
+  public async deleteCategory(id: string): Promise<{ message: string }> {
+    const res = localStore.deleteCategory(id);
+    try {
+      await deleteDoc(doc(db, 'categories', id)).catch(() => {});
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `categories/${id}`);
+    }
+    return res;
   }
 
   public async zeroAllProductsStock(): Promise<{ updatedCount: number }> {

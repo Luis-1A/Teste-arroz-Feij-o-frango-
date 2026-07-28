@@ -16,10 +16,9 @@ import {
   ChevronLeft,
   ChevronRight,
   PackageMinus,
-  Smartphone,
-  Download
+  Cpu,
+  Crown
 } from 'lucide-react';
-import { InstallAppModal } from './InstallAppModal';
 
 export type TabType =
   | 'dashboard'
@@ -32,7 +31,9 @@ export type TabType =
   | 'restock-list'
   | 'history'
   | 'users'
-  | 'pos-customization';
+  | 'pos-customization'
+  | 'system_test'
+  | 'admin_supreme_hub';
 
 
 interface SidebarProps {
@@ -50,7 +51,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { user } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
 
   const navGroups = [
     {
@@ -129,6 +129,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       groupLabel: 'Administração & Personalização',
       items: [
         {
+          id: 'admin_supreme_hub' as TabType,
+          label: 'Central Supremo (100+)',
+          icon: Crown,
+          badge: '100+',
+          roles: ['admin_supremo']
+        },
+        {
+          id: 'system_test' as TabType,
+          label: 'Teste do Sistema',
+          icon: Cpu,
+          badge: '@Luisoo5',
+          roles: ['admin_supremo']
+        },
+        {
           id: 'pos-customization' as TabType,
           label: 'Personalização da Caixa',
           icon: Sliders,
@@ -141,7 +155,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: Users,
           roles: ['admin_supremo']
         }
-
       ]
     }
   ];
@@ -228,35 +241,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </div>
 
-      {/* Install App Promo Card / Button */}
-      <div className="p-3 border-t border-slate-100 bg-emerald-50/50">
-        {!isCollapsed ? (
-          <button
-            onClick={() => setIsInstallModalOpen(true)}
-            className="w-full p-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs transition shadow-md shadow-emerald-600/20 flex items-center justify-between group active:scale-98"
-          >
-            <div className="flex items-center space-x-2 truncate">
-              <Smartphone className="w-4 h-4 shrink-0 text-emerald-200" />
-              <span className="truncate">Instalar App (APK)</span>
-            </div>
-            <Download className="w-4 h-4 shrink-0 opacity-80 group-hover:translate-y-0.5 transition-transform" />
-          </button>
-        ) : (
-          <button
-            onClick={() => setIsInstallModalOpen(true)}
-            className="w-full p-2.5 rounded-xl bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 transition shadow-sm"
-            title="Instalar App (APK)"
-          >
-            <Download className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
       {/* Collapse Toggle Footer */}
       <div className="p-3 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between">
         {!isCollapsed && (
           <p className="text-[10px] font-bold text-slate-400 truncate">
-            Bytecas Estoque v2.4 • Central
+            Bytecas Estoque v2.4 • Notebook Pro
           </p>
         )}
         <button
@@ -267,11 +256,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       </div>
-
-      <InstallAppModal
-        isOpen={isInstallModalOpen}
-        onClose={() => setIsInstallModalOpen(false)}
-      />
     </div>
   );
 

@@ -84,6 +84,14 @@ export const UsersManagement: React.FC = () => {
       return;
     }
 
+    if (cargo === 'gerente') {
+      const existingGerente = users.find(u => u.cargo === 'gerente' && u.id !== editingUser?.id);
+      if (existingGerente) {
+        setFormError(`⚠️ O sistema permite apenas 1 Gerente ativo. Já existe o gerente "${existingGerente.nome}". Para definir um novo gerente, altere o cargo do atual primeiro.`);
+        return;
+      }
+    }
+
     try {
       if (editingUser) {
         await api.updateUser(editingUser.id, { nome, email, cargo, senha: senha || undefined });
@@ -103,11 +111,14 @@ export const UsersManagement: React.FC = () => {
   const handleDeleteUser = async () => {
     if (!deleteCandidate) return;
     try {
-      await api.deleteUser(deleteCandidate.id);
+      const targetId = deleteCandidate.id;
+      setUsers(prev => prev.filter(u => u.id !== targetId));
+      await api.deleteUser(targetId);
       setDeleteCandidate(null);
-      loadData();
+      await loadData();
     } catch (err: any) {
       alert(err.message || 'Erro ao remover usuário.');
+      loadData();
     }
   };
 

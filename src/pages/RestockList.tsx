@@ -81,7 +81,6 @@ export const RestockList: React.FC<RestockListProps> = ({
 
   const unregisteredDemands = demands.filter(d => !d.cadastrado);
 
-  // Apply search & category filters
   const filteredRestockItems = restockItems.filter(item => {
     const matchesSearch =
       item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -91,6 +90,34 @@ export const RestockList: React.FC<RestockListProps> = ({
       selectedCategory === 'Todas' || item.categoria === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  // Group filtered restock items by Category
+  const groupedRestockItems = React.useMemo(() => {
+    const groups: { [catName: string]: RestockItem[] } = {};
+    for (const item of filteredRestockItems) {
+      const cat = item.categoria || 'Outros';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    }
+    return groups;
+  }, [filteredRestockItems]);
+
+  const copySingleItem = (item: RestockItem) => {
+    const line = `• ${item.nome} (CÓD: ${item.codigo}) - Comprar: ${item.sugerido_compra} un (Estoque: ${item.estoque} un / Mín: ${item.estoque_minimo} un)`;
+    navigator.clipboard.writeText(line);
+    setCopyNotification(true);
+    setTimeout(() => setCopyNotification(false), 2000);
+  };
+
+  const copyCategoryGroup = (catName: string, items: RestockItem[]) => {
+    let text = `📂 *CATEGORIA: ${catName.toUpperCase()}*\n`;
+    items.forEach((item, idx) => {
+      text += `${idx + 1}. *${item.nome}* [${item.codigo}]\n   👉 Comprar: *${item.sugerido_compra} un* (Atual: ${item.estoque} un)\n`;
+    });
+    navigator.clipboard.writeText(text);
+    setCopyNotification(true);
+    setTimeout(() => setCopyNotification(false), 2500);
+  };
 
   const totalUnidadesComprar = restockItems.reduce(
     (acc, item) => acc + item.sugerido_compra,
@@ -377,7 +404,7 @@ export const RestockList: React.FC<RestockListProps> = ({
             </div>
           )}
 
-          {/* Restock Items List / Table */}
+          {/* Restock Items Grouped by Category */}
           {filteredRestockItems.length === 0 ? (
             <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-2xs text-center py-12">
               <PackageCheck className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
@@ -391,89 +418,121 @@ export const RestockList: React.FC<RestockListProps> = ({
               </p>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="space-y-6">
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
                 <div>
                   <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                    Produtos com Reposição Recomendada ({filteredRestockItems.length})
+                    Produtos Agrupados por Categoria ({filteredRestockItems.length} Itens)
                   </h3>
                   <p className="text-[10px] text-slate-400">
-                    Clique em "Copiar Lista" para exportar todos os itens formatados
+                    Copie a lista inteira, uma categoria completa ou itens individuais com um clique
                   </p>
                 </div>
                 <button
                   onClick={handleCopyList}
-                  className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold border border-blue-200/80 flex items-center space-x-1.5 transition-all"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center space-x-1.5 transition-all"
                 >
                   <Copy className="w-3.5 h-3.5" />
-                  <span>{copied ? 'Copiado!' : 'Copiar'}</span>
+                  <span>{copied ? 'Lista Copiada!' : 'Copiar Lista Inteira'}</span>
                 </button>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100 uppercase text-[10px]">
-                    <tr>
-                      <th className="py-3 px-4">Produto & Código</th>
-                      <th className="py-3 px-4">Categoria / Marca</th>
-                      <th className="py-3 px-4">Localização</th>
-                      <th className="py-3 px-4 text-center">Estoque Atual</th>
-                      <th className="py-3 px-4 text-center">Mínimo</th>
-                      <th className="py-3 px-4 text-center">Qtd Sugerida</th>
-                      <th className="py-3 px-4 text-right">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredRestockItems.map(item => (
-                      <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3.5 px-4">
-                          <p className="font-bold text-slate-900">{item.nome}</p>
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            CÓD: {item.codigo}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-600">
-                          <p className="font-semibold text-slate-800">{item.categoria}</p>
-                          <p className="text-[10px] text-slate-400">{item.marca}</p>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-600 font-medium">
-                          {item.localizacao}
-                        </td>
-                        <td className="py-3.5 px-4 text-center">
-                          <span
-                            className={`inline-block font-extrabold px-2.5 py-1 rounded-lg text-xs ${
-                              item.estoque === 0
-                                ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                                : 'bg-amber-100 text-amber-800 border border-amber-200'
-                            }`}
-                          >
-                            {item.estoque} un
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-center font-bold text-slate-600">
-                          {item.estoque_minimo} un
-                        </td>
-                        <td className="py-3.5 px-4 text-center">
-                          <span className="font-black text-blue-700 bg-blue-50 border border-blue-200/80 px-3 py-1 rounded-lg text-xs">
-                            +{item.sugerido_compra} un
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-right">
-                          {onNavigateToEntry && (
-                            <button
-                              onClick={onNavigateToEntry}
-                              className="px-3 py-1.5 bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 rounded-lg text-[11px] font-bold transition-all inline-flex items-center space-x-1"
-                            >
-                              <span>Dar Entrada</span>
-                              <ArrowRight className="w-3 h-3" />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {Object.entries(groupedRestockItems).map(([catName, items]) => (
+                <div key={catName} className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+                  {/* Category Header */}
+                  <div className="bg-slate-900 text-white p-3.5 px-4 flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-extrabold text-xs uppercase tracking-wider text-blue-400">
+                        📁 {catName}
+                      </span>
+                      <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 text-[10px] rounded-full font-mono font-bold border border-blue-500/30">
+                        {items.length} {items.length === 1 ? 'item' : 'itens'}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => copyCategoryGroup(catName, items)}
+                      className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition border border-white/20 flex items-center space-x-1.5"
+                      title={`Copiar todos os itens da categoria ${catName}`}
+                    >
+                      <Copy className="w-3 h-3 text-blue-300" />
+                      <span>Copiar Categoria</span>
+                    </button>
+                  </div>
+
+                  {/* Items Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100 uppercase text-[10px]">
+                        <tr>
+                          <th className="py-3 px-4">Produto & Código</th>
+                          <th className="py-3 px-4">Marca & Local</th>
+                          <th className="py-3 px-4 text-center">Estoque Atual</th>
+                          <th className="py-3 px-4 text-center">Mínimo</th>
+                          <th className="py-3 px-4 text-center">Sugerido Compra</th>
+                          <th className="py-3 px-4 text-right">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {items.map(item => (
+                          <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="py-3.5 px-4">
+                              <p className="font-bold text-slate-900">{item.nome}</p>
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                CÓD: {item.codigo}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-slate-600">
+                              <p className="font-semibold text-slate-800">{item.marca}</p>
+                              <p className="text-[10px] text-slate-400">{item.localizacao}</p>
+                            </td>
+                            <td className="py-3.5 px-4 text-center">
+                              <span
+                                className={`inline-block font-extrabold px-2.5 py-1 rounded-lg text-xs ${
+                                  item.estoque === 0
+                                    ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                    : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                }`}
+                              >
+                                {item.estoque} un
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-center font-bold text-slate-600">
+                              {item.estoque_minimo} un
+                            </td>
+                            <td className="py-3.5 px-4 text-center">
+                              <span className="font-black text-blue-700 bg-blue-50 border border-blue-200/80 px-3 py-1 rounded-lg text-xs">
+                                +{item.sugerido_compra} un
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end space-x-2">
+                                <button
+                                  onClick={() => copySingleItem(item)}
+                                  className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-lg text-[10px] font-bold border border-slate-200 transition flex items-center space-x-1"
+                                  title="Copiar apenas este item"
+                                >
+                                  <Copy className="w-3 h-3 text-slate-500" />
+                                  <span>Copiar Item</span>
+                                </button>
+                                {onNavigateToEntry && (
+                                  <button
+                                    onClick={onNavigateToEntry}
+                                    className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold transition flex items-center space-x-1 shadow-xs"
+                                  >
+                                    <span>Entrada</span>
+                                    <ArrowRight className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </>

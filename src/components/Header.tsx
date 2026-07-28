@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   Package,
@@ -8,10 +8,8 @@ import {
   User as UserIcon,
   ShieldAlert,
   ShieldCheck,
-  UserCheck,
-  Download
+  UserCheck
 } from 'lucide-react';
-import { InstallAppModal } from './InstallAppModal';
 
 interface HeaderProps {
   onToggleSidebarMobile?: () => void;
@@ -21,7 +19,6 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebarMobile, onOpenMobileMenu }) => {
   const handleMenuClick = onToggleSidebarMobile || onOpenMobileMenu;
   const { user, logout, isMobileSimulated, toggleMobileSimulated } = useAuth();
-  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
 
   const getRoleBadge = (cargo?: string) => {
     switch (cargo) {
@@ -87,17 +84,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebarMobile, onOpenMob
 
         {/* Right Actions */}
         <div className="flex items-center space-x-2 sm:space-x-3">
-          {/* Install APK / App Button */}
-          <button
-            onClick={() => setIsInstallModalOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-black flex items-center space-x-1.5 shadow-sm shadow-emerald-600/20 transition-all active:scale-95"
-            title="Instalar Aplicativo (APK / Android / iOS)"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Instalar App (APK)</span>
-            <span className="sm:hidden">APK</span>
-          </button>
-
           {/* Mobile View / Web Desktop Simulator Toggle */}
           <button
             onClick={toggleMobileSimulated}
@@ -106,17 +92,17 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebarMobile, onOpenMob
                 ? 'bg-blue-600 text-white border-blue-600 shadow-xs shadow-blue-500/20'
                 : 'bg-slate-50/80 text-slate-700 border-slate-200/80 hover:bg-slate-100'
             }`}
-            title="Alternar entre modo Web Computador e Modo Aplicativo Celular (Android/iOS)"
+            title="Alternar entre modo Web Computador e Modo Aplicativo Celular"
           >
             {isMobileSimulated ? (
               <>
                 <Smartphone className="w-4 h-4 text-white" />
-                <span className="hidden sm:inline">Modo Celular (App)</span>
+                <span className="hidden sm:inline">Modo Celular</span>
               </>
             ) : (
               <>
                 <Monitor className="w-4 h-4 text-slate-500" />
-                <span className="hidden sm:inline">Modo Web (Desktop)</span>
+                <span className="hidden sm:inline">Modo Notebook / PC</span>
               </>
             )}
           </button>
@@ -152,11 +138,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebarMobile, onOpenMob
           )}
         </div>
       </div>
-
-      <InstallAppModal
-        isOpen={isInstallModalOpen}
-        onClose={() => setIsInstallModalOpen(false)}
-      />
     </header>
   );
 };

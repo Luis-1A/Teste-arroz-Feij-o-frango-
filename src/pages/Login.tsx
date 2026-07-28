@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Package, Lock, Mail, ArrowRight, ShieldCheck, KeyRound, AlertCircle, CheckCircle2, UserPlus, UserCheck, Crown } from 'lucide-react';
+import { Package, Lock, Mail, ArrowRight, ShieldCheck, KeyRound, AlertCircle, CheckCircle2, UserPlus, UserCheck, Eye, EyeOff } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login, register } = useAuth();
@@ -11,6 +11,7 @@ export const Login: React.FC = () => {
   // Login State
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -18,6 +19,7 @@ export const Login: React.FC = () => {
   const [regNome, setRegNome] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regSenha, setRegSenha] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const [regCargo, setRegCargo] = useState<'admin_supremo' | 'gerente' | 'funcionario'>('admin_supremo');
 
   // Forgot password state
@@ -171,12 +173,20 @@ export const Login: React.FC = () => {
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       value={senha}
                       onChange={e => setSenha(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-4 py-2.5 text-xs border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-slate-50/50 focus:bg-white transition-all duration-150 font-medium"
+                      className="w-full pl-10 pr-10 py-2.5 text-xs border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-slate-50/50 focus:bg-white transition-all duration-150 font-medium"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                      title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
 
@@ -243,14 +253,24 @@ export const Login: React.FC = () => {
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Senha de Acesso
                   </label>
-                  <input
-                    type="password"
-                    required
-                    value={regSenha}
-                    onChange={e => setRegSenha(e.target.value)}
-                    placeholder="Crie uma senha segura"
-                    className="w-full px-3.5 py-2 text-xs border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 bg-slate-50/50 focus:bg-white font-medium"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showRegPassword ? 'text' : 'password'}
+                      required
+                      value={regSenha}
+                      onChange={e => setRegSenha(e.target.value)}
+                      placeholder="Crie uma senha segura"
+                      className="w-full pl-3.5 pr-10 py-2 text-xs border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 bg-slate-50/50 focus:bg-white font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegPassword(!showRegPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                      title={showRegPassword ? "Ocultar senha" : "Mostrar senha"}
+                    >
+                      {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 <div>
