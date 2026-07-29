@@ -260,6 +260,10 @@ export const api = {
     return { message: 'Saída realizada com sucesso', movements: [] };
   },
 
+  registerProductExchange: async (params: any) => {
+    return firestoreSync.registerProductExchange(params);
+  },
+
   // Dashboard & Reports
   getDashboardStats: async () => {
     try {

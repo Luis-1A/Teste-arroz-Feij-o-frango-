@@ -30,6 +30,24 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   console.warn(`Firestore Sync Notice (${operationType} @ ${path}):`, errMessage);
 }
 
+export interface ProductExchangeParams {
+  itemReturned: {
+    productId: string;
+    quantity: number;
+    returnToStock: boolean;
+    motivoDevolucao?: string;
+  };
+  itemTaken: {
+    productId: string;
+    quantity: number;
+  };
+  user: {
+    id: string;
+    nome: string;
+  };
+  observacao?: string;
+}
+
 // Global subscribers
 type Listener<T> = (data: T) => void;
 
@@ -504,6 +522,118 @@ class FirestoreSyncService {
       handleFirestoreError(err, OperationType.DELETE, `products/${id}`);
     }
     return result;
+  }
+
+  public async registerProductExchange(params: ProductExchangeParams) {
+    const { itemReturned, itemTaken, user, observacao } = params;
+
+    // VALIDAÇÃO 1: Verificar se o produto devolvido e o produto levado existem no cadastro do sistema
+    const returnedProd = localStore.getProductById(itemReturned.productId);
+    const takenProd = localStore.getProductById(itemTaken.productId);
+
+    if (!returnedProd || !returnedProd.ativo) {
+      throw new Error('Validação 1 Falhou: O produto devolvido não existe ou está inativo no cadastro do sistema.');
+    }
+    if (!takenProd || !takenProd.ativo) {
+      throw new Error('Validação 1 Falhou: O produto a ser entregue não existe ou está inativo no cadastro do sistema.');
+    }
+
+    if (takenProd.estoque < itemTaken.quantity) {
+      throw new Error(
+        `Validação 1 Falhou: Estoque insuficiente do produto entregue "${takenProd.nome}". Disponível: ${takenProd.estoque} UN.`
+      );
+    }
+
+    const exchangeId = `exc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const nowIso = new Date().toISOString();
+
+    // VALIDAÇÃO 2: Preparar e verificar o registro correto de ambas as movimentações (entrada e saída) no histórico
+    const movReturned: Movement = {
+      id: `mov_${Date.now()}_ret`,
+      produto_id: returnedProd.id,
+      produto_nome: returnedProd.nome,
+      produto_codigo: returnedProd.codigo || returnedProd.id,
+      usuario_id: user.id,
+      usuario_nome: user.nome,
+      tipo: itemReturned.returnToStock ? 'entrada' : 'saida',
+      quantidade: itemReturned.quantity,
+      observacao: itemReturned.returnToStock
+        ? `[TROCA / DEVOLUÇÃO PRO ESTOQUE] Item devolvido em troca (${exchangeId}). Motivo: ${itemReturned.motivoDevolucao || 'Troca de produto'}. ${observacao || ''}`.trim()
+        : `[TROCA / AVARIA - FORA DO ESTOQUE] Devolvido pelo cliente sem retorno ao estoque vendável (${exchangeId}). Motivo: ${itemReturned.motivoDevolucao || 'Defeito/Avaria'}. ${observacao || ''}`.trim(),
+      created_at: nowIso
+    };
+
+    const movTaken: Movement = {
+      id: `mov_${Date.now()}_tak`,
+      produto_id: takenProd.id,
+      produto_nome: takenProd.nome,
+      produto_codigo: takenProd.codigo || takenProd.id,
+      usuario_id: user.id,
+      usuario_nome: user.nome,
+      tipo: 'saida',
+      quantidade: itemTaken.quantity,
+      observacao: `[TROCA / SAÍDA] Produto levado em troca pelo item ${returnedProd.nome} (${exchangeId}). ${observacao || ''}`.trim(),
+      created_at: nowIso
+    };
+
+    if (!movReturned.produto_id || !movTaken.produto_id || movReturned.quantidade <= 0 || movTaken.quantidade <= 0) {
+      throw new Error('Validação 2 Falhou: Inconsistência nos dados das movimentações de entrada e saída.');
+    }
+
+    // Process Returned Product Stock Update
+    const newReturnedStock = itemReturned.returnToStock
+      ? returnedProd.estoque + itemReturned.quantity
+      : returnedProd.estoque;
+
+    localStore.updateProduct(returnedProd.id, { estoque: newReturnedStock });
+
+    try {
+      if (itemReturned.returnToStock) {
+        await updateDoc(doc(db, 'products', returnedProd.id), {
+          estoque: newReturnedStock,
+          updated_at: nowIso
+        });
+      }
+      await setDoc(doc(db, 'movements', movReturned.id), movReturned);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `movements/${movReturned.id}`);
+    }
+
+    // Process Taken Product Stock Update
+    const newTakenStock = Math.max(0, takenProd.estoque - itemTaken.quantity);
+    localStore.updateProduct(takenProd.id, { estoque: newTakenStock });
+
+    try {
+      await updateDoc(doc(db, 'products', takenProd.id), {
+        estoque: newTakenStock,
+        updated_at: nowIso
+      });
+      await setDoc(doc(db, 'movements', movTaken.id), movTaken);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `movements/${movTaken.id}`);
+    }
+
+    // VALIDAÇÃO 3: Confirmar que o estoque foi atualizado e sincronizado para ambos os produtos
+    const updatedReturnedInLocal = localStore.getProductById(returnedProd.id);
+    const updatedTakenInLocal = localStore.getProductById(takenProd.id);
+
+    if (itemReturned.returnToStock && updatedReturnedInLocal?.estoque !== newReturnedStock) {
+      throw new Error('Validação 3 Falhou: O estoque do produto devolvido não foi atualizado corretamente.');
+    }
+    if (updatedTakenInLocal?.estoque !== newTakenStock) {
+      throw new Error('Validação 3 Falhou: O estoque do produto entregue não foi atualizado corretamente.');
+    }
+
+    // Sincronizar em tempo real com todos os dispositivos
+    this.notifyProducts(localStore.getProducts());
+    this.notifyMovements(localStore.getMovements());
+
+    return {
+      exchangeId,
+      returnedProduct: returnedProd,
+      takenProduct: takenProd,
+      validationsPassed: { v1: true, v2: true, v3: true }
+    };
   }
 
   public async registerCustomerDemand(demandData: {

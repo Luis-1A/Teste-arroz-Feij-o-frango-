@@ -5,6 +5,7 @@ import { Product, POSConfig, Category } from '../types';
 import { DEFAULT_POS_CONFIG } from '../config/posDefault';
 import { soundEffects } from '../utils/audio';
 import { triggerHaptic } from '../utils/haptics';
+import { ProductExchangeModal } from '../components/ProductExchangeModal';
 import {
   Search,
   Plus,
@@ -27,7 +28,8 @@ import {
   VolumeX,
   Star,
   PlusCircle,
-  Filter
+  Filter,
+  ArrowLeftRight
 } from 'lucide-react';
 
 interface SelectedItem {
@@ -76,6 +78,7 @@ export const SalesPanel: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [isExchangeModalOpen, setIsExchangeModalOpen] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'warning' | 'info'; message: string } | null>(null);
 
   // Live Clock
@@ -170,9 +173,7 @@ export const SalesPanel: React.FC = () => {
       .filter(
         (p) =>
           p.nome.toLowerCase().includes(term) ||
-          p.codigo.toLowerCase().includes(term) ||
-          p.categoria.toLowerCase().includes(term) ||
-          (p.codigo_barras && p.codigo_barras.toLowerCase().includes(term))
+          p.categoria.toLowerCase().includes(term)
       )
       .slice(0, 8);
 
@@ -402,7 +403,7 @@ export const SalesPanel: React.FC = () => {
           </div>
 
           {/* Right Status & User Info */}
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-3 md:space-x-4">
             <div className="hidden sm:flex items-center space-x-2 bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-bold">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -454,7 +455,7 @@ export const SalesPanel: React.FC = () => {
                   onFocus={() => {
                     if (searchTerm.trim()) setShowSuggestions(true);
                   }}
-                  placeholder="Pesquisar produto por nome, código ou bipar código de barras... (pressione Enter)"
+                  placeholder="Pesquisar produto pelo nome... (pressione Enter)"
                   className="w-full bg-transparent text-sm md:text-base font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none py-2"
                 />
                 {searchTerm && (
@@ -490,8 +491,7 @@ export const SalesPanel: React.FC = () => {
                         <div>
                           <p className="text-xs font-bold text-slate-900 dark:text-white">{item.nome}</p>
                           <div className="flex items-center space-x-3 text-[11px] text-slate-400 mt-0.5">
-                            {posConfig.showProductCode && <span>COD: {item.codigo}</span>}
-                            {posConfig.showProductCategory && <span>Cat: {item.categoria}</span>}
+                            {posConfig.showProductCategory && <span>Categoria: {item.categoria}</span>}
                             {posConfig.showProductLocation && (
                               <span className="flex items-center space-x-1">
                                 <MapPin className="w-3 h-3 text-slate-400" />
@@ -763,7 +763,12 @@ export const SalesPanel: React.FC = () => {
                   {posConfig.customActionButtons.map((btn) => (
                     <button
                       key={btn.id}
-                      onClick={() => setTipoSaida(btn.tipoSaida)}
+                      onClick={() => {
+                        setTipoSaida(btn.tipoSaida);
+                        if (btn.tipoSaida === 'troca') {
+                          setIsExchangeModalOpen(true);
+                        }
+                      }}
                       className={`p-2.5 rounded-xl border text-xs font-bold text-left flex items-center justify-between transition ${
                         tipoSaida === btn.tipoSaida
                           ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
@@ -775,6 +780,17 @@ export const SalesPanel: React.FC = () => {
                     </button>
                   ))}
                 </div>
+
+                {tipoSaida === 'troca' && (
+                  <button
+                    type="button"
+                    onClick={() => setIsExchangeModalOpen(true)}
+                    className="w-full p-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition shadow-sm active:scale-95"
+                  >
+                    <ArrowLeftRight className="w-4 h-4 text-emerald-200" />
+                    <span>Abrir Janela de Troca (Item Devolvido + Item Levado)</span>
+                  </button>
+                )}
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -818,6 +834,39 @@ export const SalesPanel: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* MOBILE STICKY BOTTOM REGISTER BAR */}
+      {selectedItems.length > 0 && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 p-3 shadow-2xl animate-in slide-in-from-bottom duration-200">
+          <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
+            <div className="min-w-0">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                {selectedItems.length} {selectedItems.length === 1 ? 'item' : 'itens'} selecionados
+              </span>
+              <span className="text-sm font-black text-white">{totalUnitsSelected} UN no Total</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsClearModalOpen(true)}
+                className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-rose-400 hover:bg-slate-700 text-xs font-bold"
+                title="Limpar"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => setIsConfirmModalOpen(true)}
+                disabled={loading}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-extrabold text-xs shadow-lg shadow-orange-950/50 flex items-center gap-2 active:scale-95 transition"
+              >
+                <PackageCheck className="w-4 h-4" />
+                <span>Registrar Saída ({totalUnitsSelected} UN)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* FOOTER */}
       {posConfig.showFooter && (
@@ -919,6 +968,14 @@ export const SalesPanel: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* PRODUCT EXCHANGE / DEVOLUTION MODAL */}
+      <ProductExchangeModal
+        isOpen={isExchangeModalOpen}
+        onClose={() => setIsExchangeModalOpen(false)}
+        products={products}
+        onSuccess={(msg) => setToast({ type: 'success', message: msg })}
+      />
     </div>
   );
 };

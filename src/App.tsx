@@ -92,7 +92,7 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
       {/* Fixed Top Header */}
-      <Header onOpenMobileMenu={() => setIsMobileSidebarOpen(true)} />
+      <Header activeTab={activeTab} onOpenMobileMenu={() => setIsMobileSidebarOpen(true)} onNavigate={tab => setActiveTab(tab)} />
 
       {/* Main Layout Body */}
       <div className="flex flex-1 relative">
