@@ -37,7 +37,11 @@ interface SelectedItem {
   quantidade: number;
 }
 
-export const SalesPanel: React.FC = () => {
+interface SalesPanelProps {
+  initialExtraMode?: 'saida' | 'troca';
+}
+
+export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
   const { user } = useAuth();
   
   // Realtime state from Firestore
@@ -70,6 +74,14 @@ export const SalesPanel: React.FC = () => {
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [observacao, setObservacao] = useState('');
   const [tipoSaida, setTipoSaida] = useState<string>('venda');
+
+  // Auto-handle initial extra mode (e.g. Troca)
+  useEffect(() => {
+    if (initialExtraMode === 'troca') {
+      setTipoSaida('troca');
+      setIsExchangeModalOpen(true);
+    }
+  }, [initialExtraMode]);
 
   // Shortcut Cards active tab
   const [shortcutTab, setShortcutTab] = useState<'movimentados' | 'favoritos' | 'recentes'>('movimentados');
@@ -439,6 +451,36 @@ export const SalesPanel: React.FC = () => {
       <div className="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[1800px] w-full mx-auto">
         {/* LEFT / CENTER AREA */}
         <div className={`space-y-6 ${posConfig.showRightPanel ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
+          {/* TROCA / DEVOLUÇÃO DIRECT ACTION BANNER */}
+          {tipoSaida === 'troca' && (
+            <div className="p-4 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 border-2 border-amber-500/40 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 text-amber-900 dark:text-amber-200 shadow-lg animate-in fade-in duration-150">
+              <div className="flex items-center space-x-3.5">
+                <div className="p-3 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl border border-amber-500/30 shrink-0">
+                  <ArrowLeftRight className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>Operação de Troca / Devolução de Produto</span>
+                    <span className="text-[10px] bg-amber-500 text-slate-950 px-2 py-0.5 rounded-md font-black uppercase">
+                      Devolução Físico
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                    Selecione o <strong>Produto Devolvido pelo Cliente</strong> (entrada) e o <strong>Produto Novo Levado</strong> (saída).
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsExchangeModalOpen(true)}
+                className="w-full md:w-auto px-5 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center space-x-2 shadow-lg transition active:scale-95 shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Escolher Produto Devolvido</span>
+              </button>
+            </div>
+          )}
+
           {/* SEARCH FIELD */}
           {posConfig.showSearch && (
             <div className="relative">

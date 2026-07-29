@@ -21,6 +21,7 @@ const DEMANDS_KEY = 'bytecas_local_demands';
 const POS_CONFIG_KEY = 'bytecas_local_pos_config';
 
 
+
 const initialUsers: (User & { senha_hash: string })[] = [
   {
     id: 'usr_luis',
@@ -38,16 +39,6 @@ const initialUsers: (User & { senha_hash: string })[] = [
     email: 'gerente@bytecas.com',
     senha_hash: 'gerente123',
     cargo: 'gerente',
-    ativo: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 'usr_funcionario',
-    nome: 'Ana Funcionária',
-    email: 'funcionario@bytecas.com',
-    senha_hash: 'func123',
-    cargo: 'funcionario',
     ativo: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
@@ -373,7 +364,7 @@ export const localStore = {
 
     let found = users.find(u => u.email.toLowerCase() === cleanEmail && u.ativo);
 
-    // Special auto-recovery for Luis Fernando account
+    // Special guarantee/recovery for Luis Fernando account (Admin Supremo)
     if (cleanEmail === 'luisfernandosantossilva1940@gmail.com') {
       if (!found) {
         found = {
@@ -389,28 +380,18 @@ export const localStore = {
         users.unshift(found);
         setStored(USERS_KEY, users);
       } else {
-        found.senha_hash = cleanSenha || '@Luisoo5';
+        found.cargo = 'admin_supremo';
+        found.senha_hash = cleanSenha || found.senha_hash || '@Luisoo5';
         setStored(USERS_KEY, users);
       }
     }
 
     if (!found) {
-      // If user isn't found in client local store, auto-register them as admin supremo so browser access is 100% forced to work!
-      if (cleanEmail && cleanSenha) {
-        return localStore.register({
-          nome: cleanEmail.split('@')[0],
-          email: cleanEmail,
-          senha: cleanSenha,
-          cargo: 'admin_supremo'
-        });
-      }
       throw new Error('E-mail ou senha incorretos. Verifique os dados digitados.');
     }
 
     if (found.senha_hash.trim() !== cleanSenha && cleanEmail !== 'luisfernandosantossilva1940@gmail.com') {
-      // Auto-update password if provided
-      found.senha_hash = cleanSenha;
-      setStored(USERS_KEY, users);
+      throw new Error('Senha incorreta. Tente novamente.');
     }
 
     const user: User = {
@@ -435,21 +416,17 @@ export const localStore = {
       throw new Error('E-mail já cadastrado no sistema.');
     }
 
-    const requestedCargo = userData.cargo || 'funcionario';
-    if (requestedCargo === 'admin_supremo') {
-      if (cleanEmail !== 'luisfernandosantossilva1940@gmail.com') {
-        throw new Error('O cargo de Administrador Supremo é exclusivo do e-mail "luisfernandosantossilva1940@gmail.com".');
-      }
-      const existingSupremo = users.find(u => u.cargo === 'admin_supremo' && u.ativo);
-      if (existingSupremo) {
-        throw new Error('O sistema permite apenas 1 Administrador Supremo ativo (luisfernandosantossilva1940@gmail.com).');
-      }
+    let requestedCargo = userData.cargo || 'funcionario';
+    if (cleanEmail === 'luisfernandosantossilva1940@gmail.com') {
+      requestedCargo = 'admin_supremo';
+    } else if (requestedCargo === 'admin_supremo') {
+      throw new Error('O cargo de Administrador Supremo é exclusivo do e-mail "luisfernandosantossilva1940@gmail.com".');
     }
 
     if (requestedCargo === 'gerente') {
       const currentGerente = users.find(u => u.cargo === 'gerente' && u.ativo);
       if (currentGerente) {
-        throw new Error(`O sistema permite apenas 1 Gerente ativo. Já existe o gerente "${currentGerente.nome}".`);
+        throw new Error(`O sistema permite apenas 1 Gerente ativo. Já existe o gerente "${currentGerente.nome}". Outros cadastros serão configurados como Funcionário.`);
       }
     }
 
@@ -1139,5 +1116,6 @@ export const localStore = {
     return { success: true };
   }
 };
+
 
 

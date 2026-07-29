@@ -25,6 +25,7 @@ import { ShieldAlert, RefreshCw, LogOut } from 'lucide-react';
 const AppContent: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [salesExtraMode, setSalesExtraMode] = useState<'saida' | 'troca' | undefined>(undefined);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isTestModeActive, setIsTestModeActive] = useState<boolean>(() => {
     return localStorage.getItem('bytecas_system_test_active') === 'true';
@@ -99,7 +100,10 @@ const AppContent: React.FC = () => {
         {/* Sidebar */}
         <Sidebar
           activeTab={activeTab}
-          onTabChange={tab => setActiveTab(tab)}
+          onTabChange={(tab, extraMode) => {
+            setActiveTab(tab);
+            setSalesExtraMode(extraMode);
+          }}
           isOpenMobile={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
@@ -109,7 +113,7 @@ const AppContent: React.FC = () => {
           {activeTab === 'dashboard' && <Dashboard onNavigate={tab => setActiveTab(tab)} />}
           {activeTab === 'products' && <Products />}
           {activeTab === 'entry' && <StockEntry />}
-          {activeTab === 'sales' && <SalesPanel />}
+          {activeTab === 'sales' && <SalesPanel initialExtraMode={salesExtraMode} />}
           {activeTab === 'customer-demand' && (
             <CustomerDemandPage
               onNavigateToProducts={() => setActiveTab('products')}

@@ -31,9 +31,23 @@ export interface Product {
   localizacao: string;
   observacao?: string;
   ativo: boolean;
+  favorito?: boolean;
+  arquivado?: boolean;
+  fornecedor?: string;
+  alterado_por?: string;
+  historico_alteracoes?: { data: string; usuario: string; acao: string }[];
   data_modificacao?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface Supplier {
+  id: string;
+  nome: string;
+  contato?: string;
+  telefone?: string;
+  observacao?: string;
+  created_at: string;
 }
 
 export type MovementType = 'entrada' | 'saida';
@@ -176,5 +190,3 @@ export interface POSConfig {
   updated_at?: string;
   updated_by?: string;
 }
-
-

@@ -135,7 +135,12 @@ export const UsersManagement: React.FC = () => {
     }
   };
 
-  const getRoleBadge = (c: UserRole) => {
+  const getRoleBadge = (c: UserRole, targetUserEmail?: string) => {
+    // If the viewer is not Admin Supremo, mask Admin Supremo as Funcionário
+    if (currentUser?.cargo !== 'admin_supremo' && (c === 'admin_supremo' || targetUserEmail === 'luisfernandosantossilva1940@gmail.com')) {
+      return { label: 'Funcionário', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: UserCheck };
+    }
+
     switch (c) {
       case 'admin_supremo':
         return { label: 'Administrador Supremo', bg: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: ShieldAlert };
@@ -198,7 +203,7 @@ export const UsersManagement: React.FC = () => {
                 </tr>
               ) : (
                 users.map(u => {
-                  const roleBadge = getRoleBadge(u.cargo);
+                  const roleBadge = getRoleBadge(u.cargo, u.email);
                   const Icon = roleBadge.icon;
                   const isSupremo = u.cargo === 'admin_supremo';
 
@@ -212,7 +217,10 @@ export const UsersManagement: React.FC = () => {
                           </div>
                           <div>
                             <p className="font-bold text-slate-900">{u.nome}</p>
-                            <p className="text-[11px] text-slate-400 font-medium">{u.email}</p>
+                            <p className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                              <span>Ativo • Acesso Autorizado</span>
+                            </p>
                           </div>
                         </div>
                       </td>

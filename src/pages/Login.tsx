@@ -149,15 +149,15 @@ export const Login: React.FC = () => {
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    E-mail Corporativo
+                    Usuário ou e-mail
                   </label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
-                      type="email"
+                      type="text"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      placeholder="luisfernandosantossilva1940@gmail.com"
+                      placeholder="Digite seu usuário ou e-mail..."
                       className="w-full pl-10 pr-4 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all duration-150 placeholder:text-slate-400 placeholder:font-normal"
                     />
                   </div>
@@ -286,9 +286,9 @@ export const Login: React.FC = () => {
                     onChange={e => setRegCargo(e.target.value as any)}
                     className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
                   >
-                    <option value="admin_supremo">Administrador Supremo (Acesso Total - luisfernandosantossilva1940@gmail.com)</option>
-                    <option value="gerente">Gerente de Estoque (Edição/Saídas)</option>
-                    <option value="funcionario">Funcionário (Lançamentos/Consultas)</option>
+                    <option value="funcionario">Funcionário (Acesso padrão a vendas e consultas)</option>
+                    <option value="gerente">Gerente de Estoque (Máximo 1 Gerente no sistema)</option>
+                    <option value="admin_supremo">Administrador Supremo (Exclusivo para luisfernandosantossilva1940@gmail.com)</option>
                   </select>
                 </div>
 
@@ -338,13 +338,13 @@ export const Login: React.FC = () => {
             ) : (
               <form onSubmit={handleForgotSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">E-mail</label>
+                  <label className="block text-xs font-bold text-slate-800 mb-1">Usuário ou e-mail</label>
                   <input
-                    type="email"
+                    type="text"
                     required
                     value={forgotEmail}
                     onChange={e => setForgotEmail(e.target.value)}
-                    placeholder="luisfernandosantossilva1940@gmail.com"
+                    placeholder="Digite seu usuário ou e-mail registrado..."
                     className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-400 placeholder:font-normal"
                   />
                 </div>
