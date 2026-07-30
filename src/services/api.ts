@@ -156,44 +156,15 @@ export const api = {
   },
 
   createUser: async (userData: { nome: string; email: string; senha: string; cargo: string }) => {
-    try {
-      return await apiRequest<User>('/api/users', {
-        method: 'POST',
-        body: JSON.stringify(userData)
-      });
-    } catch (err: any) {
-      if (err.message === 'SERVER_UNREACHABLE') {
-        return localStore.createUser(userData);
-      }
-      throw err;
-    }
+    return firestoreSync.createUser(userData);
   },
 
   updateUser: async (id: string, userData: Partial<User & { senha?: string }>) => {
-    try {
-      return await apiRequest<User>(`/api/users/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(userData)
-      });
-    } catch (err: any) {
-      if (err.message === 'SERVER_UNREACHABLE') {
-        return localStore.updateUser(id, userData);
-      }
-      throw err;
-    }
+    return firestoreSync.updateUser(id, userData);
   },
 
   deleteUser: async (id: string) => {
-    try {
-      return await apiRequest<{ message: string }>(`/api/users/${id}`, {
-        method: 'DELETE'
-      });
-    } catch (err: any) {
-      if (err.message === 'SERVER_UNREACHABLE') {
-        return localStore.deleteUser(id);
-      }
-      throw err;
-    }
+    return firestoreSync.deleteUser(id);
   },
 
   // Categories
@@ -370,35 +341,11 @@ export const api = {
     solicitante_nome?: string;
     confirmou_erro_contagem?: boolean;
   }) => {
-    try {
-      return await apiRequest<{
-        status_code: 'EXISTS_HAS_STOCK_AWAITING_CONFIRMATION' | 'EXISTS_STOCK_ZEROED' | 'EXISTS_NO_STOCK_REGISTERED' | 'NOT_REGISTERED_SAVED';
-        message: string;
-        product?: Product;
-        demand?: CustomerDemand;
-      }>('/api/customer-demands', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
-    } catch (err: any) {
-      if (err.message === 'SERVER_UNREACHABLE') {
-        return localStore.registerCustomerDemand(data);
-      }
-      throw err;
-    }
+    return firestoreSync.registerCustomerDemand(data);
   },
 
   deleteCustomerDemand: async (id: string) => {
-    try {
-      return await apiRequest<{ message: string }>(`/api/customer-demands/${id}`, {
-        method: 'DELETE'
-      });
-    } catch (err: any) {
-      if (err.message === 'SERVER_UNREACHABLE') {
-        return localStore.deleteCustomerDemand(id);
-      }
-      throw err;
-    }
+    return firestoreSync.deleteCustomerDemand(id);
   },
 
   getPOSConfig: async (): Promise<POSConfig> => {

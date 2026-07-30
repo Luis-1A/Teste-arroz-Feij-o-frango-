@@ -33,6 +33,9 @@ export interface Product {
   ativo: boolean;
   favorito?: boolean;
   arquivado?: boolean;
+  lixeira?: boolean;
+  lixeira_data?: string;
+  etiquetas?: string[];
   fornecedor?: string;
   alterado_por?: string;
   historico_alteracoes?: { data: string; usuario: string; acao: string }[];
@@ -190,3 +193,111 @@ export interface POSConfig {
   updated_at?: string;
   updated_by?: string;
 }
+
+export interface CalendarEvent {
+  id: string;
+  titulo: string;
+  descricao?: string;
+  tipo: 'chegada_mercadoria' | 'inventario' | 'lembrete' | 'outro';
+  data: string; // YYYY-MM-DD
+  usuario_nome: string;
+  created_at: string;
+}
+
+export interface Announcement {
+  id: string;
+  titulo: string;
+  conteudo: string;
+  prioridade: 'urgente' | 'importante' | 'normal';
+  autor_nome: string;
+  ativo: boolean;
+  created_at: string;
+}
+
+export interface StoreGoal {
+  id: string;
+  titulo: string;
+  descricao?: string;
+  meta_valor: number;
+  atual_valor: number;
+  unidade: string;
+  concluida: boolean;
+  data_limite?: string;
+  created_at: string;
+}
+
+export interface DraftMovement {
+  id: string;
+  tipo: MovementType;
+  produto_id: string;
+  produto_nome: string;
+  quantidade: number;
+  observacao?: string;
+  usuario_nome: string;
+  data_salvo: string;
+}
+
+export interface StoreTemplate {
+  id: string;
+  nome: string;
+  descricao: string;
+  categorias: string[];
+  etiquetas_sugeridas: string[];
+  estoque_minimo_padrao: number;
+}
+
+export interface DashboardCardConfig {
+  statsSummary: boolean;
+  quickShortcuts: boolean;
+  activityFeed: boolean;
+  recentProducts: boolean;
+  announcements: boolean;
+  calendarEvents: boolean;
+  storeGoals: boolean;
+  organizationAssistant: boolean;
+}
+
+export interface StoreAppearance {
+  nome_loja: string;
+  logotipo_texto: string;
+  cor_tema: 'blue' | 'emerald' | 'indigo' | 'amber' | 'violet' | 'slate';
+  densidade: 'confortavel' | 'compacto';
+  modo_escuro_header: boolean;
+}
+
+export interface InventoryAuditItem {
+  produto_id: string;
+  produto_nome: string;
+  codigo: string;
+  estoque_sistema: number;
+  estoque_fisico: number;
+  divergencia: number;
+  conferido: boolean;
+}
+
+export interface InventoryAuditSession {
+  id: string;
+  categoria?: string;
+  usuario_nome: string;
+  data_inicio: string;
+  data_fim?: string;
+  status: 'em_andamento' | 'concluido';
+  itens: InventoryAuditItem[];
+}
+
+export interface StockDivergenceRecord {
+  id: string;
+  produto_id: string;
+  produto_nome: string;
+  categoria: string;
+  estoque_no_momento: number;
+  estoque_atual: number;
+  data_primeira_divergencia: string;
+  data_correcao?: string;
+  usuario_id?: string;
+  usuario_nome: string;
+  status: 'Aberta' | 'Corrigida';
+  created_at: string;
+  updated_at: string;
+}
+

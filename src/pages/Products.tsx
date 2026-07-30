@@ -3,7 +3,9 @@ import { api } from '../services/api';
 import { firestoreSync } from '../services/firestoreSync';
 import { Product, Category } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { localStore } from '../services/localStore';
 import { BarcodeScannerModal } from '../components/BarcodeScannerModal';
+import { standardizeProductName, findDuplicateProduct } from '../utils/productStandardizer';
 import {
   Search,
   Plus,
@@ -23,12 +25,16 @@ import {
   Copy,
   FolderPlus,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Star,
+  History,
+  AlertTriangle
 } from 'lucide-react';
+
 
 export const Products: React.FC = () => {
   const { canPerform } = useAuth();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [rawProducts, setRawProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -72,34 +78,48 @@ export const Products: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     const unsubProds = firestoreSync.subscribeProducts((allProds) => {
-      let filtered = allProds.filter((p) => p.ativo);
-      if (selectedCategory && selectedCategory !== 'Todas') {
-        filtered = filtered.filter((p) => p.categoria === selectedCategory);
-      }
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase();
-        filtered = filtered.filter(
-          (p) =>
-            p.nome.toLowerCase().includes(term) ||
-            p.marca.toLowerCase().includes(term) ||
-            p.codigo.toLowerCase().includes(term) ||
-            p.localizacao.toLowerCase().includes(term) ||
-            (p.codigo_barras && p.codigo_barras.toLowerCase().includes(term))
-        );
-      }
-      setProducts(filtered);
+      setRawProducts(allProds || []);
       setLoading(false);
     });
 
     const unsubCats = firestoreSync.subscribeCategories((cats) => {
-      setCategories(cats);
+      const seen = new Set<string>();
+      const uniqueCats: Category[] = [];
+      for (const c of cats || []) {
+        if (!c || !c.nome) continue;
+        const nameKey = c.nome.trim().toLowerCase();
+        if (!seen.has(nameKey)) {
+          seen.add(nameKey);
+          uniqueCats.push(c);
+        }
+      }
+      setCategories(uniqueCats);
     });
 
     return () => {
       unsubProds();
       unsubCats();
     };
-  }, [searchTerm, selectedCategory]);
+  }, []);
+
+  const products = useMemo(() => {
+    let filtered = rawProducts.filter((p) => p.ativo !== false);
+    if (selectedCategory && selectedCategory !== 'Todas') {
+      filtered = filtered.filter((p) => p.categoria === selectedCategory);
+    }
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.nome.toLowerCase().includes(term) ||
+          p.marca.toLowerCase().includes(term) ||
+          p.codigo.toLowerCase().includes(term) ||
+          p.localizacao.toLowerCase().includes(term) ||
+          (p.codigo_barras && p.codigo_barras.toLowerCase().includes(term))
+      );
+    }
+    return filtered;
+  }, [rawProducts, selectedCategory, searchTerm]);
 
   // Group products by category
   const groupedProducts = useMemo(() => {
@@ -189,10 +209,21 @@ export const Products: React.FC = () => {
       return;
     }
 
+    const standardizedName = standardizeProductName(nome);
+
+    // Check duplicate product in same category
+    const duplicate = findDuplicateProduct(products, standardizedName, categoria, editingProduct?.id);
+    if (duplicate) {
+      setFormError(
+        `Já existe o produto "${duplicate.nome}" cadastrado na categoria "${categoria}". Não é permitido ter produtos duplicados na mesma categoria.`
+      );
+      return;
+    }
+
     try {
       if (editingProduct) {
         await api.updateProduct(editingProduct.id, {
-          nome,
+          nome: standardizedName,
           categoria,
           marca,
           codigo,
@@ -204,7 +235,7 @@ export const Products: React.FC = () => {
         });
       } else {
         await api.createProduct({
-          nome,
+          nome: standardizedName,
           categoria,
           marca,
           codigo,
@@ -226,7 +257,7 @@ export const Products: React.FC = () => {
     if (!deleteProductCandidate) return;
     try {
       const targetId = deleteProductCandidate.id;
-      setProducts(prev => prev.filter(p => p.id !== targetId));
+      setRawProducts(prev => prev.filter(p => p.id !== targetId));
       await api.deleteProduct(targetId);
       setDeleteProductCandidate(null);
     } catch (err: any) {
@@ -271,6 +302,22 @@ export const Products: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('open_guided_inventory'))}
+            className="px-3 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
+            title="Iniciar conferência física de estoque passo a passo"
+          >
+            <span>Inventário Guiado</span>
+          </button>
+
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('open_import_export'))}
+            className="px-3 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
+            title="Importar ou Exportar CSV/JSON"
+          >
+            <span>Importar / Exportar</span>
+          </button>
+
           <button
             onClick={() => setIsCategoryModalOpen(true)}
             className="px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-2xs"
@@ -347,8 +394,8 @@ export const Products: React.FC = () => {
             className="px-3 py-2 text-xs border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-slate-50/50 text-slate-700 font-semibold w-full md:w-auto"
           >
             <option value="Todas">Todas as Categorias ({products.length})</option>
-            {categories.map(c => (
-              <option key={c.id} value={c.nome}>
+            {categories.map((c, idx) => (
+              <option key={c.id ? `${c.id}-${idx}` : `${c.nome}-${idx}`} value={c.nome}>
                 {c.nome}
               </option>
             ))}
@@ -415,16 +462,17 @@ export const Products: React.FC = () => {
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-xs">
                         {prods.map(p => {
+                          const isNegative = p.estoque < 0;
                           const isZero = p.estoque === 0;
                           const isLow = p.estoque > 0 && p.estoque <= p.estoque_minimo;
                           const isCopied = copiedProdId === p.id;
 
                           return (
-                            <tr key={p.id} className="hover:bg-slate-50/80 transition-colors group">
+                            <tr key={p.id} className={`hover:bg-slate-50/80 transition-colors group ${isNegative ? 'bg-rose-50/30' : ''}`}>
                               {/* Name with Copy Option */}
                               <td className="p-3.5">
                                 <div className="flex items-center space-x-2">
-                                  <span className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
+                                  <span className={`font-semibold transition-colors ${isNegative ? 'text-rose-700 font-extrabold' : 'text-slate-900 group-hover:text-blue-600'}`}>
                                     {p.nome}
                                   </span>
                                   <button
@@ -474,21 +522,31 @@ export const Products: React.FC = () => {
                               <td className="p-3.5 text-center">
                                 <div className="inline-flex flex-col items-center">
                                   <span
-                                    className={`px-3 py-1 rounded-full font-bold text-xs ${
-                                      isZero
+                                    className={`px-3 py-1 rounded-full font-bold text-xs flex items-center gap-1 ${
+                                      isNegative
+                                        ? 'bg-rose-600 text-white border border-rose-700 shadow-xs'
+                                        : isZero
                                         ? 'bg-rose-100 text-rose-800 border border-rose-200'
                                         : isLow
                                         ? 'bg-amber-100 text-amber-800 border border-amber-200'
                                         : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                                     }`}
                                   >
+                                    {isNegative && <AlertTriangle className="w-3.5 h-3.5 text-amber-300 animate-pulse" />}
                                     {p.estoque} un
                                   </span>
-                                  <span className="text-[10px] text-slate-400 mt-0.5 font-medium">
-                                    Mín: {p.estoque_minimo}
-                                  </span>
+                                  {isNegative ? (
+                                    <span className="text-[10px] text-rose-600 font-extrabold mt-0.5 uppercase tracking-wider">
+                                      Divergência
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] text-slate-400 mt-0.5 font-medium">
+                                      Mín: {p.estoque_minimo}
+                                    </span>
+                                  )}
                                 </div>
                               </td>
+
 
                               {/* Location */}
                               <td className="p-3.5">
@@ -501,6 +559,41 @@ export const Products: React.FC = () => {
                               {/* Actions */}
                               <td className="p-3.5 text-right">
                                 <div className="flex items-center justify-end space-x-1">
+                                  {/* Favorite Toggle Button */}
+                                  <button
+                                    onClick={() => {
+                                      localStore.toggleFavoriteProduct(p.id);
+                                      setRawProducts(prev =>
+                                        prev.map(item =>
+                                          item.id === p.id ? { ...item, favorito: !item.favorito } : item
+                                        )
+                                      );
+                                    }}
+                                    className={`p-1.5 rounded-xl transition-colors ${
+                                      p.favorito
+                                        ? 'text-amber-400 bg-amber-500/10'
+                                        : 'text-slate-300 hover:text-amber-500 hover:bg-slate-100'
+                                    }`}
+                                    title={p.favorito ? 'Remover dos Favoritos' : 'Marcar como Favorito'}
+                                  >
+                                    <Star className={`w-4 h-4 ${p.favorito ? 'fill-amber-400' : ''}`} />
+                                  </button>
+
+                                  {/* Product History Modal Trigger */}
+                                  <button
+                                    onClick={() => {
+                                      window.dispatchEvent(
+                                        new CustomEvent('open_product_history', {
+                                          detail: { productId: p.id }
+                                        })
+                                      );
+                                    }}
+                                    className="p-1.5 rounded-xl text-slate-400 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+                                    title="Ver Histórico de Movimentações"
+                                  >
+                                    <History className="w-4 h-4" />
+                                  </button>
+
                                   {canPerform('edit_products') && (
                                     <button
                                       onClick={() => openEditModal(p)}
@@ -585,9 +678,9 @@ export const Products: React.FC = () => {
                   Categorias Existentes ({categories.length})
                 </h4>
                 <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
-                  {categories.map(c => (
+                  {categories.map((c, idx) => (
                     <div
-                      key={c.id}
+                      key={c.id ? `${c.id}-${idx}` : `${c.nome}-${idx}`}
                       className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 hover:bg-slate-100 transition"
                     >
                       <span className="font-semibold text-slate-800">{c.nome}</span>
@@ -691,8 +784,8 @@ export const Products: React.FC = () => {
                     onChange={e => setCategoria(e.target.value)}
                     className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
                   >
-                    {categories.map(c => (
-                      <option key={c.id} value={c.nome}>
+                    {categories.map((c, idx) => (
+                      <option key={c.id ? `${c.id}-${idx}` : `${c.nome}-${idx}`} value={c.nome}>
                         {c.nome}
                       </option>
                     ))}

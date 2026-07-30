@@ -19,7 +19,13 @@ import {
   ArrowLeftRight,
   Cpu,
   Crown,
-  FileBarChart
+  FileBarChart,
+  ClipboardCheck,
+  Megaphone,
+  Trash2,
+  FileSpreadsheet,
+  FileEdit,
+  Palette
 } from 'lucide-react';
 
 export type TabType =
@@ -31,17 +37,29 @@ export type TabType =
   | 'low-stock'
   | 'top-selling'
   | 'restock-list'
+  | 'stock-divergences'
   | 'history'
   | 'users'
   | 'pos-customization'
   | 'system_test'
   | 'admin_supreme_hub';
 
+
 interface SidebarProps {
   activeTab: TabType;
   onTabChange: (tab: TabType, extraMode?: 'saida' | 'troca') => void;
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
+}
+
+interface NavItem {
+  id: TabType;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
+  extraMode?: 'saida' | 'troca';
+  customEvent?: string;
+  roles: string[];
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -53,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { user } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const navGroups = [
+  const navGroups: { groupLabel: string; items: NavItem[] }[] = [
     {
       groupLabel: 'Frente de Loja',
       items: [
@@ -134,10 +152,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
           roles: ['admin_supremo', 'gerente', 'funcionario']
         },
         {
+          id: 'stock-divergences' as TabType,
+          label: 'Divergências de Estoque',
+          icon: AlertTriangle,
+          badge: 'ALERTA',
+          roles: ['admin_supremo', 'gerente', 'funcionario']
+        },
+        {
           id: 'history' as TabType,
           label: 'Relatórios e Histórico',
           icon: FileBarChart,
           roles: ['admin_supremo', 'gerente', 'funcionario']
+        }
+      ]
+    },
+
+    {
+      groupLabel: 'Ferramentas de Gestão',
+      items: [
+        {
+          id: 'products' as TabType,
+          label: 'Inventário Guiado',
+          icon: ClipboardCheck,
+          customEvent: 'open_guided_inventory',
+          roles: ['admin_supremo', 'gerente', 'funcionario']
+        },
+        {
+          id: 'products' as TabType,
+          label: 'Mural de Avisos',
+          icon: Megaphone,
+          customEvent: 'open_announcements',
+          roles: ['admin_supremo', 'gerente', 'funcionario']
+        },
+        {
+          id: 'products' as TabType,
+          label: 'Lixeira Inteligente',
+          icon: Trash2,
+          customEvent: 'open_recycle_bin',
+          roles: ['admin_supremo', 'gerente']
+        },
+        {
+          id: 'products' as TabType,
+          label: 'Importar / Exportar',
+          icon: FileSpreadsheet,
+          customEvent: 'open_import_export',
+          roles: ['admin_supremo', 'gerente']
         }
       ]
     },
@@ -213,7 +272,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <button
                     key={`${item.id}-${item.extraMode || itemIdx}`}
                     onClick={() => {
-                      onTabChange(item.id, item.extraMode);
+                      if ('customEvent' in item && item.customEvent) {
+                        window.dispatchEvent(new CustomEvent(item.customEvent as string));
+                      } else {
+                        onTabChange(item.id, item.extraMode);
+                      }
                       if (onCloseMobile) onCloseMobile();
                     }}
                     title={isCollapsed ? item.label : undefined}

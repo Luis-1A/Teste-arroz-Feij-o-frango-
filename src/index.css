@@ -1,6 +1,11 @@
 @import "tailwindcss";
 
 @layer base {
+  html, body {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: clip;
+  }
   body {
     @apply bg-slate-50 text-slate-800 antialiased selection:bg-blue-500 selection:text-white;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { firestoreSync } from '../services/firestoreSync';
 import { User, UserRole } from '../types';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -38,20 +39,13 @@ export const UsersManagement: React.FC = () => {
   // Delete modal
   const [deleteCandidate, setDeleteCandidate] = useState<User | null>(null);
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const list = await api.getUsers();
-      setUsers(list);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadData();
+    setLoading(true);
+    const unsub = firestoreSync.subscribeUsers((list) => {
+      setUsers(list || []);
+      setLoading(false);
+    });
+    return () => unsub();
   }, []);
 
   const openAddModal = () => {
@@ -115,7 +109,6 @@ export const UsersManagement: React.FC = () => {
       }
 
       setIsModalOpen(false);
-      loadData();
     } catch (err: any) {
       setFormError(err.message || 'Erro ao salvar usuário.');
     }
@@ -128,10 +121,8 @@ export const UsersManagement: React.FC = () => {
       setUsers(prev => prev.filter(u => u.id !== targetId));
       await api.deleteUser(targetId);
       setDeleteCandidate(null);
-      await loadData();
     } catch (err: any) {
       alert(err.message || 'Erro ao remover usuário.');
-      loadData();
     }
   };
 

@@ -23,7 +23,6 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
-  const [topMoved, setTopMoved] = useState<TopMovedProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,18 +36,46 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       setMovements(movs || []);
     });
 
-    // Fetch top moved ranking
-    api.getTopMoved('mes').then(resTop => {
-      setTopMoved(resTop || []);
-    }).catch(err => {
-      console.warn('Erro ao carregar top moved:', err);
-    });
-
     return () => {
       unsubProducts();
       unsubMovements();
     };
   }, []);
+
+  // Compute top moved ranking dynamically from real-time movements and products
+  const topMovedItems: TopMovedProduct[] = useMemo(() => {
+    const now = new Date();
+    const monthMovs = movements.filter((m) => {
+      if (m.tipo !== 'saida') return false;
+      const d = new Date(m.created_at);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+
+    const counts: { [id: string]: { nome: string; total: number } } = {};
+    monthMovs.forEach((m) => {
+      if (!counts[m.produto_id]) {
+        counts[m.produto_id] = { nome: m.produto_nome, total: 0 };
+      }
+      counts[m.produto_id].total += (m.quantidade || 1);
+    });
+
+    const prodMap = new Map<string, Product>(products.map(p => [p.id, p]));
+
+    return Object.entries(counts)
+      .map(([id, data]) => {
+        const prod = prodMap.get(id);
+        return {
+          id,
+          nome: data.nome,
+          codigo: prod?.codigo || 'PROD',
+          categoria: prod?.categoria || 'Acessórios',
+          quantidade_movimentada: data.total,
+          estoque_atual: prod ? prod.estoque : 0
+        };
+      })
+      .sort((a, b) => b.quantidade_movimentada - a.quantidade_movimentada)
+      .slice(0, 5);
+  }, [movements, products]);
 
   // Compute live stats directly from real-time products and movements
   const stats: DashboardStats = useMemo(() => {
@@ -126,7 +153,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               Monitore movimentações físicas, alertas de reposição urgente e velocidade de giro de produtos em tempo real.
             </p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-wrap">
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('open_guided_inventory'))}
+              className="px-3.5 py-2.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-1.5"
+            >
+              <span>Inventário Guiado</span>
+            </button>
             <button
               onClick={() => onNavigate('sales')}
               className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-2"
@@ -373,12 +406,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
 
             <div className="space-y-2.5">
-              {topMoved.length === 0 ? (
+              {topMovedItems.length === 0 ? (
                 <p className="text-xs text-slate-400 italic py-4 text-center">
                   Nenhuma saída registrada este mês.
                 </p>
               ) : (
-                topMoved.slice(0, 4).map((item, idx) => (
+                topMovedItems.slice(0, 4).map((item, idx) => (
                   <div key={item.id} className="flex items-center justify-between text-xs p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
                     <div className="flex items-center space-x-2.5 truncate">
                       <span className="w-5 h-5 rounded-full bg-blue-100/80 text-blue-700 font-extrabold text-[10px] flex items-center justify-center shrink-0">

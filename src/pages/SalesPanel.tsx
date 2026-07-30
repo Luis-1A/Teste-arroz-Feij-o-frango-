@@ -89,9 +89,11 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
   // Modals & Notifications
   const [loading, setLoading] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isOversellModalOpen, setIsOversellModalOpen] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [isExchangeModalOpen, setIsExchangeModalOpen] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'warning' | 'info'; message: string } | null>(null);
+
 
   // Live Clock
   const [now, setNow] = useState(new Date());
@@ -259,11 +261,6 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
       return;
     }
 
-    const item = selectedItems[index];
-    if (newQty > item.product.estoque) {
-      showToast('warning', `Estoque máximo para "${item.product.nome}" é de ${item.product.estoque} UN.`);
-    }
-
     setSelectedItems((prev) => {
       const updated = [...prev];
       updated[index].quantidade = newQty;
@@ -282,6 +279,17 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
     setObservacao('');
     setIsClearModalOpen(false);
     showToast('info', 'Lista de movimentação limpa com sucesso.');
+  };
+
+  const oversoldItems = selectedItems.filter((item) => item.quantidade > item.product.estoque);
+
+  const handleStartExitProcess = () => {
+    if (selectedItems.length === 0) return;
+    if (oversoldItems.length > 0) {
+      setIsOversellModalOpen(true);
+    } else {
+      setIsConfirmModalOpen(true);
+    }
   };
 
   // REGISTER STOCK EXIT IN CENTRALIZED FIRESTORE DB
@@ -305,6 +313,7 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
       setSelectedItems([]);
       setObservacao('');
       setIsConfirmModalOpen(false);
+      setIsOversellModalOpen(false);
       soundEffects.playSuccessChime(!isMuted);
       triggerHaptic('success');
       showToast('success', 'Saída de estoque registrada e sincronizada em tempo real!');
@@ -316,6 +325,7 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
       setLoading(false);
     }
   };
+
 
   // Calculate totals
   const totalUnitsSelected = selectedItems.reduce((acc, curr) => acc + curr.quantidade, 0);
@@ -851,7 +861,7 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
               {/* Action Buttons */}
               <div className="space-y-2 pt-2">
                 <button
-                  onClick={() => setIsConfirmModalOpen(true)}
+                  onClick={handleStartExitProcess}
                   disabled={selectedItems.length === 0 || loading}
                   className={`w-full py-3.5 px-4 rounded-xl text-xs font-extrabold text-white flex items-center justify-center space-x-2 transition shadow-md ${
                     selectedItems.length === 0 || loading
@@ -898,7 +908,7 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
               </button>
 
               <button
-                onClick={() => setIsConfirmModalOpen(true)}
+                onClick={handleStartExitProcess}
                 disabled={loading}
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-extrabold text-xs shadow-lg shadow-orange-950/50 flex items-center gap-2 active:scale-95 transition"
               >
@@ -909,6 +919,7 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
           </div>
         </div>
       )}
+
 
       {/* FOOTER */}
       {posConfig.showFooter && (
@@ -979,7 +990,75 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
         </div>
       )}
 
+      {/* OVERSELL WARNING MODAL */}
+      {isOversellModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 max-w-md w-full rounded-3xl p-6 border border-amber-300 dark:border-amber-800/60 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center space-x-3">
+              <div className="w-11 h-11 rounded-2xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">Atenção!</h3>
+                <p className="text-xs text-amber-600 dark:text-amber-400 font-bold">
+                  A quantidade informada é maior que o estoque disponível.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {oversoldItems.map((item) => (
+                <div key={item.product.id} className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-2xl border border-amber-200/80 dark:border-amber-800/40 text-xs space-y-1">
+                  <div className="font-extrabold text-slate-900 dark:text-white text-sm">
+                    {item.product.nome}
+                  </div>
+                  <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                    <span>Estoque atual:</span>
+                    <span className="font-bold text-amber-700 dark:text-amber-300">{item.product.estoque} unidades</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                    <span>Quantidade informada:</span>
+                    <span className="font-bold text-rose-600 dark:text-rose-400">{item.quantidade} unidades</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-3 bg-slate-100 dark:bg-slate-800/80 rounded-2xl text-xs text-slate-700 dark:text-slate-300 font-medium space-y-1">
+              <p className="font-bold text-slate-900 dark:text-white">Tem certeza de que deseja continuar?</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                Essa operação fará o estoque ficar negativo e indicará que existe uma divergência que precisa ser corrigida.
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-3 pt-2">
+              <button
+                onClick={() => setIsOversellModalOpen(false)}
+                className="flex-1 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmExit}
+                disabled={loading}
+                className="flex-1 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold shadow-md shadow-amber-600/25 transition flex items-center justify-center space-x-2"
+              >
+                {loading ? (
+                  <span>Sincronizando...</span>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Confirmar</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* CLEAR SELECTION MODAL */}
+
       {isClearModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <div className="bg-white dark:bg-slate-900 max-w-sm w-full rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">

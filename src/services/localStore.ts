@@ -8,7 +8,15 @@ import {
   DashboardStats,
   TopMovedProduct,
   CustomerDemand,
-  POSConfig
+  POSConfig,
+  CalendarEvent,
+  Announcement,
+  StoreGoal,
+  DraftMovement,
+  DashboardCardConfig,
+  StoreAppearance,
+  InventoryAuditSession,
+  StockDivergenceRecord
 } from '../types';
 import { DEFAULT_POS_CONFIG } from '../config/posDefault';
 
@@ -19,6 +27,98 @@ const MOVEMENTS_KEY = 'bytecas_local_movements';
 const HISTORY_KEY = 'bytecas_local_history';
 const DEMANDS_KEY = 'bytecas_local_demands';
 const POS_CONFIG_KEY = 'bytecas_local_pos_config';
+const CALENDAR_KEY = 'bytecas_local_calendar';
+const ANNOUNCEMENTS_KEY = 'bytecas_local_announcements';
+const GOALS_KEY = 'bytecas_local_goals';
+const DRAFTS_KEY = 'bytecas_local_drafts';
+const DASHBOARD_CONFIG_KEY = 'bytecas_local_dashboard_config';
+const APPEARANCE_KEY = 'bytecas_local_appearance';
+const AUDIT_SESSIONS_KEY = 'bytecas_local_audit_sessions';
+const DIVERGENCES_KEY = 'bytecas_local_divergences';
+
+const initialCalendarEvents: CalendarEvent[] = [
+  {
+    id: 'cal_1',
+    titulo: 'Chegada Carga de Acessórios',
+    descricao: 'Conferência de lote de cabos e carregadores homologados',
+    tipo: 'chegada_mercadoria',
+    data: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+    usuario_nome: 'Luis Fernando Silva',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'cal_2',
+    titulo: 'Inventário Geral Mensal',
+    descricao: 'Auditoria física e contagem do setor de peças',
+    tipo: 'inventario',
+    data: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
+    usuario_nome: 'Luis Fernando Silva',
+    created_at: new Date().toISOString()
+  }
+];
+
+const initialAnnouncements: Announcement[] = [
+  {
+    id: 'ann_1',
+    titulo: '⚠️ Conferência Obrigatória ao Receber Mercadorias',
+    conteudo: 'Todas as entradas de produtos devem ser registradas com código de barras ou SKU completo no momento da descarga.',
+    prioridade: 'urgente',
+    autor_nome: 'Administrador Supremo',
+    ativo: true,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'ann_2',
+    titulo: '💡 Lixeira Inteligente Ativa',
+    conteudo: 'Os produtos excluídos agora ficam salvos na Lixeira por segurança antes da remoção definitiva.',
+    prioridade: 'normal',
+    autor_nome: 'Administrador Supremo',
+    ativo: true,
+    created_at: new Date().toISOString()
+  }
+];
+
+const initialGoals: StoreGoal[] = [
+  {
+    id: 'goal_1',
+    titulo: 'Zerar Produtos Sem Categoria',
+    descricao: 'Organizar e associar todas as mercadorias aos seus devidos grupos.',
+    meta_valor: 100,
+    atual_valor: 100,
+    unidade: '%',
+    concluida: true,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'goal_2',
+    titulo: 'Manter Estoque Físico Auditado',
+    descricao: 'Realizar ao menos 1 inventário guiado semanal nas principais categorias.',
+    meta_valor: 4,
+    atual_valor: 2,
+    unidade: 'auditorias',
+    concluida: false,
+    created_at: new Date().toISOString()
+  }
+];
+
+const initialDashboardConfig: DashboardCardConfig = {
+  statsSummary: true,
+  quickShortcuts: true,
+  activityFeed: true,
+  recentProducts: true,
+  announcements: true,
+  calendarEvents: true,
+  storeGoals: true,
+  organizationAssistant: true
+};
+
+const initialAppearance: StoreAppearance = {
+  nome_loja: 'Bytecas Estoque',
+  logotipo_texto: 'BYTECAS',
+  cor_tema: 'blue',
+  densidade: 'confortavel',
+  modo_escuro_header: true
+};
 
 
 
@@ -97,6 +197,104 @@ const initialProducts: Product[] = [
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   },
+  {
+    id: 'prod_cabo_kingo_v8',
+    nome: 'Cabo Kingo V8',
+    categoria: 'Cabos',
+    marca: 'Kingo',
+    codigo: 'CAB-KINGO-V8',
+    codigo_barras: '7891234560104',
+    estoque: 10,
+    estoque_minimo: 5,
+    localizacao: 'Prateleira A1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_cabo_kimaster_usbc',
+    nome: 'Cabo Kimaster USB-C',
+    categoria: 'Cabos',
+    marca: 'Kimaster',
+    codigo: 'CAB-KIM-USBC',
+    codigo_barras: '7891234560105',
+    estoque: 3,
+    estoque_minimo: 5,
+    localizacao: 'Prateleira A1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_cabo_kimaster_usblight',
+    nome: 'Cabo Kimaster USB-Lightning',
+    categoria: 'Cabos',
+    marca: 'Kimaster',
+    codigo: 'CAB-KIM-LIGHT',
+    codigo_barras: '7891234560106',
+    estoque: 2,
+    estoque_minimo: 5,
+    localizacao: 'Prateleira A1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_cabo_kimaster_c2c',
+    nome: 'Cabo Kimaster Tipo-C para Tipo-C',
+    categoria: 'Cabos',
+    marca: 'Kimaster',
+    codigo: 'CAB-KIM-C2C',
+    codigo_barras: '7891234560107',
+    estoque: 2,
+    estoque_minimo: 5,
+    localizacao: 'Prateleira A1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_cabo_light_usbc',
+    nome: 'Cabo Lightning para USB-C',
+    categoria: 'Cabos',
+    marca: 'Kimaster',
+    codigo: 'CAB-LIGHT-USBC',
+    codigo_barras: '7891234560108',
+    estoque: 2,
+    estoque_minimo: 5,
+    localizacao: 'Prateleira A1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_cabo_kimaster_c2m',
+    nome: 'Cabo Kimaster Tipo-C (2 metros)',
+    categoria: 'Cabos',
+    marca: 'Kimaster',
+    codigo: 'CAB-KIM-C2M',
+    codigo_barras: '7891234560109',
+    estoque: 0,
+    estoque_minimo: 5,
+    localizacao: 'Prateleira A1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_cabo_kimaster_c2c_2m',
+    nome: 'Cabo Kimaster Tipo-C para Tipo-C (2 metros)',
+    categoria: 'Cabos',
+    marca: 'Kimaster',
+    codigo: 'CAB-KIM-C2C2M',
+    codigo_barras: '7891234560110',
+    estoque: 1,
+    estoque_minimo: 5,
+    localizacao: 'Prateleira A1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
   // Carregadores
   {
     id: 'prod_carr_1',
@@ -140,6 +338,48 @@ const initialProducts: Product[] = [
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   },
+  {
+    id: 'prod_carregador_simples_usbc',
+    nome: 'Carregador Simples Tipo-C',
+    categoria: 'Carregadores',
+    marca: 'Kimaster',
+    codigo: 'CAR-SIM-USBC',
+    codigo_barras: '7891234560204',
+    estoque: 5,
+    estoque_minimo: 5,
+    localizacao: 'Prateleira B1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_carregador_kim_turbo_usbc',
+    nome: 'Carregador Kimaster Turbo Tipo-C',
+    categoria: 'Carregadores',
+    marca: 'Kimaster',
+    codigo: 'CAR-KIM-TURBO-USBC',
+    codigo_barras: '7891234560205',
+    estoque: 5,
+    estoque_minimo: 5,
+    localizacao: 'Prateleira B1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_carregador_kim_turbo_light',
+    nome: 'Carregador Kimaster Turbo Lightning',
+    categoria: 'Carregadores',
+    marca: 'Kimaster',
+    codigo: 'CAR-KIM-TURBO-LIGHT',
+    codigo_barras: '7891234560206',
+    estoque: 5,
+    estoque_minimo: 5,
+    localizacao: 'Prateleira B1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
   // Fones
   {
     id: 'prod_fone_1',
@@ -162,7 +402,7 @@ const initialProducts: Product[] = [
     marca: 'SoundPro',
     codigo: 'FON-USBC',
     codigo_barras: '7891234560302',
-    estoque: 16,
+    estoque: 3,
     estoque_minimo: 4,
     localizacao: 'Vitrine V1',
     ativo: true,
@@ -178,6 +418,34 @@ const initialProducts: Product[] = [
     codigo_barras: '7891234560303',
     estoque: 22,
     estoque_minimo: 5,
+    localizacao: 'Vitrine V1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_fone_kimaster_tws350',
+    nome: 'Fone Kimaster TWS-350',
+    categoria: 'Fones',
+    marca: 'Kimaster',
+    codigo: 'FON-KIM-TWS350',
+    codigo_barras: '7891234560304',
+    estoque: 0,
+    estoque_minimo: 3,
+    localizacao: 'Vitrine V1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_fone_kaidi_kd788',
+    nome: 'Fone Kaidi KD-788',
+    categoria: 'Fones',
+    marca: 'Kaidi',
+    codigo: 'FON-KAI-KD788',
+    codigo_barras: '7891234560305',
+    estoque: 5,
+    estoque_minimo: 3,
     localizacao: 'Vitrine V1',
     ativo: true,
     created_at: new Date().toISOString(),
@@ -316,10 +584,18 @@ function getUsers(): (User & { senha_hash: string })[] {
 }
 
 function getProducts(): Product[] {
-  const prods = getStored<Product[]>(PRODUCTS_KEY, initialProducts);
+  const hasInitKey = localStorage.getItem(PRODUCTS_KEY) !== null;
+  let prods = getStored<Product[]>(PRODUCTS_KEY, initialProducts);
+  
+  if (!hasInitKey && prods.length === 0) {
+    prods = [...initialProducts];
+    setStored(PRODUCTS_KEY, prods);
+  }
+
   const clean = prods.filter(
     (p) => !p.id.startsWith('test_prod_') && !p.nome.includes('[BOT_TEST]')
   );
+
   if (clean.length !== prods.length) {
     setStored(PRODUCTS_KEY, clean);
   }
@@ -327,7 +603,30 @@ function getProducts(): Product[] {
 }
 
 function getCategories(): Category[] {
-  return getStored(CATEGORIES_KEY, initialCategories);
+  const hasInitKey = localStorage.getItem(CATEGORIES_KEY) !== null;
+  let cats = getStored<Category[]>(CATEGORIES_KEY, initialCategories);
+
+  if (!hasInitKey && cats.length === 0) {
+    cats = [...initialCategories];
+    setStored(CATEGORIES_KEY, cats);
+  }
+
+  const seenIds = new Set<string>();
+  const seenNames = new Set<string>();
+  const uniqueCats: Category[] = [];
+
+  for (const c of cats) {
+    if (!c || !c.nome) continue;
+    const normName = c.nome.trim().toLowerCase();
+    const catId = c.id || `cat_${normName}`;
+    if (!normName) continue;
+    if (seenIds.has(catId) || seenNames.has(normName)) continue;
+    seenIds.add(catId);
+    seenNames.add(normName);
+    uniqueCats.push({ ...c, id: catId, nome: c.nome.trim() });
+  }
+
+  return uniqueCats;
 }
 
 function getMovements(): Movement[] {
@@ -590,9 +889,14 @@ export const localStore = {
 
   createCategory: (nome: string): Category => {
     const categories = getCategories();
+    const cleanName = nome.trim();
+    const existing = categories.find(c => c.nome.toLowerCase() === cleanName.toLowerCase());
+    if (existing) {
+      return existing;
+    }
     const newCat: Category = {
-      id: `cat_${Date.now()}`,
-      nome: nome.trim(),
+      id: `cat_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      nome: cleanName,
       created_at: new Date().toISOString()
     };
     categories.push(newCat);
@@ -697,6 +1001,22 @@ export const localStore = {
 
     products[idx].estoque += quantidade;
     products[idx].updated_at = new Date().toISOString();
+
+    if (products[idx].estoque >= 0) {
+      const divs = getStored<StockDivergenceRecord[]>(DIVERGENCES_KEY, []);
+      let changed = false;
+      divs.forEach(d => {
+        if (d.produto_id === produto_id && d.status === 'Aberta') {
+          d.status = 'Corrigida';
+          d.estoque_atual = products[idx].estoque;
+          d.data_correcao = new Date().toISOString();
+          d.updated_at = new Date().toISOString();
+          changed = true;
+        }
+      });
+      if (changed) setStored(DIVERGENCES_KEY, divs);
+    }
+
     setStored(PRODUCTS_KEY, products);
 
     const movements = getMovements();
@@ -717,7 +1037,7 @@ export const localStore = {
     return products[idx];
   },
 
-  addStockExit: (items: { produtoId: string; quantidade: number }[], observacao?: string): { message: string; movements: Movement[] } => {
+  addStockExit: (items: { produtoId: string; quantidade: number }[], observacao?: string, user?: { id: string; nome: string }): { message: string; movements: Movement[] } => {
     const products = getProducts();
     const movements = getMovements();
     const createdMovements: Movement[] = [];
@@ -725,19 +1045,41 @@ export const localStore = {
     for (const item of items) {
       const idx = products.findIndex(p => p.id === item.produtoId);
       if (idx !== -1) {
-        if (products[idx].estoque < item.quantidade) {
-          throw new Error(`Estoque insuficiente para "${products[idx].nome}". Disponível: ${products[idx].estoque} UN.`);
-        }
         products[idx].estoque -= item.quantidade;
         products[idx].updated_at = new Date().toISOString();
+
+        if (products[idx].estoque < 0) {
+          const divs = getStored<StockDivergenceRecord[]>(DIVERGENCES_KEY, []);
+          const existingIdx = divs.findIndex(d => d.produto_id === products[idx].id && d.status === 'Aberta');
+          if (existingIdx >= 0) {
+            divs[existingIdx].estoque_atual = products[idx].estoque;
+            divs[existingIdx].updated_at = new Date().toISOString();
+          } else {
+            divs.unshift({
+              id: `div_${products[idx].id}_${Date.now()}`,
+              produto_id: products[idx].id,
+              produto_nome: products[idx].nome,
+              categoria: products[idx].categoria,
+              estoque_no_momento: products[idx].estoque,
+              estoque_atual: products[idx].estoque,
+              data_primeira_divergencia: new Date().toISOString(),
+              usuario_id: user?.id || 'usr_current',
+              usuario_nome: user?.nome || 'Operador',
+              status: 'Aberta',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+          }
+          setStored(DIVERGENCES_KEY, divs);
+        }
 
         const mov: Movement = {
           id: `mov_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
           produto_id: item.produtoId,
           produto_nome: products[idx].nome,
           produto_codigo: products[idx].codigo,
-          usuario_id: 'usr_current',
-          usuario_nome: 'Operador',
+          usuario_id: user?.id || 'usr_current',
+          usuario_nome: user?.nome || 'Operador',
           tipo: 'saida',
           quantidade: item.quantidade,
           observacao,
@@ -753,6 +1095,7 @@ export const localStore = {
 
     return { message: 'Saída registrada com sucesso', movements: createdMovements };
   },
+
 
   getDashboardStats: (): DashboardStats => {
     const products = getProducts().filter(p => p.ativo);
@@ -1004,8 +1347,12 @@ export const localStore = {
     return config;
   },
 
-  getUsers: (): (User & { senha_hash: string })[] => {
-    return getStored(USERS_KEY, initialUsers);
+  getUsersList: (): User[] => {
+    return getUsers().map(({ senha_hash, ...u }) => u);
+  },
+
+  saveUsersToLocal: (users: User[]) => {
+    setStored(USERS_KEY, users);
   },
 
   getProducts: (): Product[] => {
@@ -1051,6 +1398,64 @@ export const localStore = {
   saveDemandsToLocal: (demands: CustomerDemand[]) => {
     setStored(DEMANDS_KEY, demands);
   },
+
+  getDivergences: (): StockDivergenceRecord[] => {
+    const divs = getStored<StockDivergenceRecord[]>(DIVERGENCES_KEY, []);
+    const activeProds = getProducts().filter(p => p.ativo);
+    let updated = [...divs];
+    let changed = false;
+
+    // Reconciliation check for any product with estoque < 0
+    for (const p of activeProds) {
+      if (p.estoque < 0) {
+        const hasOpen = updated.some(d => d.produto_id === p.id && d.status === 'Aberta');
+        if (!hasOpen) {
+          updated.unshift({
+            id: `div_${p.id}_${Date.now()}`,
+            produto_id: p.id,
+            produto_nome: p.nome,
+            categoria: p.categoria,
+            estoque_no_momento: p.estoque,
+            estoque_atual: p.estoque,
+            data_primeira_divergencia: p.updated_at || p.created_at || new Date().toISOString(),
+            usuario_id: 'usr_current',
+            usuario_nome: 'Frente de Caixa (Venda acima do estoque)',
+            status: 'Aberta',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+          changed = true;
+        }
+      }
+    }
+
+    // Auto-resolve any divergence where product.estoque >= 0
+    updated.forEach(d => {
+      const prod = activeProds.find(p => p.id === d.produto_id);
+      if (prod) {
+        if (prod.estoque >= 0 && d.status === 'Aberta') {
+          d.status = 'Corrigida';
+          d.estoque_atual = prod.estoque;
+          d.data_correcao = d.data_correcao || new Date().toISOString();
+          d.updated_at = new Date().toISOString();
+          changed = true;
+        } else if (d.estoque_atual !== prod.estoque) {
+          d.estoque_atual = prod.estoque;
+          changed = true;
+        }
+      }
+    });
+
+    if (changed) {
+      setStored(DIVERGENCES_KEY, updated);
+    }
+    return updated;
+  },
+
+  saveDivergencesToLocal: (divergences: StockDivergenceRecord[]) => {
+    setStored(DIVERGENCES_KEY, divergences);
+  },
+
 
   saveStockSnapshot: (): Record<string, number> => {
     const products = getProducts();
@@ -1114,6 +1519,334 @@ export const localStore = {
 
     localStorage.removeItem('bytecas_stock_snapshot');
     return { success: true };
+  },
+
+  // --- RECURSOS EXPANDIDOS DE ESTOQUE ---
+
+  // 1. Favoritos
+  toggleFavoriteProduct: (id: string): Product => {
+    const products = getProducts();
+    const idx = products.findIndex(p => p.id === id);
+    if (idx === -1) throw new Error('Produto não encontrado.');
+    products[idx].favorito = !products[idx].favorito;
+    products[idx].updated_at = new Date().toISOString();
+    setStored(PRODUCTS_KEY, products);
+    return products[idx];
+  },
+
+  // 2. Lixeira Inteligente
+  moveToRecycleBin: (id: string, user: string = 'Sistema'): Product => {
+    const products = getProducts();
+    const idx = products.findIndex(p => p.id === id);
+    if (idx === -1) throw new Error('Produto não encontrado.');
+    products[idx].lixeira = true;
+    products[idx].lixeira_data = new Date().toISOString();
+    products[idx].alterado_por = user;
+    products[idx].updated_at = new Date().toISOString();
+    setStored(PRODUCTS_KEY, products);
+
+    localStore.addAuditLog({
+      usuario: user,
+      acao: 'EXCLUSAO_LOGICA',
+      descricao: `Produto "${products[idx].nome}" (${products[idx].codigo}) movido para a Lixeira Inteligente.`
+    });
+
+    return products[idx];
+  },
+
+  restoreFromRecycleBin: (id: string, user: string = 'Sistema'): Product => {
+    const products = getProducts();
+    const idx = products.findIndex(p => p.id === id);
+    if (idx === -1) throw new Error('Produto não encontrado.');
+    products[idx].lixeira = false;
+    products[idx].lixeira_data = undefined;
+    products[idx].alterado_por = user;
+    products[idx].updated_at = new Date().toISOString();
+    setStored(PRODUCTS_KEY, products);
+
+    localStore.addAuditLog({
+      usuario: user,
+      acao: 'EDICAO',
+      descricao: `Produto "${products[idx].nome}" (${products[idx].codigo}) restaurado da Lixeira.`
+    });
+
+    return products[idx];
+  },
+
+  purgeFromRecycleBin: (id: string, user: string = 'Sistema'): void => {
+    let products = getProducts();
+    const prod = products.find(p => p.id === id);
+    if (prod) {
+      products = products.filter(p => p.id !== id);
+      setStored(PRODUCTS_KEY, products);
+      localStore.addAuditLog({
+        usuario: user,
+        acao: 'EXCLUSAO_LOGICA',
+        descricao: `Exclusão definitiva permanente do produto "${prod.nome}" (${prod.codigo}).`
+      });
+    }
+  },
+
+  // 3. Calendário Interno
+  getCalendarEvents: (): CalendarEvent[] => {
+    return getStored<CalendarEvent[]>(CALENDAR_KEY, initialCalendarEvents);
+  },
+
+  addCalendarEvent: (eventData: Omit<CalendarEvent, 'id' | 'created_at'>): CalendarEvent => {
+    const events = localStore.getCalendarEvents();
+    const newEvent: CalendarEvent = {
+      ...eventData,
+      id: `cal_${Date.now()}`,
+      created_at: new Date().toISOString()
+    };
+    events.unshift(newEvent);
+    setStored(CALENDAR_KEY, events);
+    return newEvent;
+  },
+
+  deleteCalendarEvent: (id: string): void => {
+    const events = localStore.getCalendarEvents().filter(e => e.id !== id);
+    setStored(CALENDAR_KEY, events);
+  },
+
+  // 4. Mural de Avisos
+  getAnnouncements: (): Announcement[] => {
+    return getStored<Announcement[]>(ANNOUNCEMENTS_KEY, initialAnnouncements);
+  },
+
+  addAnnouncement: (annData: Omit<Announcement, 'id' | 'created_at'>): Announcement => {
+    const anns = localStore.getAnnouncements();
+    const newAnn: Announcement = {
+      ...annData,
+      id: `ann_${Date.now()}`,
+      created_at: new Date().toISOString()
+    };
+    anns.unshift(newAnn);
+    setStored(ANNOUNCEMENTS_KEY, anns);
+    return newAnn;
+  },
+
+  deleteAnnouncement: (id: string): void => {
+    const anns = localStore.getAnnouncements().filter(a => a.id !== id);
+    setStored(ANNOUNCEMENTS_KEY, anns);
+  },
+
+  // 5. Metas de Organização
+  getStoreGoals: (): StoreGoal[] => {
+    return getStored<StoreGoal[]>(GOALS_KEY, initialGoals);
+  },
+
+  addStoreGoal: (goalData: Omit<StoreGoal, 'id' | 'created_at'>): StoreGoal => {
+    const goals = localStore.getStoreGoals();
+    const newGoal: StoreGoal = {
+      ...goalData,
+      id: `goal_${Date.now()}`,
+      created_at: new Date().toISOString()
+    };
+    goals.unshift(newGoal);
+    setStored(GOALS_KEY, goals);
+    return newGoal;
+  },
+
+  toggleStoreGoal: (id: string): StoreGoal => {
+    const goals = localStore.getStoreGoals();
+    const idx = goals.findIndex(g => g.id === id);
+    if (idx !== -1) {
+      goals[idx].concluida = !goals[idx].concluida;
+      if (goals[idx].concluida) {
+        goals[idx].atual_valor = goals[idx].meta_valor;
+      }
+      setStored(GOALS_KEY, goals);
+      return goals[idx];
+    }
+    throw new Error('Meta não encontrada');
+  },
+
+  // 6. Rascunhos de Movimentação
+  getDraftMovements: (): DraftMovement[] => {
+    return getStored<DraftMovement[]>(DRAFTS_KEY, []);
+  },
+
+  saveDraftMovement: (draftData: Omit<DraftMovement, 'id' | 'data_salvo'>): DraftMovement => {
+    const drafts = localStore.getDraftMovements();
+    const newDraft: DraftMovement = {
+      ...draftData,
+      id: `draft_${Date.now()}`,
+      data_salvo: new Date().toISOString()
+    };
+    drafts.unshift(newDraft);
+    setStored(DRAFTS_KEY, drafts);
+    return newDraft;
+  },
+
+  deleteDraftMovement: (id: string): void => {
+    const drafts = localStore.getDraftMovements().filter(d => d.id !== id);
+    setStored(DRAFTS_KEY, drafts);
+  },
+
+  // 7. Dashboard Personalizável
+  getDashboardConfig: (): DashboardCardConfig => {
+    return getStored<DashboardCardConfig>(DASHBOARD_CONFIG_KEY, initialDashboardConfig);
+  },
+
+  setDashboardConfig: (cfg: Partial<DashboardCardConfig>): DashboardCardConfig => {
+    const current = localStore.getDashboardConfig();
+    const updated = { ...current, ...cfg };
+    setStored(DASHBOARD_CONFIG_KEY, updated);
+    return updated;
+  },
+
+  // 8. Configuração de Aparência
+  getStoreAppearance: (): StoreAppearance => {
+    return getStored<StoreAppearance>(APPEARANCE_KEY, initialAppearance);
+  },
+
+  setStoreAppearance: (appData: Partial<StoreAppearance>): StoreAppearance => {
+    const current = localStore.getStoreAppearance();
+    const updated = { ...current, ...appData };
+    setStored(APPEARANCE_KEY, updated);
+    return updated;
+  },
+
+  // 9. Inventário Guiado
+  getInventoryAuditSessions: (): InventoryAuditSession[] => {
+    return getStored<InventoryAuditSession[]>(AUDIT_SESSIONS_KEY, []);
+  },
+
+  saveInventoryAuditSession: (session: InventoryAuditSession): InventoryAuditSession => {
+    const sessions = localStore.getInventoryAuditSessions();
+    const idx = sessions.findIndex(s => s.id === session.id);
+    if (idx !== -1) {
+      sessions[idx] = session;
+    } else {
+      sessions.unshift(session);
+    }
+    setStored(AUDIT_SESSIONS_KEY, sessions);
+    return session;
+  },
+
+  // 10. Auditoria e Registro Rápido
+  addAuditLog: (logData: Partial<AuditLog>): AuditLog => {
+    const logs = getStored<AuditLog[]>(HISTORY_KEY, []);
+    const newLog: AuditLog = {
+      id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      usuario: logData.usuario || 'Sistema',
+      acao: logData.acao || 'CONFIG',
+      descricao: logData.descricao || 'Ação executada no sistema.',
+      created_at: new Date().toISOString()
+    };
+    logs.unshift(newLog);
+    setStored(HISTORY_KEY, logs);
+    return newLog;
+  },
+
+  getAuditLogs: (): AuditLog[] => {
+    return getStored<AuditLog[]>(HISTORY_KEY, []);
+  },
+
+  registerEntry: (productId: string, quantidade: number, usuario: string = 'Sistema', observacao?: string): Movement => {
+    const products = getProducts();
+    const prodIdx = products.findIndex(p => p.id === productId);
+    if (prodIdx === -1) throw new Error('Produto não encontrado');
+
+    products[prodIdx].estoque += quantidade;
+    products[prodIdx].updated_at = new Date().toISOString();
+    setStored(PRODUCTS_KEY, products);
+
+    const movements = getMovements();
+    const newMov: Movement = {
+      id: `mov_${Date.now()}`,
+      produto_id: productId,
+      produto_nome: products[prodIdx].nome,
+      produto_codigo: products[prodIdx].codigo,
+      tipo: 'entrada',
+      quantidade,
+      usuario_id: 'usr_local',
+      usuario_nome: usuario,
+      observacao: observacao || 'Entrada via Inventário/Auditoria',
+      created_at: new Date().toISOString()
+    };
+    movements.unshift(newMov);
+    setStored(MOVEMENTS_KEY, movements);
+
+    localStore.addAuditLog({
+      usuario,
+      acao: 'ENTRADA',
+      descricao: `Entrada de ${quantidade} un do produto "${products[prodIdx].nome}".`
+    });
+
+    return newMov;
+  },
+
+  registerSale: (productId: string, quantidade: number, usuario: string = 'Sistema', observacao?: string): Movement => {
+    const products = getProducts();
+    const prodIdx = products.findIndex(p => p.id === productId);
+    if (prodIdx === -1) throw new Error('Produto não encontrado');
+
+    if (products[prodIdx].estoque < quantidade) {
+      throw new Error(`Estoque insuficiente. Disponível: ${products[prodIdx].estoque}`);
+    }
+
+    products[prodIdx].estoque -= quantidade;
+    products[prodIdx].updated_at = new Date().toISOString();
+    setStored(PRODUCTS_KEY, products);
+
+    const movements = getMovements();
+    const newMov: Movement = {
+      id: `mov_${Date.now()}`,
+      produto_id: productId,
+      produto_nome: products[prodIdx].nome,
+      produto_codigo: products[prodIdx].codigo,
+      tipo: 'saida',
+      quantidade,
+      usuario_id: 'usr_local',
+      usuario_nome: usuario,
+      observacao: observacao || 'Saída/Ajuste via Inventário/Auditoria',
+      created_at: new Date().toISOString()
+    };
+    movements.unshift(newMov);
+    setStored(MOVEMENTS_KEY, movements);
+
+    localStore.addAuditLog({
+      usuario,
+      acao: 'SAIDA',
+      descricao: `Ajuste/Saída de ${quantidade} un do produto "${products[prodIdx].nome}".`
+    });
+
+    return newMov;
+  },
+
+  addProduct: (prodData: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Product => {
+    const products = getProducts();
+    const newProd: Product = {
+      ...prodData,
+      id: `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      ativo: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    products.unshift(newProd);
+    setStored(PRODUCTS_KEY, products);
+
+    localStore.addAuditLog({
+      usuario: prodData.alterado_por || 'Sistema',
+      acao: 'CADASTRO',
+      descricao: `Novo produto "${newProd.nome}" (${newProd.codigo}) cadastrado.`
+    });
+
+    return newProd;
+  },
+
+  addCategory: (nome: string): Category => {
+    const categories = getCategories();
+    const newCat: Category = {
+      id: `cat_${Date.now()}`,
+      nome: nome.trim(),
+      created_at: new Date().toISOString()
+    };
+    categories.push(newCat);
+    setStored(CATEGORIES_KEY, categories);
+    return newCat;
   }
 };
 

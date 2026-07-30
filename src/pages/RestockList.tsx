@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
 import { firestoreSync } from '../services/firestoreSync';
 import { Product, CustomerDemand } from '../types';
@@ -16,8 +16,11 @@ import {
   ArrowRight,
   Calculator,
   UserX,
-  Sparkles,
-  TrendingUp
+  TrendingUp,
+  Layers,
+  ChevronDown,
+  ChevronUp,
+  FileText
 } from 'lucide-react';
 
 interface RestockItem extends Product {
@@ -42,8 +45,14 @@ export const RestockList: React.FC<RestockListProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todas');
   const [categories, setCategories] = useState<string[]>([]);
+  
+  // Copy notification states
   const [copied, setCopied] = useState(false);
-  const [copyNotification, setCopyNotification] = useState(false);
+  const [copyNotification, setCopyNotification] = useState<string | null>(null);
+
+  // Copy Options Modal State
+  const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
+  const [selectedCopyCategory, setSelectedCopyCategory] = useState<string>('');
 
   const loadData = async () => {
     setLoading(true);
@@ -70,7 +79,8 @@ export const RestockList: React.FC<RestockListProps> = ({
       setLoading(false);
     });
     const unsubCats = firestoreSync.subscribeCategories((allCats) => {
-      setCategories((allCats || []).map((c) => c.nome));
+      const names = Array.from(new Set((allCats || []).map((c) => c.nome.trim()).filter(Boolean)));
+      setCategories(names);
     });
     const unsubDemands = firestoreSync.subscribeDemands((allDemands) => {
       setDemands(allDemands || []);
@@ -108,41 +118,97 @@ export const RestockList: React.FC<RestockListProps> = ({
     return matchesSearch && matchesCategory;
   });
 
-  // Group filtered restock items by Category
-  const groupedRestockItems = React.useMemo(() => {
+  // Group restock items strictly by Category and sort inside alphabetically
+  const groupedRestockItems = useMemo(() => {
     const groups: { [catName: string]: RestockItem[] } = {};
-    for (const item of filteredRestockItems) {
+
+    // Sort items alphabetically by product name
+    const sortedItems = [...filteredRestockItems].sort((a, b) =>
+      a.nome.localeCompare(b.nome, 'pt-BR')
+    );
+
+    for (const item of sortedItems) {
       const cat = item.categoria || 'Outros';
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(item);
     }
-    return groups;
+
+    // Sort categories alphabetically
+    const sortedGroups: { [catName: string]: RestockItem[] } = {};
+    Object.keys(groups)
+      .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+      .forEach(cat => {
+        sortedGroups[cat] = groups[cat];
+      });
+
+    return sortedGroups;
   }, [filteredRestockItems]);
-
-  const copySingleItem = (item: RestockItem) => {
-    const line = `• ${item.nome} (CÓD: ${item.codigo}) - Comprar: ${item.sugerido_compra} un (Estoque: ${item.estoque} un / Mín: ${item.estoque_minimo} un)`;
-    navigator.clipboard.writeText(line);
-    setCopyNotification(true);
-    setTimeout(() => setCopyNotification(false), 2000);
-  };
-
-  const copyCategoryGroup = (catName: string, items: RestockItem[]) => {
-    let text = `📂 *CATEGORIA: ${catName.toUpperCase()}*\n`;
-    items.forEach((item, idx) => {
-      text += `${idx + 1}. *${item.nome}* [${item.codigo}]\n   👉 Comprar: *${item.sugerido_compra} un* (Atual: ${item.estoque} un)\n`;
-    });
-    navigator.clipboard.writeText(text);
-    setCopyNotification(true);
-    setTimeout(() => setCopyNotification(false), 2500);
-  };
 
   const totalUnidadesComprar = restockItems.reduce(
     (acc, item) => acc + item.sugerido_compra,
     0
   );
 
-  // Generate copyable formatted text for WhatsApp / Purchasing Manager
-  const generateFormattedListText = () => {
+  /**
+   * Generates clean formatted text as strictly specified:
+   * 
+   * CABOS
+   * 
+   * Cabo Lightning
+   * Cabo Micro USB
+   * Cabo Tipo-C
+   * 
+   * CAPINHAS
+   * 
+   * Capinha A36
+   * Capinha iPhone 15
+   * Capinha S24
+   */
+  const generateCleanTextList = (
+    filterMode: 'all' | 'outOfStock' | 'lowStock' | 'category',
+    targetCatName?: string
+  ) => {
+    let itemsToInclude = restockItems;
+
+    if (filterMode === 'outOfStock') {
+      itemsToInclude = restockItems.filter(p => p.estoque === 0);
+    } else if (filterMode === 'lowStock') {
+      itemsToInclude = restockItems.filter(p => p.estoque > 0 && p.estoque <= p.estoque_minimo);
+    } else if (filterMode === 'category' && targetCatName) {
+      itemsToInclude = restockItems.filter(p => (p.categoria || 'Outros') === targetCatName);
+    }
+
+    if (itemsToInclude.length === 0) {
+      return 'Nenhum produto encontrado para este filtro.';
+    }
+
+    // Group items by category
+    const groups: { [catName: string]: RestockItem[] } = {};
+    for (const item of itemsToInclude) {
+      const cat = (item.categoria || 'OUTROS').toUpperCase();
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    }
+
+    // Sort categories alphabetically
+    const sortedCategories = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+    const categoryBlocks: string[] = [];
+
+    for (const catName of sortedCategories) {
+      // Sort products alphabetically inside category
+      const sortedProds = groups[catName].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+      const prodLines = sortedProds.map(p => p.nome).join('\n');
+      categoryBlocks.push(`${catName}\n\n${prodLines}`);
+    }
+
+    return categoryBlocks.join('\n\n');
+  };
+
+  /**
+   * Generates a detailed technical report with quantities for suppliers
+   */
+  const generateDetailedReportText = () => {
     const dataHora = new Date().toLocaleString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
@@ -151,51 +217,73 @@ export const RestockList: React.FC<RestockListProps> = ({
       minute: '2-digit'
     });
 
-    let text = `📋 *LISTA AUTOMÁTICA DE REPOSIÇÃO DE ESTOQUE*\n`;
-    text += `🏢 *Empresa:* Bytecas Loja e Estoque\n`;
-    text += `📅 *Emissão:* ${dataHora}\n`;
+    let text = `📋 LISTA DETALHADA DE REPOSIÇÃO - BYTECAS\n`;
+    text += `Emissão: ${dataHora}\n`;
     text += `--------------------------------------------------\n\n`;
 
-    if (restockItems.length === 0) {
-      text += `✅ *Nenhum produto cadastrado precisando de reposição no momento.*\n`;
-      text += `Todos os itens cadastrados estão com estoque acima do nível mínimo.\n\n`;
-    } else {
-      text += `📦 *ITENS DO CATÁLOGO COM NECESSIDADE DE COMPRA:*\n`;
-      restockItems.forEach((item, index) => {
-        text += `${index + 1}. *[CÓD: ${item.codigo}] ${item.nome}*\n`;
-        text += `   • Categoria: ${item.categoria} | Marca: ${item.marca}\n`;
-        text += `   • Localização: ${item.localizacao}\n`;
-        text += `   • Estoque Atual: ${item.estoque} un | Mínimo: ${item.estoque_minimo} un\n`;
-        text += `   👉 *SUGESTÃO DE COMPRA: ${item.sugerido_compra} un*\n\n`;
-      });
+    const groups: { [catName: string]: RestockItem[] } = {};
+    for (const item of restockItems) {
+      const cat = (item.categoria || 'Outros').toUpperCase();
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
     }
 
-    if (unregisteredDemands.length > 0) {
-      text += `--------------------------------------------------\n`;
-      text += `🚨 *PRODUTOS NÃO CADASTRADOS SOLICITADOS POR CLIENTES:*\n`;
-      unregisteredDemands.forEach((item, index) => {
-        text += `${index + 1}. *${item.produto_nome}*\n`;
-        text += `   • Procura de clientes: *${item.quantidade_solicitacoes} pessoa(s)*\n`;
-        text += `   • Status: Produto Não Cadastrado\n\n`;
+    const sortedCats = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+    for (const catName of sortedCats) {
+      text += `📦 ${catName}\n`;
+      const sortedProds = groups[catName].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+      sortedProds.forEach(item => {
+        text += `• ${item.nome} [CÓD: ${item.codigo}]\n`;
+        text += `  Estoque Atual: ${item.estoque} un | Sugestão Compra: ${item.sugerido_compra} un\n`;
       });
+      text += `\n`;
     }
 
     text += `--------------------------------------------------\n`;
-    text += `📊 *RESUMO PARA COMPRA:*\n`;
-    text += `• Total de produtos para repor: *${restockItems.length} item(ns)*\n`;
-    text += `• Total de unidades recomendadas: *${totalUnidadesComprar} unidades*\n`;
-    text += `• Novos produtos solicitados por clientes: *${unregisteredDemands.length} item(ns)*\n\n`;
-    text += `_Relatório gerado matematicamente pelo Sistema de Gestão de Estoque._`;
+    text += `Total de Itens: ${restockItems.length} | Total Unidades: ${totalUnidadesComprar} un`;
     return text;
   };
 
-  const handleCopyList = () => {
-    const formattedText = generateFormattedListText();
-    navigator.clipboard.writeText(formattedText).then(() => {
+  const handleCopyCleanList = () => {
+    const text = generateCleanTextList('all');
+    navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
-      setCopyNotification(true);
+      setCopyNotification('Lista formatada limpa copiada com sucesso!');
       setTimeout(() => setCopied(false), 2500);
-      setTimeout(() => setCopyNotification(false), 4000);
+      setTimeout(() => setCopyNotification(null), 4000);
+    });
+  };
+
+  const handleCopyOption = (
+    mode: 'all' | 'outOfStock' | 'lowStock' | 'category' | 'detailed',
+    catName?: string
+  ) => {
+    let text = '';
+    let successMsg = '';
+
+    if (mode === 'detailed') {
+      text = generateDetailedReportText();
+      successMsg = 'Lista técnica detalhada copiada com sucesso!';
+    } else {
+      text = generateCleanTextList(mode, catName);
+      if (mode === 'all') successMsg = 'Toda a lista copiada no formato limpo!';
+      else if (mode === 'outOfStock') successMsg = 'Produtos sem estoque copiados!';
+      else if (mode === 'lowStock') successMsg = 'Produtos com estoque baixo copiados!';
+      else if (mode === 'category') successMsg = `Categoria "${catName}" copiada!`;
+    }
+
+    navigator.clipboard.writeText(text).then(() => {
+      setIsCopyModalOpen(false);
+      setCopyNotification(successMsg);
+      setTimeout(() => setCopyNotification(null), 4000);
+    });
+  };
+
+  const copySingleItemName = (itemName: string) => {
+    navigator.clipboard.writeText(itemName).then(() => {
+      setCopyNotification(`Nome "${itemName}" copiado!`);
+      setTimeout(() => setCopyNotification(null), 3000);
     });
   };
 
@@ -216,17 +304,18 @@ export const RestockList: React.FC<RestockListProps> = ({
           <div>
             <div className="inline-flex items-center space-x-2 bg-blue-500/20 px-3 py-1 rounded-full text-blue-300 text-xs font-medium mb-2 border border-blue-500/30">
               <Calculator className="w-3.5 h-3.5 text-blue-400" />
-              <span>Análise Matemática de Estoque • 100% Automático</span>
+              <span>Organização por Categoria • Ordem Alfabética</span>
             </div>
-            <h2 className="text-2xl font-bold tracking-tight">Lista Automática de Reposição</h2>
+            <h2 className="text-2xl font-bold tracking-tight">Lista de Reposição de Estoque</h2>
             <p className="text-xs text-slate-300 mt-1 max-w-xl">
-              Lista gerada exclusivamente com base nas quantidades disponíveis e no estoque mínimo definido. Copie os dados formatados com um clique para enviar ao comprador.
+              Organizada estritamente por categoria em ordem alfabética. Copie com um clique no formato limpo sem símbolos técnicos.
             </p>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Primary Copy Button */}
             <button
-              onClick={handleCopyList}
+              onClick={handleCopyCleanList}
               disabled={products.length === 0}
               className={`px-5 py-3 rounded-xl text-xs font-extrabold transition-all shadow-md flex items-center space-x-2.5 ${
                 copied
@@ -235,8 +324,19 @@ export const RestockList: React.FC<RestockListProps> = ({
               }`}
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              <span>{copied ? 'Lista Copiada!' : 'Copiar Lista de Reposição'}</span>
+              <span>{copied ? 'Lista Copiada!' : 'Copiar Lista'}</span>
             </button>
+
+            {/* Copy Options Menu Trigger */}
+            <button
+              onClick={() => setIsCopyModalOpen(true)}
+              className="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
+              title="Opções avançadas de cópia"
+            >
+              <FileText className="w-4 h-4 text-blue-400" />
+              <span>Opções de Cópia</span>
+            </button>
+
             <button
               onClick={loadData}
               className="p-3 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl transition-all"
@@ -256,14 +356,14 @@ export const RestockList: React.FC<RestockListProps> = ({
               <Check className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-bold">Lista copiada com sucesso!</p>
+              <p className="text-xs font-bold">{copyNotification}</p>
               <p className="text-[11px] text-emerald-700">
-                O texto formatado já está na sua área de transferência. Basta colar (Ctrl+V) no WhatsApp ou e-mail do fornecedor.
+                O conteúdo formatado já está na sua área de transferência. Basta colar (Ctrl+V) onde desejar.
               </p>
             </div>
           </div>
           <button
-            onClick={() => setCopyNotification(false)}
+            onClick={() => setCopyNotification(null)}
             className="text-emerald-700 text-xs font-semibold hover:underline"
           >
             Fechar
@@ -271,7 +371,7 @@ export const RestockList: React.FC<RestockListProps> = ({
         </div>
       )}
 
-      {/* Database Completely Empty State */}
+      {/* Database Empty State */}
       {products.length === 0 ? (
         <div className="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-2xs text-center max-w-2xl mx-auto my-8 space-y-4">
           <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto border border-blue-100">
@@ -280,7 +380,7 @@ export const RestockList: React.FC<RestockListProps> = ({
           <div>
             <h3 className="text-lg font-bold text-slate-900">Nenhum produto cadastrado no banco de dados</h3>
             <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto leading-relaxed">
-              O sistema iniciou totalmente vazio conforme a especificação. Cadastre os produtos da sua loja e defina o estoque mínimo para ativar a lista de reposição automática.
+              Cadastre os produtos da sua loja e defina o estoque mínimo para ativar a lista de reposição automática.
             </p>
           </div>
           {onNavigateToProducts && (
@@ -329,16 +429,16 @@ export const RestockList: React.FC<RestockListProps> = ({
 
             <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">Fórmula de Cálculo</span>
+                <span className="text-xs font-semibold text-slate-500">Organização Rígida</span>
                 <div className="p-2.5 bg-slate-100 text-slate-600 rounded-xl border border-slate-200">
-                  <Calculator className="w-5 h-5" />
+                  <Layers className="w-5 h-5" />
                 </div>
               </div>
               <div className="mt-3">
                 <span className="text-xs font-bold text-slate-800 block">
-                  (Mínimo × 2) - Estoque
+                  Por Categoria & Ordem Alfabética
                 </span>
-                <span className="text-[10px] text-slate-400 font-medium">Cálculo 100% matemático</span>
+                <span className="text-[10px] text-slate-400 font-medium">Formatação padrão sem exceções</span>
               </div>
             </div>
           </div>
@@ -364,8 +464,8 @@ export const RestockList: React.FC<RestockListProps> = ({
                 className="w-full sm:w-48 py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               >
                 <option value="Todas">Todas as Categorias</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>
+                {categories.map((cat, idx) => (
+                  <option key={`${cat}-${idx}`} value={cat}>
                     {cat}
                   </option>
                 ))}
@@ -373,7 +473,7 @@ export const RestockList: React.FC<RestockListProps> = ({
             </div>
           </div>
 
-          {/* Unregistered Products Demanded by Customers Banner */}
+          {/* Unregistered Customer Demands Banner */}
           {unregisteredDemands.length > 0 && (
             <div className="bg-gradient-to-r from-rose-900 via-slate-900 to-rose-950 text-white p-5 rounded-2xl border border-rose-500/30 shadow-md space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -383,10 +483,10 @@ export const RestockList: React.FC<RestockListProps> = ({
                   </div>
                   <div>
                     <h3 className="text-xs font-extrabold uppercase tracking-wider text-rose-300">
-                      Demanda de Clientes • Produtos Não Cadastrados ({unregisteredDemands.length} Itens)
+                      Procura por Produtos Não Cadastrados ({unregisteredDemands.length} Itens)
                     </h3>
                     <p className="text-xs text-slate-300 mt-0.5">
-                      Estes produtos não existem no sistema mas foram procurados por clientes na loja.
+                      Produtos não cadastrados solicitados por clientes na loja.
                     </p>
                   </div>
                 </div>
@@ -421,7 +521,7 @@ export const RestockList: React.FC<RestockListProps> = ({
             </div>
           )}
 
-          {/* Restock Items Grouped by Category */}
+          {/* Categorized Restock List View */}
           {filteredRestockItems.length === 0 ? (
             <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-2xs text-center py-12">
               <PackageCheck className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
@@ -436,123 +536,263 @@ export const RestockList: React.FC<RestockListProps> = ({
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                    Produtos Agrupados por Categoria ({filteredRestockItems.length} Itens)
-                  </h3>
-                  <p className="text-[10px] text-slate-400">
-                    Copie a lista inteira, uma categoria completa ou itens individuais com um clique
-                  </p>
-                </div>
-                <button
-                  onClick={handleCopyList}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center space-x-1.5 transition-all"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>{copied ? 'Lista Copiada!' : 'Copiar Lista Inteira'}</span>
-                </button>
-              </div>
+              {/* Category Blocks Display */}
+              {Object.entries(groupedRestockItems).map(([catName, items]: [string, RestockItem[]]) => {
+                // Ensure items inside category are sorted alphabetically
+                const sortedItems = [...items].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
-              {Object.entries(groupedRestockItems).map(([catName, items]: [string, RestockItem[]]) => (
-                <div key={catName} className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-                  {/* Category Header */}
-                  <div className="bg-slate-900 text-white p-3.5 px-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-extrabold text-xs uppercase tracking-wider text-blue-400">
-                        📁 {catName}
-                      </span>
-                      <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 text-[10px] rounded-full font-mono font-bold border border-blue-500/30">
-                        {items.length} {items.length === 1 ? 'item' : 'itens'}
-                      </span>
+                return (
+                  <div key={catName} className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
+                    {/* Category Header as specified: 📦 CATEGORIA */}
+                    <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
+                      <div className="flex items-center space-x-2.5">
+                        <span className="text-lg">📦</span>
+                        <h3 className="font-extrabold text-sm tracking-wider uppercase text-blue-300">
+                          {catName}
+                        </h3>
+                        <span className="px-2.5 py-0.5 bg-blue-500/20 text-blue-300 text-[10px] rounded-full font-mono font-bold border border-blue-500/30">
+                          {sortedItems.length} {sortedItems.length === 1 ? 'produto' : 'produtos'}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => handleCopyOption('category', catName)}
+                        className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition border border-white/20 flex items-center space-x-1.5"
+                        title={`Copiar lista limpa da categoria ${catName}`}
+                      >
+                        <Copy className="w-3.5 h-3.5 text-blue-300" />
+                        <span>Copiar Categoria</span>
+                      </button>
                     </div>
 
-                    <button
-                      onClick={() => copyCategoryGroup(catName, items)}
-                      className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition border border-white/20 flex items-center space-x-1.5"
-                      title={`Copiar todos os itens da categoria ${catName}`}
-                    >
-                      <Copy className="w-3 h-3 text-blue-300" />
-                      <span>Copiar Categoria</span>
-                    </button>
-                  </div>
-
-                  {/* Items Table */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100 uppercase text-[10px]">
-                        <tr>
-                          <th className="py-3 px-4">Produto & Código</th>
-                          <th className="py-3 px-4">Marca & Local</th>
-                          <th className="py-3 px-4 text-center">Estoque Atual</th>
-                          <th className="py-3 px-4 text-center">Mínimo</th>
-                          <th className="py-3 px-4 text-center">Sugerido Compra</th>
-                          <th className="py-3 px-4 text-right">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {items.map(item => (
-                          <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
-                            <td className="py-3.5 px-4">
-                              <p className="font-bold text-slate-900">{item.nome}</p>
-                              <span className="text-[10px] text-slate-400 font-mono">
-                                CÓD: {item.codigo}
+                    {/* Bullet List Display of Products */}
+                    <div className="p-4 bg-slate-50/50 border-b border-slate-100">
+                      <ul className="space-y-1.5 text-xs font-medium text-slate-800">
+                        {sortedItems.map(p => (
+                          <li key={p.id} className="flex items-center justify-between group hover:bg-white p-1.5 rounded-lg transition">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-blue-600 font-bold">•</span>
+                              <span className="font-semibold">{p.nome}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                p.estoque === 0
+                                  ? 'bg-rose-100 text-rose-800'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                {p.estoque === 0 ? 'Acabou (0 un)' : `${p.estoque} un`}
                               </span>
-                            </td>
-                            <td className="py-3.5 px-4 text-slate-600">
-                              <p className="font-semibold text-slate-800">{item.marca}</p>
-                              <p className="text-[10px] text-slate-400">{item.localizacao}</p>
-                            </td>
-                            <td className="py-3.5 px-4 text-center">
-                              <span
-                                className={`inline-block font-extrabold px-2.5 py-1 rounded-lg text-xs ${
-                                  item.estoque === 0
-                                    ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                                    : 'bg-amber-100 text-amber-800 border border-amber-200'
-                                }`}
+                              <button
+                                onClick={() => copySingleItemName(p.nome)}
+                                className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition opacity-80 group-hover:opacity-100"
+                                title="Copiar nome do produto"
                               >
-                                {item.estoque} un
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4 text-center font-bold text-slate-600">
-                              {item.estoque_minimo} un
-                            </td>
-                            <td className="py-3.5 px-4 text-center">
-                              <span className="font-black text-blue-700 bg-blue-50 border border-blue-200/80 px-3 py-1 rounded-lg text-xs">
-                                +{item.sugerido_compra} un
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4 text-right">
-                              <div className="flex items-center justify-end space-x-2">
-                                <button
-                                  onClick={() => copySingleItem(item)}
-                                  className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-lg text-[10px] font-bold border border-slate-200 transition flex items-center space-x-1"
-                                  title="Copiar apenas este item"
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Technical Details Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-100/70 text-slate-500 font-bold border-b border-slate-200/80 uppercase text-[10px]">
+                          <tr>
+                            <th className="py-2.5 px-4">Produto & Código</th>
+                            <th className="py-2.5 px-4">Marca & Local</th>
+                            <th className="py-2.5 px-4 text-center">Estoque Atual</th>
+                            <th className="py-2.5 px-4 text-center">Mínimo</th>
+                            <th className="py-2.5 px-4 text-center">Sugerido Compra</th>
+                            <th className="py-2.5 px-4 text-right">Ação</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 bg-white">
+                          {sortedItems.map(item => (
+                            <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
+                              <td className="py-3 px-4">
+                                <p className="font-bold text-slate-900">{item.nome}</p>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  CÓD: {item.codigo}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-slate-600">
+                                <p className="font-semibold text-slate-800">{item.marca}</p>
+                                <p className="text-[10px] text-slate-400">{item.localizacao}</p>
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span
+                                  className={`inline-block font-extrabold px-2.5 py-0.5 rounded-lg text-xs ${
+                                    item.estoque === 0
+                                      ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                      : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                  }`}
                                 >
-                                  <Copy className="w-3 h-3 text-slate-500" />
-                                  <span>Copiar Item</span>
-                                </button>
+                                  {item.estoque} un
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-center font-bold text-slate-600">
+                                {item.estoque_minimo} un
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span className="font-black text-blue-700 bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 rounded-lg text-xs">
+                                  +{item.sugerido_compra} un
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-right">
                                 {onNavigateToEntry && (
                                   <button
                                     onClick={onNavigateToEntry}
-                                    className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold transition flex items-center space-x-1 shadow-xs"
+                                    className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold transition flex items-center space-x-1 shadow-xs ml-auto"
                                   >
                                     <span>Entrada</span>
                                     <ArrowRight className="w-3 h-3" />
                                   </button>
                                 )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
+      )}
+
+      {/* Copy Options Modal */}
+      {isCopyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100">
+            <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Copy className="w-5 h-5 text-blue-400" />
+                <h3 className="font-bold text-base">Opções de Cópia da Lista</h3>
+              </div>
+              <button
+                onClick={() => setIsCopyModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs">
+              <p className="text-slate-600">
+                Escolha como deseja copiar a lista de reposição para envio:
+              </p>
+
+              <div className="space-y-2">
+                {/* Option 1: Clean Full List */}
+                <button
+                  onClick={() => handleCopyOption('all')}
+                  className="w-full p-3.5 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-2xl text-left transition flex items-center justify-between group"
+                >
+                  <div>
+                    <div className="font-bold text-slate-900 group-hover:text-blue-700">
+                      📋 Toda a Lista (Padrão Limpo)
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      Organizada por categorias em ordem alfabética. Sem códigos ou símbolos técnicos.
+                    </div>
+                  </div>
+                  <Copy className="w-4 h-4 text-slate-400 group-hover:text-blue-600 shrink-0" />
+                </button>
+
+                {/* Option 2: Only Out of Stock */}
+                <button
+                  onClick={() => handleCopyOption('outOfStock')}
+                  className="w-full p-3.5 bg-rose-50/50 hover:bg-rose-50 border border-rose-200/80 rounded-2xl text-left transition flex items-center justify-between group"
+                >
+                  <div>
+                    <div className="font-bold text-rose-900">
+                      🚫 Apenas Produtos Sem Estoque (Acabou - 0 un)
+                    </div>
+                    <div className="text-[11px] text-rose-700/80 mt-0.5">
+                      Copia apenas os produtos que estão com estoque zerado no momento.
+                    </div>
+                  </div>
+                  <Copy className="w-4 h-4 text-rose-500 shrink-0" />
+                </button>
+
+                {/* Option 3: Only Low Stock */}
+                <button
+                  onClick={() => handleCopyOption('lowStock')}
+                  className="w-full p-3.5 bg-amber-50/50 hover:bg-amber-50 border border-amber-200/80 rounded-2xl text-left transition flex items-center justify-between group"
+                >
+                  <div>
+                    <div className="font-bold text-amber-900">
+                      ⚠️ Apenas Produtos com Estoque Baixo
+                    </div>
+                    <div className="text-[11px] text-amber-700/80 mt-0.5">
+                      Copia produtos que estão abaixo do estoque mínimo, mas ainda possuem unidades.
+                    </div>
+                  </div>
+                  <Copy className="w-4 h-4 text-amber-500 shrink-0" />
+                </button>
+
+                {/* Option 4: Single Category */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                  <div className="font-bold text-slate-900">📂 Copiar Apenas Uma Categoria</div>
+                  <div className="flex space-x-2">
+                    <select
+                      value={selectedCopyCategory}
+                      onChange={e => setSelectedCopyCategory(e.target.value)}
+                      className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold"
+                    >
+                      <option value="">Selecione uma categoria...</option>
+                      {categories.map((c, idx) => (
+                        <option key={`${c}-${idx}`} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => {
+                        if (selectedCopyCategory) {
+                          handleCopyOption('category', selectedCopyCategory);
+                        }
+                      }}
+                      disabled={!selectedCopyCategory}
+                      className="px-4 py-2 bg-blue-600 disabled:bg-slate-300 hover:bg-blue-700 text-white rounded-xl font-bold transition shrink-0"
+                    >
+                      Copiar
+                    </button>
+                  </div>
+                </div>
+
+                {/* Option 5: Detailed Report */}
+                <button
+                  onClick={() => handleCopyOption('detailed')}
+                  className="w-full p-3.5 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 rounded-2xl text-left transition flex items-center justify-between group"
+                >
+                  <div>
+                    <div className="font-bold text-slate-900">
+                      📊 Lista Detalhada (Com Quantidades e Códigos)
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      Inclui sugestão de compra em unidades e códigos internos de cada item.
+                    </div>
+                  </div>
+                  <Copy className="w-4 h-4 text-slate-500 shrink-0" />
+                </button>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => setIsCopyModalOpen(false)}
+                  className="w-full py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

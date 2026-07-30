@@ -11,7 +11,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Product, Category, Movement, AuditLog, CustomerDemand, POSConfig } from '../types';
+import { Product, Category, Movement, AuditLog, CustomerDemand, POSConfig, StockDivergenceRecord, User } from '../types';
 
 import { DEFAULT_POS_CONFIG } from '../config/posDefault';
 import { localStore } from './localStore';
@@ -57,7 +57,10 @@ class FirestoreSyncService {
   private configListeners: Listener<POSConfig>[] = [];
   private categoriesListeners: Listener<Category[]>[] = [];
   private demandsListeners: Listener<CustomerDemand[]>[] = [];
+  private divergencesListeners: Listener<StockDivergenceRecord[]>[] = [];
+  private usersListeners: Listener<User[]>[] = [];
   private systemTestStatusListeners: Listener<{ active: boolean; started_at?: string; started_by?: string }>[] = [];
+
   private systemTestLogsListeners: Listener<any[]>[] = [];
 
   private isInitialized = false;
@@ -186,8 +189,7 @@ class FirestoreSyncService {
           snapshot.forEach((docSnap) => {
             const d = { id: docSnap.id, ...docSnap.data() } as CustomerDemand;
             if (
-              !d.id.startsWith('dem_') &&
-              (!d.produto_nome || (!d.produto_nome.includes('[BOT_TEST]') && !d.produto_nome.includes('Produto Solicitado')))
+              !d.produto_nome || (!d.produto_nome.includes('[BOT_TEST]') && !d.produto_nome.includes('Produto Solicitado'))
             ) {
               demands.push(d);
             }
@@ -201,6 +203,54 @@ class FirestoreSyncService {
     } catch (e) {
       console.warn('Failed to attach Demands listener', e);
     }
+
+    // 5b. Sync Stock Divergences
+    try {
+      const divsRef = collection(db, 'divergences');
+      onSnapshot(
+        divsRef,
+        (snapshot) => {
+          const divergences: StockDivergenceRecord[] = [];
+          snapshot.forEach((docSnap) => {
+            const div = { id: docSnap.id, ...docSnap.data() } as StockDivergenceRecord;
+            divergences.push(div);
+          });
+          divergences.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          localStore.saveDivergencesToLocal(divergences);
+          this.notifyDivergences(divergences);
+        },
+        (error) => handleFirestoreError(error, OperationType.GET, 'divergences')
+      );
+    } catch (e) {
+      console.warn('Failed to attach Divergences listener', e);
+    }
+
+    // 5c. Sync Users
+    try {
+      const usersRef = collection(db, 'users');
+      onSnapshot(
+        usersRef,
+        async (snapshot) => {
+          if (snapshot.empty) {
+            const initialUsers = localStore.getUsersList();
+            for (const u of initialUsers) {
+              await setDoc(doc(db, 'users', u.id), u).catch(() => {});
+            }
+          } else {
+            const usersList: User[] = [];
+            snapshot.forEach((docSnap) => {
+              usersList.push({ id: docSnap.id, ...docSnap.data() } as User);
+            });
+            localStore.saveUsersToLocal(usersList);
+            this.notifyUsers(usersList);
+          }
+        },
+        (error) => handleFirestoreError(error, OperationType.GET, 'users')
+      );
+    } catch (e) {
+      console.warn('Failed to attach Users listener', e);
+    }
+
 
     // 6. Sync System Test Status
     try {
@@ -283,7 +333,24 @@ class FirestoreSyncService {
     };
   }
 
+  public subscribeDivergences(cb: Listener<StockDivergenceRecord[]>): () => void {
+    this.divergencesListeners.push(cb);
+    cb(localStore.getDivergences());
+    return () => {
+      this.divergencesListeners = this.divergencesListeners.filter((l) => l !== cb);
+    };
+  }
+
+  public subscribeUsers(cb: Listener<User[]>): () => void {
+    this.usersListeners.push(cb);
+    cb(localStore.getUsersList());
+    return () => {
+      this.usersListeners = this.usersListeners.filter((l) => l !== cb);
+    };
+  }
+
   public subscribeSystemTestStatus(cb: Listener<{ active: boolean; started_at?: string; started_by?: string }>): () => void {
+
     this.systemTestStatusListeners.push(cb);
     cb({ active: localStorage.getItem('bytecas_system_test_active') === 'true' });
     return () => {
@@ -313,6 +380,13 @@ class FirestoreSyncService {
   private notifyDemands(data: CustomerDemand[]) {
     this.demandsListeners.forEach((l) => l(data));
   }
+  private notifyDivergences(data: StockDivergenceRecord[]) {
+    this.divergencesListeners.forEach((l) => l(data));
+  }
+  private notifyUsers(data: User[]) {
+    this.usersListeners.forEach((l) => l(data));
+  }
+
   private notifySystemTestStatus(data: { active: boolean; started_at?: string; started_by?: string }) {
     this.systemTestStatusListeners.forEach((l) => l(data));
   }
@@ -397,19 +471,55 @@ class FirestoreSyncService {
       const product = localStore.getProductById(item.productId);
       if (!product) continue;
 
-      const newQty = Math.max(0, product.estoque - item.quantity);
+      const newQty = product.estoque - item.quantity;
 
       // 1. Update product in Firestore
       try {
-        await updateDoc(doc(db, 'products', product.id), {
+        await setDoc(doc(db, 'products', product.id), {
           estoque: newQty,
           updated_at: nowIso
-        });
+        }, { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `products/${product.id}`);
       }
 
-      // 2. Create Movement in Firestore
+      // 2. Manage Divergence document in Firestore if stock becomes negative
+      if (newQty < 0) {
+        const divDocRef = doc(db, 'divergences', `div_${product.id}`);
+        const divData: StockDivergenceRecord = {
+          id: `div_${product.id}`,
+          produto_id: product.id,
+          produto_nome: product.nome,
+          categoria: product.categoria,
+          estoque_no_momento: newQty,
+          estoque_atual: newQty,
+          data_primeira_divergencia: nowIso,
+          usuario_id: user.id,
+          usuario_nome: user.nome,
+          status: 'Aberta',
+          created_at: nowIso,
+          updated_at: nowIso
+        };
+        try {
+          await setDoc(divDocRef, divData, { merge: true });
+        } catch (err) {
+          handleFirestoreError(err, OperationType.WRITE, `divergences/div_${product.id}`);
+        }
+      } else {
+        const divDocRef = doc(db, 'divergences', `div_${product.id}`);
+        try {
+          await setDoc(divDocRef, {
+            status: 'Corrigida',
+            estoque_atual: newQty,
+            data_correcao: nowIso,
+            updated_at: nowIso
+          }, { merge: true });
+        } catch (err) {
+          // Ignored if non-existent
+        }
+      }
+
+      // 3. Create Movement in Firestore
       const newMovement: Movement = {
         id: `mov_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
         produto_id: product.id,
@@ -434,6 +544,7 @@ class FirestoreSyncService {
     }
     this.notifyProducts(localStore.getProducts());
     this.notifyMovements(localStore.getMovements());
+    this.notifyDivergences(localStore.getDivergences());
   }
 
   public async updateProductStock(
@@ -450,12 +561,46 @@ class FirestoreSyncService {
     const nowIso = new Date().toISOString();
 
     try {
-      await updateDoc(doc(db, 'products', productId), {
+      await setDoc(doc(db, 'products', productId), {
         estoque: newStock,
         updated_at: nowIso
-      });
+      }, { merge: true });
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `products/${productId}`);
+    }
+
+    if (newStock >= 0) {
+      const divDocRef = doc(db, 'divergences', `div_${productId}`);
+      try {
+        await setDoc(divDocRef, {
+          status: 'Corrigida',
+          estoque_atual: newStock,
+          data_correcao: nowIso,
+          updated_at: nowIso
+        }, { merge: true });
+      } catch (e) {
+        // Ignored
+      }
+    } else {
+      const divDocRef = doc(db, 'divergences', `div_${productId}`);
+      try {
+        await setDoc(divDocRef, {
+          id: `div_${productId}`,
+          produto_id: productId,
+          produto_nome: product.nome,
+          categoria: product.categoria,
+          estoque_no_momento: newStock,
+          estoque_atual: newStock,
+          data_primeira_divergencia: nowIso,
+          usuario_id: user.id,
+          usuario_nome: user.nome,
+          status: 'Aberta',
+          created_at: nowIso,
+          updated_at: nowIso
+        }, { merge: true });
+      } catch (e) {
+        // Ignored
+      }
     }
 
     const newMovement: Movement = {
@@ -480,14 +625,16 @@ class FirestoreSyncService {
     const updatedProd = localStore.updateProductStock(productId, newStock, user, tipo, quantidadeAlterada, observacao);
     this.notifyProducts(localStore.getProducts());
     this.notifyMovements(localStore.getMovements());
+    this.notifyDivergences(localStore.getDivergences());
     return updatedProd;
   }
+
 
   public async createProduct(productData: Omit<Product, 'id' | 'ativo' | 'created_at' | 'updated_at'>): Promise<Product> {
     const newProd = localStore.createProduct(productData);
     this.notifyProducts(localStore.getProducts());
     try {
-      await setDoc(doc(db, 'products', newProd.id), newProd);
+      await setDoc(doc(db, 'products', newProd.id), newProd, { merge: true });
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `products/${newProd.id}`);
     }
@@ -498,10 +645,10 @@ class FirestoreSyncService {
     const updated = localStore.updateProduct(id, productData);
     this.notifyProducts(localStore.getProducts());
     try {
-      await updateDoc(doc(db, 'products', id), {
+      await setDoc(doc(db, 'products', id), {
         ...productData,
         updated_at: new Date().toISOString()
-      });
+      }, { merge: true });
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `products/${id}`);
     }
@@ -656,8 +803,71 @@ class FirestoreSyncService {
     return res;
   }
 
+  public async deleteCustomerDemand(id: string): Promise<{ message: string }> {
+    const res = localStore.deleteCustomerDemand(id);
+    this.notifyDemands(localStore.getDemands());
+    try {
+      await deleteDoc(doc(db, 'demands', id));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `demands/${id}`);
+    }
+    return res;
+  }
+
+  public async restoreProductFromRecycleBin(id: string, userName: string): Promise<Product | null> {
+    const prod = localStore.restoreFromRecycleBin(id, userName);
+    this.notifyProducts(localStore.getProducts());
+    try {
+      await updateDoc(doc(db, 'products', id), {
+        lixeira: false,
+        lixeira_data: null,
+        alterado_por: userName,
+        updated_at: new Date().toISOString()
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `products/${id}`);
+    }
+    return prod;
+  }
+
+  public async purgeProductFromRecycleBin(id: string, userName: string): Promise<void> {
+    localStore.purgeFromRecycleBin(id, userName);
+    this.notifyProducts(localStore.getProducts());
+    try {
+      await deleteDoc(doc(db, 'products', id));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `products/${id}`);
+    }
+  }
+
+  public async createUser(userData: { nome: string; email: string; senha: string; cargo: string }): Promise<User> {
+    const newUser = localStore.createUser(userData);
+    this.notifyUsers(localStore.getUsersList());
+    try {
+      await setDoc(doc(db, 'users', newUser.id), newUser);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `users/${newUser.id}`);
+    }
+    return newUser;
+  }
+
+  public async updateUser(id: string, userData: Partial<User & { senha?: string }>): Promise<User> {
+    const updated = localStore.updateUser(id, userData);
+    this.notifyUsers(localStore.getUsersList());
+    try {
+      await updateDoc(doc(db, 'users', id), {
+        ...userData,
+        updated_at: new Date().toISOString()
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `users/${id}`);
+    }
+    return updated;
+  }
+
   public async deleteUser(id: string): Promise<{ message: string }> {
     const result = localStore.deleteUser(id);
+    this.notifyUsers(localStore.getUsersList());
     try {
       await deleteDoc(doc(db, 'users', id)).catch(async () => {
         await updateDoc(doc(db, 'users', id), {
@@ -673,8 +883,9 @@ class FirestoreSyncService {
 
   public async createCategory(nome: string): Promise<Category> {
     const newCat = localStore.createCategory(nome);
+    this.notifyCategories(localStore.getCategories());
     try {
-      await setDoc(doc(db, 'categories', newCat.id), newCat);
+      await setDoc(doc(db, 'categories', newCat.id), newCat, { merge: true });
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `categories/${newCat.id}`);
     }
@@ -683,6 +894,7 @@ class FirestoreSyncService {
 
   public async deleteCategory(id: string): Promise<{ message: string }> {
     const res = localStore.deleteCategory(id);
+    this.notifyCategories(localStore.getCategories());
     try {
       await deleteDoc(doc(db, 'categories', id)).catch(() => {});
     } catch (err) {

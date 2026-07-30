@@ -16,7 +16,10 @@ import {
   ShieldCheck,
   UserCheck,
   X,
-  User
+  User,
+  Search,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -24,20 +27,23 @@ interface HeaderProps {
   onToggleSidebarMobile?: () => void;
   onOpenMobileMenu?: () => void;
   onNavigate?: (tab: TabType) => void;
+  onOpenCommandPalette?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   activeTab = 'sales',
   onToggleSidebarMobile,
   onOpenMobileMenu,
-  onNavigate
+  onNavigate,
+  onOpenCommandPalette
 }) => {
   const handleMenuClick = onToggleSidebarMobile || onOpenMobileMenu;
   const { user, logout, isMobileSimulated, toggleMobileSimulated } = useAuth();
 
   const [time, setTime] = useState(new Date());
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
-  
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   // Account Settings Modal State
   const [showAccountModal, setShowAccountModal] = useState(false);
 
@@ -45,6 +51,18 @@ export const Header: React.FC<HeaderProps> = ({
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+        setIsFullscreen(false);
+      }
+    }
+  };
 
   const getRoleBadge = (cargo?: string) => {
     switch (cargo) {
@@ -183,6 +201,27 @@ export const Header: React.FC<HeaderProps> = ({
               <span>{formattedDate}</span>
             </div>
           </div>
+
+          {/* Command Palette Button (#24) */}
+          {onOpenCommandPalette && (
+            <button
+              onClick={onOpenCommandPalette}
+              className="p-2 md:px-3 md:py-2 bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/60 rounded-xl text-xs font-extrabold flex items-center space-x-1.5 transition-all"
+              title="Pesquisa Avançada e Atalhos (Ctrl+K)"
+            >
+              <Search className="w-4 h-4 text-orange-400" />
+              <span className="hidden md:inline font-mono text-[10px] bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded text-slate-400">Ctrl+K</span>
+            </button>
+          )}
+
+          {/* Fullscreen Toggle Button (#29) */}
+          <button
+            onClick={toggleFullscreen}
+            className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/60 transition-all hidden sm:flex"
+            title="Modo Tela Cheia (Sem distrações)"
+          >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
 
           {/* Mobile simulator toggle */}
           <button

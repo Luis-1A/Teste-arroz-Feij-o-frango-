@@ -93,7 +93,8 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
       setProducts(prods || []);
     });
     const unsubCats = firestoreSync.subscribeCategories((cats) => {
-      setCategories((cats || []).map((c) => c.nome));
+      const names = Array.from(new Set((cats || []).map((c) => c.nome.trim()).filter(Boolean)));
+      setCategories(names);
     });
 
     return () => {
@@ -156,20 +157,21 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
       setInputValue('');
       setSelectedProduct(null);
 
-      if (res.status_code === 'EXISTS_STOCK_ZEROED') {
+      const response = res as any;
+      if (response.status_code === 'EXISTS_STOCK_ZEROED') {
         setFeedback({
           type: 'warning',
-          text: res.message
+          text: response.message
         });
-      } else if (res.status_code === 'NOT_REGISTERED_SAVED') {
+      } else if (response.status_code === 'NOT_REGISTERED_SAVED') {
         setFeedback({
           type: 'info',
-          text: res.message
+          text: response.message
         });
       } else {
         setFeedback({
           type: 'success',
-          text: res.message
+          text: response.message
         });
       }
     } catch (err: any) {
@@ -731,8 +733,8 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
                     onChange={e => setNewProdForm({ ...newProdForm, categoria: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800"
                   >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>
+                    {categories.map((cat, idx) => (
+                      <option key={`${cat}-${idx}`} value={cat}>
                         {cat}
                       </option>
                     ))}
