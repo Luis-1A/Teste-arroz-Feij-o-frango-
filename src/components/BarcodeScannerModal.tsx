@@ -77,7 +77,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               Aproxime a câmera do código de barras do produto
             </p>
             <div className="mt-2 px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full text-[11px] text-blue-300 font-medium">
-              Câmera Ativa • Bytecas Mobile Scan
+              Câmera Ativa • Bosteca Mobile Scan
             </div>
           </div>
 

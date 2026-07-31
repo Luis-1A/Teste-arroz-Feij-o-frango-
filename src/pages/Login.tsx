@@ -91,31 +91,31 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-50/80 via-slate-50 to-slate-100 flex flex-col justify-center items-center p-4 selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-[#0B1220] text-slate-100 flex flex-col justify-center items-center p-4 selection:bg-blue-600 selection:text-white">
       <div className="w-full max-w-md">
         {/* Brand Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-2xl shadow-lg shadow-blue-500/25 mb-3">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl shadow-lg shadow-indigo-500/20 mb-3 border border-blue-400/30">
             <Package className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Bytecas Loja e Estoque</h1>
-          <p className="text-xs text-slate-500 mt-1 font-medium">
+          <h1 className="text-2xl font-black text-white tracking-tight">Bosteca Loja e Estoque</h1>
+          <p className="text-xs text-slate-400 mt-1 font-medium">
             Sistema Integrado de Controle Físico de Estoque
           </p>
         </div>
 
         {/* Mode Selector Tabs */}
-        <div className="flex bg-slate-200/70 p-1 rounded-2xl mb-3 border border-slate-300/50">
+        <div className="flex bg-[#111827] p-1 rounded-2xl mb-3 border border-[#1F2937]">
           <button
             type="button"
             onClick={() => { setIsRegisterMode(false); setErrorMsg(''); }}
             className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 ${
               !isRegisterMode
-                ? 'bg-white text-slate-900 shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+            <UserCheck className="w-3.5 h-3.5" />
             <span>Entrar no Sistema</span>
           </button>
           <button
@@ -123,70 +123,70 @@ export const Login: React.FC = () => {
             onClick={() => { setIsRegisterMode(true); setErrorMsg(''); }}
             className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 ${
               isRegisterMode
-                ? 'bg-white text-slate-900 shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <UserPlus className="w-3.5 h-3.5 text-indigo-600" />
+            <UserPlus className="w-3.5 h-3.5" />
             <span>Cadastrar Pela 1ª Vez</span>
           </button>
         </div>
 
         {/* Form Card */}
-        <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 md:p-8 shadow-xl shadow-slate-200/60 border border-slate-200/80">
+        <div className="bg-[#111827] rounded-3xl p-6 md:p-8 shadow-xl border border-[#1F2937]">
           {!isRegisterMode ? (
             <>
-              <h2 className="text-base font-bold text-slate-900 mb-0.5">Acesso ao Sistema</h2>
-              <p className="text-xs text-slate-500 mb-6 font-medium">Informe seus dados para acessar o estoque.</p>
+              <h2 className="text-base font-bold text-white mb-0.5">Acesso ao Sistema</h2>
+              <p className="text-xs text-slate-400 mb-6 font-medium">Informe seus dados para acessar o estoque.</p>
 
               {errorMsg && (
-                <div className="mb-4 p-3 bg-rose-50/80 border border-rose-200/80 rounded-2xl flex items-start space-x-2.5 text-rose-700 text-xs font-medium">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+                <div className="mb-4 p-3 bg-rose-950/60 border border-rose-800/80 rounded-2xl flex items-start space-x-2.5 text-rose-300 text-xs font-medium">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
                   <span>{errorMsg}</span>
                 </div>
               )}
 
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
                     Usuário ou e-mail
                   </label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       placeholder="Digite seu usuário ou e-mail..."
-                      className="w-full pl-10 pr-4 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all duration-150 placeholder:text-slate-400 placeholder:font-normal"
+                      className="w-full pl-10 pr-4 py-2.5 text-sm font-bold text-white bg-[#0B1220] border border-[#1F2937] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-150 placeholder:text-slate-600 placeholder:font-normal"
                     />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-xs font-bold text-slate-800">Senha</label>
+                    <label className="block text-xs font-bold text-slate-300">Senha</label>
                     <button
                       type="button"
                       onClick={() => setShowForgot(true)}
-                      className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+                      className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 hover:underline"
                     >
                       Esqueceu a senha?
                     </button>
                   </div>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={senha}
                       onChange={e => setSenha(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-10 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all duration-150 placeholder:text-slate-400 placeholder:font-normal"
+                      className="w-full pl-10 pr-10 py-2.5 text-sm font-bold text-white bg-[#0B1220] border border-[#1F2937] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-150 placeholder:text-slate-600 placeholder:font-normal"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-1"
                       title={showPassword ? "Ocultar senha" : "Mostrar senha"}
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -197,7 +197,7 @@ export const Login: React.FC = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs shadow-blue-500/25 transition-all duration-150 flex items-center justify-center space-x-2 active:scale-[0.99]"
+                  className="w-full py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:opacity-95 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center space-x-2 active:scale-[0.99]"
                 >
                   {loading ? (
                     <span>Autenticando...</span>
@@ -212,21 +212,21 @@ export const Login: React.FC = () => {
             </>
           ) : (
             <>
-              <h2 className="text-base font-bold text-slate-900 mb-0.5">Criar Conta no Sistema</h2>
-              <p className="text-xs text-slate-500 mb-5 font-medium">
+              <h2 className="text-base font-bold text-white mb-0.5">Criar Conta no Sistema</h2>
+              <p className="text-xs text-slate-400 mb-5 font-medium">
                 Cadastre seu acesso pela primeira vez para gerenciar o estoque.
               </p>
 
               {errorMsg && (
-                <div className="mb-4 p-3 bg-rose-50/80 border border-rose-200/80 rounded-2xl flex items-start space-x-2.5 text-rose-700 text-xs font-medium">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+                <div className="mb-4 p-3 bg-rose-950/60 border border-rose-800/80 rounded-2xl flex items-start space-x-2.5 text-rose-300 text-xs font-medium">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
                   <span>{errorMsg}</span>
                 </div>
               )}
 
               <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
                     Nome Completo
                   </label>
                   <input
@@ -235,12 +235,12 @@ export const Login: React.FC = () => {
                     value={regNome}
                     onChange={e => setRegNome(e.target.value)}
                     placeholder="Seu Nome Completo"
-                    className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 placeholder:text-slate-400 placeholder:font-normal"
+                    className="w-full px-3.5 py-2.5 text-sm font-bold text-white bg-[#0B1220] border border-[#1F2937] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 placeholder:text-slate-600 placeholder:font-normal"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
                     Seu E-mail
                   </label>
                   <input
@@ -249,12 +249,12 @@ export const Login: React.FC = () => {
                     value={regEmail}
                     onChange={e => setRegEmail(e.target.value)}
                     placeholder="luisfernandosantossilva1940@gmail.com"
-                    className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 placeholder:text-slate-400 placeholder:font-normal"
+                    className="w-full px-3.5 py-2.5 text-sm font-bold text-white bg-[#0B1220] border border-[#1F2937] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 placeholder:text-slate-600 placeholder:font-normal"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
                     Senha de Acesso
                   </label>
                   <div className="relative">
@@ -264,12 +264,12 @@ export const Login: React.FC = () => {
                       value={regSenha}
                       onChange={e => setRegSenha(e.target.value)}
                       placeholder="Crie uma senha segura"
-                      className="w-full pl-3.5 pr-10 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 placeholder:text-slate-400 placeholder:font-normal"
+                      className="w-full pl-3.5 pr-10 py-2.5 text-sm font-bold text-white bg-[#0B1220] border border-[#1F2937] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 placeholder:text-slate-600 placeholder:font-normal"
                     />
                     <button
                       type="button"
                       onClick={() => setShowRegPassword(!showRegPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-1"
                       title={showRegPassword ? "Ocultar senha" : "Mostrar senha"}
                     >
                       {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -278,13 +278,13 @@ export const Login: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
                     Perfil / Cargo Solicitado
                   </label>
                   <select
                     value={regCargo}
                     onChange={e => setRegCargo(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                    className="w-full px-3.5 py-2.5 text-sm font-bold text-white bg-[#0B1220] border border-[#1F2937] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
                   >
                     <option value="funcionario">Funcionário (Acesso padrão a vendas e consultas)</option>
                     <option value="gerente">Gerente de Estoque (Máximo 1 Gerente no sistema)</option>
@@ -295,7 +295,7 @@ export const Login: React.FC = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 mt-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl font-bold text-xs shadow-xs shadow-indigo-500/25 transition-all flex items-center justify-center space-x-2 active:scale-[0.99]"
+                  className="w-full py-3 mt-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:opacity-95 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center space-x-2 active:scale-[0.99]"
                 >
                   {loading ? (
                     <span>Cadastrando...</span>
@@ -312,9 +312,9 @@ export const Login: React.FC = () => {
         </div>
 
         {/* Security Note */}
-        <div className="mt-6 text-center text-[11px] text-slate-400 flex items-center justify-center space-x-1.5 font-medium">
+        <div className="mt-6 text-center text-[11px] text-slate-500 flex items-center justify-center space-x-1.5 font-medium">
           <ShieldCheck className="w-4 h-4 text-blue-500" />
-          <span>Bytecas • Controle 100% de Estoque • Sem funções financeiras</span>
+          <span>Bosteca • Controle 100% de Estoque • Sem funções financeiras</span>
         </div>
       </div>
 

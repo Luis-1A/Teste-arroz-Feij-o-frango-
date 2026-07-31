@@ -328,7 +328,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
             <Sparkles className="w-3.5 h-3.5 text-orange-400" />
             Atalho Global: Digite <kbd className="text-white bg-slate-800 px-1 rounded">Ctrl + K</kbd> em qualquer tela
           </span>
-          <span className="hidden sm:inline font-mono">Bytecas System v2.0</span>
+          <span className="hidden sm:inline font-mono">Bosteca System v2.0</span>
         </div>
       </div>
     </div>

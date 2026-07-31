@@ -148,18 +148,18 @@ export const UsersManagement: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center space-x-2">
-            <Users className="w-6 h-6 text-indigo-600" />
+          <h2 className="text-xl font-bold text-white tracking-tight flex items-center space-x-2">
+            <Users className="w-6 h-6 text-blue-400" />
             <span>Gestão de Usuários e Níveis de Permissão</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Área restrita ao Administrador Supremo para controle de acessos da equipe Bytecas.
+          <p className="text-xs text-slate-400 mt-0.5">
+            Área restrita ao Administrador Supremo para controle de acessos da equipe Bosteca.
           </p>
         </div>
 
         <button
           onClick={openAddModal}
-          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-500/20 flex items-center space-x-2 self-start"
+          className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:opacity-95 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 flex items-center space-x-2 self-start"
         >
           <Plus className="w-4 h-4" />
           <span>Novo Usuário</span>
@@ -264,18 +264,18 @@ export const UsersManagement: React.FC = () => {
 
       {/* Modal Add/Edit */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
-            <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-xs p-4">
+          <div className="bg-[#111827] text-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-[#1F2937]">
+            <div className="bg-[#0B1220] p-5 flex items-center justify-between border-b border-[#1F2937]">
               <div className="flex items-center space-x-2">
-                <Users className="w-5 h-5 text-indigo-400" />
-                <h3 className="font-bold text-base">
+                <Users className="w-5 h-5 text-blue-400" />
+                <h3 className="font-bold text-base text-white">
                   {editingUser ? 'Editar Permissões do Usuário' : 'Cadastrar Novo Usuário'}
                 </h3>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1 rounded-lg hover:bg-[#1F2937] text-slate-400 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -283,38 +283,38 @@ export const UsersManagement: React.FC = () => {
 
             <form onSubmit={handleSaveUser} className="p-6 space-y-4 text-xs">
               {formError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center space-x-2 text-rose-700">
-                  <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                <div className="p-3 bg-rose-950/40 border border-rose-800 rounded-xl flex items-center space-x-2 text-rose-300">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
                   <span>{formError}</span>
                 </div>
               )}
 
               <div>
-                <label className="block font-bold text-slate-800 mb-1">Nome Completo *</label>
+                <label className="block font-bold text-slate-300 mb-1">Nome Completo *</label>
                 <input
                   type="text"
                   required
                   value={nome}
                   onChange={e => setNome(e.target.value)}
                   placeholder="Ex: Roberto Silva"
-                  className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 placeholder:font-normal"
+                  className="w-full px-3.5 py-2.5 text-sm font-bold text-white bg-[#0B1220] border border-[#1F2937] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-400 placeholder:font-normal"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-800 mb-1">E-mail *</label>
+                <label className="block font-bold text-slate-300 mb-1">E-mail *</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="roberto@bytecas.com"
-                  className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 placeholder:font-normal"
+                  className="w-full px-3.5 py-2.5 text-sm font-bold text-white bg-[#0B1220] border border-[#1F2937] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-400 placeholder:font-normal"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-800 mb-1">
+                <label className="block font-bold text-slate-300 mb-1">
                   {editingUser ? 'Nova Senha (Deixe em branco para manter a atual)' : 'Senha de Acesso *'}
                 </label>
                 <input
@@ -323,31 +323,31 @@ export const UsersManagement: React.FC = () => {
                   value={senha}
                   onChange={e => setSenha(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 placeholder:font-normal"
+                  className="w-full px-3.5 py-2.5 text-sm font-bold text-white bg-[#0B1220] border border-[#1F2937] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-400 placeholder:font-normal"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-800 mb-1">
+                <label className="block font-bold text-slate-300 mb-1">
                   Cargo / Nível de Permissão *
                 </label>
                 <select
                   value={cargo}
                   onChange={e => setCargo(e.target.value as UserRole)}
                   disabled={editingUser?.cargo === 'admin_supremo'}
-                  className="w-full px-3.5 py-2.5 text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2.5 text-sm font-bold text-white bg-[#0B1220] border border-[#1F2937] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="funcionario">Funcionário (Estoque, Entradas, Saídas, Consultas)</option>
-                  <option value="gerente">Gerente (Gestão completa de estoque e relatórios - Máximo 1)</option>
-                  <option value="admin_supremo">Administrador Supremo (Apenas luisfernandosantossilva1940@gmail.com)</option>
+                  <option value="funcionario" className="bg-[#0B1220] text-white">Funcionário (Estoque, Entradas, Saídas, Consultas)</option>
+                  <option value="gerente" className="bg-[#0B1220] text-white">Gerente (Gestão completa de estoque e relatórios - Máximo 1)</option>
+                  <option value="admin_supremo" className="bg-[#0B1220] text-white">Administrador Supremo (Apenas luisfernandosantossilva1940@gmail.com)</option>
                 </select>
               </div>
 
-              <div className="pt-3 flex justify-end space-x-2 border-t border-slate-100">
+              <div className="pt-3 flex justify-end space-x-2 border-t border-[#1F2937]">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 rounded-xl font-semibold text-slate-600 hover:bg-slate-50"
+                  className="px-4 py-2 border border-[#1F2937] rounded-xl font-semibold text-slate-300 hover:bg-[#1F2937] transition"
                 >
                   Cancelar
                 </button>
@@ -370,7 +370,7 @@ export const UsersManagement: React.FC = () => {
             <h3 className="font-bold text-base text-slate-900">Remover Usuário?</h3>
             <p className="text-xs text-slate-500 mt-2">
               Confirma a remoção do usuário <strong className="text-slate-800">{deleteCandidate.nome}</strong>?
-              A conta deixará de ter acesso ao sistema Bytecas.
+              A conta deixará de ter acesso ao sistema Bosteca.
             </p>
             <div className="mt-5 flex space-x-2">
               <button

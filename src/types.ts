@@ -13,6 +13,9 @@ export interface User {
 export interface Category {
   id: string;
   nome: string;
+  cor?: string;
+  icone?: string;
+  descricao?: string;
   created_at: string;
 }
 

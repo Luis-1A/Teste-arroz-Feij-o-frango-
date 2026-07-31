@@ -1,7 +1,7 @@
 import { Product } from '../types';
 
 /**
- * Standardizes product names according to Bytecas store guidelines:
+ * Standardizes product names according to Bosteca store guidelines:
  * - Proper Title Case (e.g., "Cabo Lightning", "Carregador Turbo 20W", "Película A56")
  * - Correct uppercase for technical terms & acronyms (USB, USB-C, Tipo-C, V8, P2, TWS, iPhone, etc.)
  * - Standardizes variations (e.g., "cabo tipo c" -> "Cabo Tipo-C")

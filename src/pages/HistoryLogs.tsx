@@ -77,7 +77,7 @@ export const HistoryLogs: React.FC = () => {
           <span>Histórico de Auditoria & Movimentações</span>
         </h2>
         <p className="text-xs text-slate-500 mt-0.5">
-          Trilha completa e permanente de todas as operações realizadas no sistema Bytecas.
+          Trilha completa e permanente de todas as operações realizadas no sistema Bosteca.
         </p>
       </div>
 

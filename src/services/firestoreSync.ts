@@ -539,8 +539,15 @@ class FirestoreSyncService {
         handleFirestoreError(err, OperationType.WRITE, `movements/${newMovement.id}`);
       }
 
-      // Also perform local update in localStore so immediate state is updated
-      localStore.registerSaida(product.id, item.quantity, user, observacao);
+      // Update localStore product directly with exact newQty (preventing double subtraction)
+      localStore.updateProduct(product.id, { estoque: newQty });
+
+      // Save movement to localStore movements list without subtracting stock a second time
+      const localMovs = localStore.getMovements();
+      if (!localMovs.some(m => m.id === newMovement.id)) {
+        localMovs.unshift(newMovement);
+        localStore.saveMovementsToLocal(localMovs);
+      }
     }
     this.notifyProducts(localStore.getProducts());
     this.notifyMovements(localStore.getMovements());
@@ -623,6 +630,11 @@ class FirestoreSyncService {
     }
 
     const updatedProd = localStore.updateProductStock(productId, newStock, user, tipo, quantidadeAlterada, observacao);
+    const localMovs = localStore.getMovements();
+    if (!localMovs.some(m => m.id === newMovement.id)) {
+      localMovs.unshift(newMovement);
+      localStore.saveMovementsToLocal(localMovs);
+    }
     this.notifyProducts(localStore.getProducts());
     this.notifyMovements(localStore.getMovements());
     this.notifyDivergences(localStore.getDivergences());
@@ -881,8 +893,8 @@ class FirestoreSyncService {
     return result;
   }
 
-  public async createCategory(nome: string): Promise<Category> {
-    const newCat = localStore.createCategory(nome);
+  public async createCategory(nome: string, cor?: string, icone?: string, descricao?: string): Promise<Category> {
+    const newCat = localStore.createCategory(nome, cor, icone, descricao);
     this.notifyCategories(localStore.getCategories());
     try {
       await setDoc(doc(db, 'categories', newCat.id), newCat, { merge: true });
@@ -970,6 +982,7 @@ class FirestoreSyncService {
           docSnap.id.startsWith('test_prod_') ||
           (data.nome && (data.nome.includes('[BOT_TEST]') || data.nome.includes('[TESTE]'))) ||
           (data.codigo && data.codigo.includes('TST-')) ||
+          data.marca === 'Bosteca TestLab' ||
           data.marca === 'Bytecas TestLab'
         ) {
           await deleteDoc(doc(db, 'products', docSnap.id)).catch(() => {});

@@ -228,19 +228,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const sidebarContent = (
     <div
-      className={`flex flex-col h-full bg-slate-900 text-slate-200 border-r border-slate-800 transition-all duration-300 select-none ${
+      className={`flex flex-col h-full bg-[#111827] text-slate-200 border-r border-[#1F2937] transition-all duration-300 select-none ${
         isCollapsed ? 'w-20' : 'w-64'
       }`}
     >
       {/* Header Info */}
-      <div className="p-4 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/50">
+      <div className="p-4 border-b border-[#1F2937] flex items-center justify-between bg-[#0B1220]/60">
         <div className="flex items-center space-x-3 min-w-0">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-600 via-orange-500 to-amber-500 text-white flex items-center justify-center font-extrabold shadow-lg shadow-orange-950/50 shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center font-extrabold shadow-md shrink-0">
             <Building2 className="w-5 h-5" />
           </div>
           {!isCollapsed && (
             <div className="min-w-0">
-              <h2 className="text-xs font-black text-white tracking-tight truncate">Bytecas Estoque</h2>
+              <h2 className="text-xs font-black text-white tracking-tight truncate">Bosteca Estoque</h2>
               <p className="text-[10px] text-slate-400 font-bold truncate">Menu do Sistema</p>
             </div>
           )}
@@ -259,7 +259,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           return (
             <div key={idx} className="space-y-1">
               {!isCollapsed && (
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1.5">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-3 mb-1.5">
                   {group.groupLabel}
                 </p>
               )}
@@ -284,8 +284,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       isCollapsed ? 'justify-center px-2' : 'justify-between px-3.5'
                     } py-2.5 rounded-xl text-xs font-bold transition-all duration-150 relative ${
                       isActive
-                        ? 'bg-gradient-to-r from-rose-600 via-orange-500 to-amber-500 text-white shadow-lg shadow-orange-950/40'
-                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                        ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white shadow-md shadow-indigo-600/30'
+                        : 'bg-transparent text-slate-300 hover:bg-[#1F2937] hover:text-white'
                     }`}
                   >
                     <div className="flex items-center space-x-3 truncate">
@@ -298,7 +298,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
                           isActive
                             ? 'bg-black/30 text-white'
-                            : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
+                            : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                         }`}
                       >
                         {item.badge}
@@ -313,15 +313,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Collapse Toggle Footer */}
-      <div className="p-3 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
+      <div className="p-3 border-t border-[#1F2937] bg-[#0B1220]/60 flex items-center justify-between">
         {!isCollapsed && (
           <p className="text-[10px] font-bold text-slate-400 truncate">
-            Bytecas Estoque • Balcão
+            Bosteca Estoque • Balcão
           </p>
         )}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 rounded-xl bg-slate-800 border border-slate-700/80 text-slate-400 hover:text-white hover:bg-slate-700 transition mx-auto shadow-sm"
+          className="p-2 rounded-xl bg-[#1F2937] border border-[#334155] text-slate-400 hover:text-white hover:bg-slate-700 transition mx-auto shadow-xs"
           title={isCollapsed ? 'Expandir Menu' : 'Recolher Menu'}
         >
           {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}

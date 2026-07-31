@@ -319,26 +319,26 @@ export const POSCustomization: React.FC = () => {
               <label className="block text-xs font-bold text-slate-700">Posição e Estilo da Barra Lateral</label>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <span className="text-[11px] text-slate-500 mb-1 block">Lado:</span>
+                  <span className="text-[11px] text-slate-400 mb-1 block">Lado:</span>
                   <select
                     value={config.sidebarPosition}
                     onChange={(e) => setConfig({ ...config, sidebarPosition: e.target.value as 'left' | 'right' })}
-                    className="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl p-2.5"
+                    className="w-full text-xs font-medium bg-[#0B1220] text-white border border-[#1F2937] rounded-xl p-2.5"
                   >
-                    <option value="left">Esquerda (Padrão)</option>
-                    <option value="right">Direita</option>
+                    <option value="left" className="bg-[#0B1220] text-white">Esquerda (Padrão)</option>
+                    <option value="right" className="bg-[#0B1220] text-white">Direita</option>
                   </select>
                 </div>
 
                 <div>
-                  <span className="text-[11px] text-slate-500 mb-1 block">Comportamento:</span>
+                  <span className="text-[11px] text-slate-400 mb-1 block">Comportamento:</span>
                   <select
                     value={config.sidebarStyle}
                     onChange={(e) => setConfig({ ...config, sidebarStyle: e.target.value as 'collapsible' | 'fixed' })}
-                    className="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl p-2.5"
+                    className="w-full text-xs font-medium bg-[#0B1220] text-white border border-[#1F2937] rounded-xl p-2.5"
                   >
-                    <option value="collapsible">Recolhível (Recomendado)</option>
-                    <option value="fixed">Fixa Sempre Visível</option>
+                    <option value="collapsible" className="bg-[#0B1220] text-white">Recolhível (Recomendado)</option>
+                    <option value="fixed" className="bg-[#0B1220] text-white">Fixa Sempre Visível</option>
                   </select>
                 </div>
               </div>
@@ -346,7 +346,7 @@ export const POSCustomization: React.FC = () => {
 
             {/* Right Panel Width & Height */}
             <div className="space-y-3">
-              <label className="block text-xs font-bold text-slate-700">Largura do Painel Lateral de Resumo</label>
+              <label className="block text-xs font-bold text-slate-300">Largura do Painel Lateral de Resumo</label>
               <div className="grid grid-cols-3 gap-2">
                 {[300, 360, 400].map((width) => (
                   <button
@@ -355,7 +355,7 @@ export const POSCustomization: React.FC = () => {
                     className={`py-2 px-3 rounded-xl text-xs font-bold border transition ${
                       config.rightPanelWidth === width
                         ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        : 'bg-[#0B1220] text-slate-300 border-[#1F2937] hover:bg-[#1F2937]'
                     }`}
                   >
                     {width}px {width === 360 ? '(Padrão)' : ''}
@@ -366,32 +366,32 @@ export const POSCustomization: React.FC = () => {
 
             {/* Shortcut Cards Tab Default & Count */}
             <div className="space-y-3">
-              <label className="block text-xs font-bold text-slate-700">Aba Padrão e Quantidade de Cartões</label>
+              <label className="block text-xs font-bold text-slate-300">Aba Padrão e Quantidade de Cartões</label>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <span className="text-[11px] text-slate-500 mb-1 block">Aba Inicial dos Cartões:</span>
+                  <span className="text-[11px] text-slate-400 mb-1 block">Aba Inicial dos Cartões:</span>
                   <select
                     value={config.shortcutTabDefault}
                     onChange={(e) => setConfig({ ...config, shortcutTabDefault: e.target.value as any })}
-                    className="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl p-2.5"
+                    className="w-full text-xs font-medium bg-[#0B1220] text-white border border-[#1F2937] rounded-xl p-2.5"
                   >
-                    <option value="movimentados">Mais Movimentados</option>
-                    <option value="favoritos">Favoritos</option>
-                    <option value="recentes">Mais Recentes</option>
+                    <option value="movimentados" className="bg-[#0B1220] text-white">Mais Movimentados</option>
+                    <option value="favoritos" className="bg-[#0B1220] text-white">Favoritos</option>
+                    <option value="recentes" className="bg-[#0B1220] text-white">Mais Recentes</option>
                   </select>
                 </div>
 
                 <div>
-                  <span className="text-[11px] text-slate-500 mb-1 block">Cartões Exibidos:</span>
+                  <span className="text-[11px] text-slate-400 mb-1 block">Cartões Exibidos:</span>
                   <select
                     value={config.shortcutCardCount}
                     onChange={(e) => setConfig({ ...config, shortcutCardCount: Number(e.target.value) })}
-                    className="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl p-2.5"
+                    className="w-full text-xs font-medium bg-[#0B1220] text-white border border-[#1F2937] rounded-xl p-2.5"
                   >
-                    <option value={3}>3 Cartões</option>
-                    <option value={6}>6 Cartões (Padrão)</option>
-                    <option value={9}>9 Cartões</option>
-                    <option value={12}>12 Cartões</option>
+                    <option value={3} className="bg-[#0B1220] text-white">3 Cartões</option>
+                    <option value={6} className="bg-[#0B1220] text-white">6 Cartões (Padrão)</option>
+                    <option value={9} className="bg-[#0B1220] text-white">9 Cartões</option>
+                    <option value={12} className="bg-[#0B1220] text-white">12 Cartões</option>
                   </select>
                 </div>
               </div>
@@ -606,7 +606,7 @@ export const POSCustomization: React.FC = () => {
             <div className="flex items-center justify-between pt-3">
               <div>
                 <p className="text-xs font-bold text-slate-800">Marca / Fabricante</p>
-                <p className="text-[11px] text-slate-500">Exemplo: Kimaster, Bytecas Pro</p>
+                <p className="text-[11px] text-slate-500">Exemplo: Kimaster, Bosteca Pro</p>
               </div>
               <input
                 type="checkbox"
@@ -677,7 +677,7 @@ export const POSCustomization: React.FC = () => {
 
             <div className="space-y-3">
               {config.customActionButtons.map((btn, idx) => (
-                <div key={btn.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+                <div key={btn.id} className="p-3 bg-[#0B1220] rounded-xl border border-[#1F2937] flex items-center justify-between gap-3">
                   <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div>
                       <span className="text-[10px] text-slate-400 block mb-0.5">Nome do Botão:</span>
@@ -689,7 +689,7 @@ export const POSCustomization: React.FC = () => {
                           updated[idx].label = e.target.value;
                           setConfig({ ...config, customActionButtons: updated });
                         }}
-                        className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-lg p-2"
+                        className="w-full text-xs font-semibold bg-[#111827] text-white border border-[#1F2937] rounded-lg p-2"
                       />
                     </div>
 
@@ -702,12 +702,12 @@ export const POSCustomization: React.FC = () => {
                           updated[idx].tipoSaida = e.target.value as any;
                           setConfig({ ...config, customActionButtons: updated });
                         }}
-                        className="w-full text-xs font-medium bg-white border border-slate-200 rounded-lg p-2"
+                        className="w-full text-xs font-medium bg-[#111827] text-white border border-[#1F2937] rounded-lg p-2"
                       >
-                        <option value="venda">Venda / Saída de Loja</option>
-                        <option value="uso_interno">Uso Interno</option>
-                        <option value="transferencia">Transferência</option>
-                        <option value="descarte">Descarte / Avaria</option>
+                        <option value="venda" className="bg-[#111827] text-white">Venda / Saída de Loja</option>
+                        <option value="uso_interno" className="bg-[#111827] text-white">Uso Interno</option>
+                        <option value="transferencia" className="bg-[#111827] text-white">Transferência</option>
+                        <option value="descarte" className="bg-[#111827] text-white">Descarte / Avaria</option>
                       </select>
                     </div>
 
@@ -720,12 +720,12 @@ export const POSCustomization: React.FC = () => {
                           updated[idx].color = e.target.value;
                           setConfig({ ...config, customActionButtons: updated });
                         }}
-                        className="w-full text-xs font-medium bg-white border border-slate-200 rounded-lg p-2"
+                        className="w-full text-xs font-medium bg-[#111827] text-white border border-[#1F2937] rounded-lg p-2"
                       >
-                        <option value="blue">Azul (Padrão)</option>
-                        <option value="indigo">Índigo</option>
-                        <option value="amber">Âmbar</option>
-                        <option value="emerald">Verde</option>
+                        <option value="blue" className="bg-[#111827] text-white">Azul (Padrão)</option>
+                        <option value="indigo" className="bg-[#111827] text-white">Índigo</option>
+                        <option value="amber" className="bg-[#111827] text-white">Âmbar</option>
+                        <option value="emerald" className="bg-[#111827] text-white">Verde</option>
                       </select>
                     </div>
                   </div>
@@ -777,7 +777,7 @@ export const POSCustomization: React.FC = () => {
                     B
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900">Bytecas Estoque</h4>
+                    <h4 className="text-xs font-bold text-slate-900">Bosteca Estoque</h4>
                     <span className="text-[10px] text-blue-600 font-bold">Frente de Caixa (POS)</span>
                   </div>
                 </div>

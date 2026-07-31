@@ -169,7 +169,7 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen w-full bg-slate-50 text-slate-800 flex flex-col font-sans">
+    <div className="min-h-screen w-full bg-[#0B1220] text-slate-100 flex flex-col font-sans">
       {/* Fixed Top Header */}
       <Header
         activeTab={activeTab}
@@ -193,7 +193,14 @@ const AppContent: React.FC = () => {
 
         {/* Dynamic Page Container */}
         <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full min-w-0">
-          {activeTab === 'dashboard' && <Dashboard onNavigate={tab => setActiveTab(tab)} />}
+          {activeTab === 'dashboard' && (
+            <Dashboard
+              onNavigate={(tab, extraMode) => {
+                setActiveTab(tab);
+                setSalesExtraMode(extraMode);
+              }}
+            />
+          )}
           {activeTab === 'products' && <Products />}
           {activeTab === 'entry' && <StockEntry />}
           {activeTab === 'sales' && <SalesPanel initialExtraMode={salesExtraMode} />}

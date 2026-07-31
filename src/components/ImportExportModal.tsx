@@ -48,19 +48,19 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
     ]);
 
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    downloadFile(csvContent, 'produtos_bytecas_estoque.csv', 'text/csv;charset=utf-8;');
+    downloadFile(csvContent, 'produtos_bosteca_estoque.csv', 'text/csv;charset=utf-8;');
   };
 
   const handleExportProductsJSON = () => {
     const products = localStore.getProducts();
     const jsonStr = JSON.stringify(products, null, 2);
-    downloadFile(jsonStr, 'produtos_bytecas_estoque.json', 'application/json');
+    downloadFile(jsonStr, 'produtos_bosteca_estoque.json', 'application/json');
   };
 
   const handleExportCategoriesJSON = () => {
     const categories = localStore.getCategories();
     const jsonStr = JSON.stringify(categories, null, 2);
-    downloadFile(jsonStr, 'categorias_bytecas_estoque.json', 'application/json');
+    downloadFile(jsonStr, 'categorias_bosteca_estoque.json', 'application/json');
   };
 
   const downloadFile = (content: string, fileName: string, contentType: string) => {

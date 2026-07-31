@@ -415,7 +415,7 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h1 className="text-base font-extrabold tracking-tight">Bytecas Estoque</h1>
+                <h1 className="text-base font-extrabold tracking-tight">Bosteca Estoque</h1>
                 <span className="bg-blue-100 text-blue-700 border border-blue-200 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase">
                   Frente de Caixa (POS)
                 </span>
@@ -494,9 +494,9 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
           {/* SEARCH FIELD */}
           {posConfig.showSearch && (
             <div className="relative">
-              <div className={`bg-white dark:bg-slate-900 p-2 ${radiusClass} border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center space-x-3 focus-within:ring-2 focus-within:ring-blue-600 transition`}>
+              <div className={`bg-white dark:bg-slate-900 p-2 ${radiusClass} border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center space-x-3 focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500 transition`}>
                 <div className="pl-3 text-slate-400 shrink-0">
-                  <Search className="w-6 h-6 text-blue-600" />
+                  <Search className="w-6 h-6 text-orange-500" />
                 </div>
                 <input
                   ref={searchInputRef}
@@ -508,7 +508,7 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
                     if (searchTerm.trim()) setShowSuggestions(true);
                   }}
                   placeholder="Pesquisar produto pelo nome... (pressione Enter)"
-                  className="w-full bg-transparent text-sm md:text-base font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none py-2"
+                  className="w-full bg-transparent text-sm md:text-base font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none py-2"
                 />
                 {searchTerm && (
                   <button
@@ -823,12 +823,12 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
                       }}
                       className={`p-2.5 rounded-xl border text-xs font-bold text-left flex items-center justify-between transition ${
                         tipoSaida === btn.tipoSaida
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-md'
+                          : 'bg-[#0B1220] text-slate-300 border-[#1F2937] hover:bg-[#1F2937]'
                       }`}
                     >
                       <span>{btn.label}</span>
-                      {tipoSaida === btn.tipoSaida && <Check className="w-4 h-4" />}
+                      {tipoSaida === btn.tipoSaida && <Check className="w-4 h-4 text-white" />}
                     </button>
                   ))}
                 </div>
@@ -863,10 +863,10 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
                 <button
                   onClick={handleStartExitProcess}
                   disabled={selectedItems.length === 0 || loading}
-                  className={`w-full py-3.5 px-4 rounded-xl text-xs font-extrabold text-white flex items-center justify-center space-x-2 transition shadow-md ${
+                  className={`w-full py-3.5 px-4 rounded-xl text-xs font-extrabold text-white flex items-center justify-center space-x-2 transition shadow-lg ${
                     selectedItems.length === 0 || loading
-                      ? 'bg-slate-300 dark:bg-slate-800 cursor-not-allowed text-slate-500'
-                      : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/25'
+                      ? 'bg-[#1F2937] cursor-not-allowed text-slate-500'
+                      : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:opacity-95 shadow-indigo-600/30'
                   }`}
                 >
                   <PackageCheck className="w-4 h-4" />
@@ -933,7 +933,7 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
               <span className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md text-slate-700 dark:text-slate-300 font-bold">[ESC] Sair</span>
             </div>
             <div>
-              <span>Bytecas Estoque v2.4 • Banco de Dados Central Sincronizado</span>
+              <span>Bosteca Estoque v2.4 • Banco de Dados Central Sincronizado</span>
             </div>
           </div>
         </footer>

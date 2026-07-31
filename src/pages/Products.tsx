@@ -3,34 +3,52 @@ import { api } from '../services/api';
 import { firestoreSync } from '../services/firestoreSync';
 import { Product, Category } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { localStore } from '../services/localStore';
-import { BarcodeScannerModal } from '../components/BarcodeScannerModal';
 import { standardizeProductName, findDuplicateProduct } from '../utils/productStandardizer';
 import {
   Search,
   Plus,
   Filter,
-  Camera,
   Edit2,
   Trash2,
   X,
   Boxes,
-  Check,
   AlertCircle,
   MapPin,
   Tag,
-  Barcode,
-  Layers,
-  RotateCcw,
-  Copy,
   FolderPlus,
   ChevronDown,
   ChevronUp,
-  Star,
-  History,
-  AlertTriangle
+  Folder,
+  Package,
+  Layers,
+  Smartphone,
+  Sparkles,
+  Shield,
+  Cpu,
+  Check
 } from 'lucide-react';
 
+const COLOR_OPTIONS = [
+  { name: 'Azul', value: '#3b82f6', bg: 'bg-blue-500' },
+  { name: 'Verde', value: '#10b981', bg: 'bg-emerald-500' },
+  { name: 'Roxo', value: '#8b5cf6', bg: 'bg-purple-500' },
+  { name: 'Laranja', value: '#f97316', bg: 'bg-orange-500' },
+  { name: 'Rosa', value: '#ec4899', bg: 'bg-pink-500' },
+  { name: 'Vermelho', value: '#ef4444', bg: 'bg-rose-500' },
+  { name: 'Ciano', value: '#06b6d4', bg: 'bg-cyan-500' },
+  { name: 'Cinza', value: '#64748b', bg: 'bg-slate-500' }
+];
+
+const ICON_OPTIONS = [
+  { id: 'Folder', label: 'Pasta', icon: Folder },
+  { id: 'Package', label: 'Pacote', icon: Package },
+  { id: 'Layers', label: 'Camadas', icon: Layers },
+  { id: 'Tag', label: 'Etiqueta', icon: Tag },
+  { id: 'Smartphone', label: 'Celular', icon: Smartphone },
+  { id: 'Sparkles', label: 'Acessórios', icon: Sparkles },
+  { id: 'Shield', label: 'Proteção', icon: Shield },
+  { id: 'Cpu', label: 'Componentes', icon: Cpu }
+];
 
 export const Products: React.FC = () => {
   const { canPerform } = useAuth();
@@ -40,10 +58,7 @@ export const Products: React.FC = () => {
 
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Todas');
-
-  // Scanner modal
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('Todas');
 
   // Add/Edit Product Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,17 +67,15 @@ export const Products: React.FC = () => {
   // Category Management Modal
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
+  const [newCategoryIcon, setNewCategoryIcon] = useState('Folder');
+  const [newCategoryDesc, setNewCategoryDesc] = useState('');
   const [catError, setCatError] = useState('');
 
-  // Copy product name state
-  const [copiedProdId, setCopiedProdId] = useState<string | null>(null);
-
-  // Form Fields
+  // Form Fields for Product
   const [nome, setNome] = useState('');
   const [categoria, setCategoria] = useState('');
-  const [marca, setMarca] = useState('');
-  const [codigo, setCodigo] = useState('');
-  const [codigoBarras, setCodigoBarras] = useState('');
+  const [marca, setMarca] = useState('Padrão');
   const [estoque, setEstoque] = useState<number>(0);
   const [estoqueMinimo, setEstoqueMinimo] = useState<number>(5);
   const [localizacao, setLocalizacao] = useState('');
@@ -72,7 +85,7 @@ export const Products: React.FC = () => {
   // Delete Confirmation Modal
   const [deleteProductCandidate, setDeleteProductCandidate] = useState<Product | null>(null);
 
-  // Collapsed Category Accordions State
+  // Collapsed Category Accordions State (default: open)
   const [collapsedCategories, setCollapsedCategories] = useState<{ [catName: string]: boolean }>({});
 
   useEffect(() => {
@@ -102,44 +115,32 @@ export const Products: React.FC = () => {
     };
   }, []);
 
-  const products = useMemo(() => {
+  // Filter products strictly by NAME
+  const filteredProducts = useMemo(() => {
     let filtered = rawProducts.filter((p) => p.ativo !== false);
-    if (selectedCategory && selectedCategory !== 'Todas') {
-      filtered = filtered.filter((p) => p.categoria === selectedCategory);
+    if (selectedCategoryFilter && selectedCategoryFilter !== 'Todas') {
+      filtered = filtered.filter((p) => p.categoria === selectedCategoryFilter);
     }
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (p) =>
-          p.nome.toLowerCase().includes(term) ||
-          p.marca.toLowerCase().includes(term) ||
-          p.codigo.toLowerCase().includes(term) ||
-          p.localizacao.toLowerCase().includes(term) ||
-          (p.codigo_barras && p.codigo_barras.toLowerCase().includes(term))
-      );
+    if (searchTerm.trim()) {
+      const term = searchTerm.trim().toLowerCase();
+      filtered = filtered.filter((p) => p.nome.toLowerCase().includes(term));
     }
     return filtered;
-  }, [rawProducts, selectedCategory, searchTerm]);
+  }, [rawProducts, selectedCategoryFilter, searchTerm]);
 
   // Group products by category
   const groupedProducts = useMemo(() => {
     const groups: { [catName: string]: Product[] } = {};
-    for (const p of products) {
+    for (const p of filteredProducts) {
       const cat = p.categoria || 'Sem Categoria';
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(p);
     }
     return groups;
-  }, [products]);
-
-  const copyProductName = (p: Product) => {
-    navigator.clipboard.writeText(p.nome);
-    setCopiedProdId(p.id);
-    setTimeout(() => setCopiedProdId(null), 2000);
-  };
+  }, [filteredProducts]);
 
   const toggleCategoryCollapse = (catName: string) => {
-    setCollapsedCategories(prev => ({
+    setCollapsedCategories((prev) => ({
       ...prev,
       [catName]: !prev[catName]
     }));
@@ -149,18 +150,38 @@ export const Products: React.FC = () => {
     e.preventDefault();
     setCatError('');
     if (!newCategoryName.trim()) {
-      setCatError('Digite o nome da nova categoria.');
+      setCatError('Digite o nome da categoria.');
       return;
     }
+
     try {
-      await firestoreSync.createCategory(newCategoryName.trim());
+      await firestoreSync.createCategory(
+        newCategoryName.trim(),
+        newCategoryColor,
+        newCategoryIcon,
+        newCategoryDesc.trim()
+      );
       setNewCategoryName('');
+      setNewCategoryDesc('');
+      setIsCategoryModalOpen(false);
     } catch (err: any) {
       setCatError(err.message || 'Erro ao criar categoria.');
     }
   };
 
   const handleDeleteCategory = async (catId: string, catName: string) => {
+    // Prevent deletion if products exist in this category
+    const productsInCat = rawProducts.filter(
+      (p) => p.categoria?.trim().toLowerCase() === catName.trim().toLowerCase() && p.ativo !== false
+    );
+
+    if (productsInCat.length > 0) {
+      alert(
+        `Não é possível excluir a categoria "${catName}" pois ainda existem ${productsInCat.length} produto(s) cadastrado(s) nela.\n\nPrimeiro será necessário mover esses produtos para outra categoria.`
+      );
+      return;
+    }
+
     if (window.confirm(`Excluir a categoria "${catName}"?`)) {
       try {
         await firestoreSync.deleteCategory(catId);
@@ -173,10 +194,8 @@ export const Products: React.FC = () => {
   const openAddModal = () => {
     setEditingProduct(null);
     setNome('');
-    setCategoria(categories[0]?.nome || 'Acessórios e Cabos');
-    setMarca('');
-    setCodigo(`PROD-${Math.floor(1000 + Math.random() * 9000)}`);
-    setCodigoBarras('');
+    setCategoria(categories[0]?.nome || 'Geral');
+    setMarca('Padrão');
     setEstoque(10);
     setEstoqueMinimo(5);
     setLocalizacao('Prateleira A1');
@@ -189,12 +208,10 @@ export const Products: React.FC = () => {
     setEditingProduct(p);
     setNome(p.nome);
     setCategoria(p.categoria);
-    setMarca(p.marca);
-    setCodigo(p.codigo);
-    setCodigoBarras(p.codigo_barras || '');
+    setMarca(p.marca || 'Padrão');
     setEstoque(p.estoque);
     setEstoqueMinimo(p.estoque_minimo);
-    setLocalizacao(p.localizacao);
+    setLocalizacao(p.localizacao || '');
     setObservacao(p.observacao || '');
     setFormError('');
     setIsModalOpen(true);
@@ -204,45 +221,42 @@ export const Products: React.FC = () => {
     e.preventDefault();
     setFormError('');
 
-    if (!nome || !categoria || !marca || !codigo || estoque === undefined || estoqueMinimo === undefined || !localizacao) {
-      setFormError('Por favor, preencha todos os campos obrigatórios.');
+    if (!nome.trim() || !categoria) {
+      setFormError('Por favor, preencha o nome do produto e a categoria.');
       return;
     }
 
     const standardizedName = standardizeProductName(nome);
 
-    // Check duplicate product in same category
-    const duplicate = findDuplicateProduct(products, standardizedName, categoria, editingProduct?.id);
+    const duplicate = findDuplicateProduct(filteredProducts, standardizedName, categoria, editingProduct?.id);
     if (duplicate) {
-      setFormError(
-        `Já existe o produto "${duplicate.nome}" cadastrado na categoria "${categoria}". Não é permitido ter produtos duplicados na mesma categoria.`
-      );
+      setFormError(`Já existe o produto "${duplicate.nome}" cadastrado na categoria "${categoria}".`);
       return;
     }
 
     try {
+      const generatedCode = editingProduct?.codigo || `PROD-${Math.floor(1000 + Math.random() * 9000)}`;
+
       if (editingProduct) {
         await api.updateProduct(editingProduct.id, {
           nome: standardizedName,
           categoria,
-          marca,
-          codigo,
-          codigo_barras: codigoBarras,
+          marca: marca || 'Padrão',
+          codigo: generatedCode,
           estoque: Number(estoque),
           estoque_minimo: Number(estoqueMinimo),
-          localizacao,
+          localizacao: localizacao || 'Prateleira A1',
           observacao
         });
       } else {
         await api.createProduct({
           nome: standardizedName,
           categoria,
-          marca,
-          codigo,
-          codigo_barras: codigoBarras,
+          marca: marca || 'Padrão',
+          codigo: generatedCode,
           estoque: Number(estoque),
           estoque_minimo: Number(estoqueMinimo),
-          localizacao,
+          localizacao: localizacao || 'Prateleira A1',
           observacao
         });
       }
@@ -257,7 +271,7 @@ export const Products: React.FC = () => {
     if (!deleteProductCandidate) return;
     try {
       const targetId = deleteProductCandidate.id;
-      setRawProducts(prev => prev.filter(p => p.id !== targetId));
+      setRawProducts((prev) => prev.filter((p) => p.id !== targetId));
       await api.deleteProduct(targetId);
       setDeleteProductCandidate(null);
     } catch (err: any) {
@@ -265,137 +279,84 @@ export const Products: React.FC = () => {
     }
   };
 
-  const handleScanSuccess = (product: Product) => {
-    setSearchTerm(product.codigo_barras || product.codigo);
-  };
-
-  const handleZeroAllStock = async () => {
-    if (window.confirm('⚠️ Tem certeza que deseja ZERAR O ESTOQUE de TODOS os produtos? As quantidades passarão para 0 UN.')) {
-      setLoading(true);
-      await firestoreSync.zeroAllProductsStock();
-      setLoading(false);
-      alert('Estoque de todos os produtos foi zerado com sucesso!');
-    }
-  };
-
-  const handleClearAllData = async () => {
-    if (window.confirm('🧹 ZERAR ESTOQUE E LIMPAR TUDO?\n\nIsso zerará a quantidade em estoque de todos os produtos E removerá o histórico de movimentações e demandas temporárias.')) {
-      setLoading(true);
-      await firestoreSync.clearAllDataAndResetStock();
-      setLoading(false);
-      alert('Estoque zerado e todas as movimentações foram limpas com sucesso!');
-    }
+  const getCategoryMeta = (catName: string) => {
+    const found = categories.find((c) => c.nome.toLowerCase() === catName.toLowerCase());
+    return {
+      cor: found?.cor || '#3b82f6',
+      icone: found?.icone || 'Folder',
+      descricao: found?.descricao || ''
+    };
   };
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header & Main Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
         <div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center space-x-2">
             <Boxes className="w-6 h-6 text-blue-600" />
-            <span>Controle de Estoque Físico</span>
+            <span>Estoque Central</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Divisão por categorias com cópia rápida de nome e gerenciamento de categorias.
+            Organização por categorias com visualização limpa e pastas sanfonadas.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center space-x-2">
           <button
-            onClick={() => window.dispatchEvent(new CustomEvent('open_guided_inventory'))}
-            className="px-3 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
-            title="Iniciar conferência física de estoque passo a passo"
+            onClick={() => {
+              setCatError('');
+              setIsCategoryModalOpen(true);
+            }}
+            className="px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center space-x-2 shadow-2xs"
           >
-            <span>Inventário Guiado</span>
+            <FolderPlus className="w-4 h-4 text-orange-500" />
+            <span>+ Criar Categoria</span>
           </button>
 
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent('open_import_export'))}
-            className="px-3 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
-            title="Importar ou Exportar CSV/JSON"
-          >
-            <span>Importar / Exportar</span>
-          </button>
-
-          <button
-            onClick={() => setIsCategoryModalOpen(true)}
-            className="px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-2xs"
-            title="Criar e gerenciar categorias de produtos"
-          >
-            <FolderPlus className="w-4 h-4 text-indigo-600" />
-            <span>+ Criar Categorias</span>
-          </button>
-
-          <button
-            onClick={handleZeroAllStock}
-            className="px-3 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
-            title="Zerar a quantidade em estoque de todos os produtos"
-          >
-            <RotateCcw className="w-4 h-4 text-amber-600" />
-            <span>Zerar Estoque</span>
-          </button>
-
-          <button
-            onClick={handleClearAllData}
-            className="px-3 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
-            title="Zerar estoques e apagar histórico de movimentações"
-          >
-            <Trash2 className="w-4 h-4 text-rose-600" />
-            <span>Limpar Tudo</span>
-          </button>
-
-          <button
-            onClick={() => setIsScannerOpen(true)}
-            className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2"
-          >
-            <Camera className="w-4 h-4 text-slate-600" />
-            <span>Ler Barcode</span>
-          </button>
-
-          <button
-            onClick={openAddModal}
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/20 flex items-center space-x-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Novo Produto</span>
-          </button>
+          {canPerform('edit_products') && (
+            <button
+              onClick={openAddModal}
+              className="px-4 py-2.5 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 hover:opacity-95 text-white rounded-xl text-xs font-bold transition shadow-md shadow-orange-500/20 flex items-center space-x-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Novo Produto</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Search & Dynamic Filter Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-3">
-        {/* Dynamic Search Input */}
+      {/* Search Input (Strictly by Name) & Category Filter */}
+      <div className="bg-[#111827] p-4 rounded-2xl border border-[#1F2937] shadow-xl flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="relative w-full md:w-96">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Pesquisar por nome, marca, código ou local..."
-            className="w-full pl-10 pr-4 py-2 text-xs border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-slate-50/50 focus:bg-white font-medium transition-all"
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Pesquisar produto pelo nome..."
+            className="w-full pl-10 pr-4 py-3 text-xs border border-[#1F2937] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-[#0B1220] text-white placeholder-slate-400 font-medium transition"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
-        {/* Category Filter */}
         <div className="flex items-center space-x-2 w-full md:w-auto">
           <Filter className="w-4 h-4 text-slate-400 shrink-0" />
           <select
-            value={selectedCategory}
-            onChange={e => setSelectedCategory(e.target.value)}
-            className="px-3 py-2 text-xs border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-slate-50/50 text-slate-700 font-semibold w-full md:w-auto"
+            value={selectedCategoryFilter}
+            onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+            className="px-3.5 py-3 text-xs border border-[#1F2937] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-[#0B1220] text-white font-semibold w-full md:w-auto"
           >
-            <option value="Todas">Todas as Categorias ({products.length})</option>
+            <option value="Todas" className="bg-[#0B1220] text-white">Todas as Categorias ({filteredProducts.length})</option>
             {categories.map((c, idx) => (
-              <option key={c.id ? `${c.id}-${idx}` : `${c.nome}-${idx}`} value={c.nome}>
+              <option key={c.id ? `${c.id}-${idx}` : `${c.nome}-${idx}`} value={c.nome} className="bg-[#0B1220] text-white">
                 {c.nome}
               </option>
             ))}
@@ -403,223 +364,142 @@ export const Products: React.FC = () => {
         </div>
       </div>
 
-      {/* Grouped Products List by Category */}
-      <div className="space-y-6">
+      {/* Folders & Products List */}
+      <div className="space-y-4">
         {loading ? (
           <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 italic text-xs">
-            Carregando produtos e estoque...
+            Carregando produtos do estoque...
           </div>
         ) : Object.keys(groupedProducts).length === 0 ? (
           <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 text-xs font-medium">
-            Nenhum produto encontrado com os filtros selecionados.
+            Nenhum produto encontrado.
           </div>
         ) : (
           Object.entries(groupedProducts).map(([catName, prods]: [string, Product[]]) => {
             const isCollapsed = collapsedCategories[catName];
+            const meta = getCategoryMeta(catName);
 
             return (
-              <div key={catName} className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
-                {/* Category Header Bar */}
+              <div
+                key={catName}
+                className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden transition-all"
+              >
+                {/* Folder Accordion Header */}
                 <div
                   onClick={() => toggleCategoryCollapse(catName)}
-                  className="bg-slate-900 text-white p-4 flex items-center justify-between cursor-pointer hover:bg-slate-850 transition select-none"
+                  className="p-4 bg-slate-900 text-white flex items-center justify-between cursor-pointer hover:bg-slate-850 transition select-none"
                 >
-                  <div className="flex items-center space-x-2.5">
-                    <div className="p-1.5 bg-blue-500/20 text-blue-400 rounded-lg">
-                      <Layers className="w-4 h-4" />
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-xs shrink-0"
+                      style={{ backgroundColor: meta.cor }}
+                    >
+                      <Folder className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-xs tracking-wide flex items-center space-x-2">
+                      <h3 className="font-bold text-sm tracking-tight flex items-center space-x-2">
                         <span>{catName}</span>
-                        <span className="px-2 py-0.5 bg-blue-500/30 text-blue-300 text-[10px] rounded-full font-mono font-bold">
-                          {prods.length} {prods.length === 1 ? 'produto' : 'produtos'}
+                        <span className="px-2.5 py-0.5 bg-white/10 text-slate-200 text-[10px] rounded-full font-mono font-bold">
+                          {prods.length} {prods.length === 1 ? 'item' : 'itens'}
                         </span>
                       </h3>
+                      {meta.descricao && (
+                        <p className="text-[11px] text-slate-400 font-normal mt-0.5">{meta.descricao}</p>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex items-center space-x-2 text-slate-400">
-                    <span className="text-[10px] uppercase tracking-wider font-bold hidden sm:inline">
-                      {isCollapsed ? 'Expandir' : 'Recolher'}
+                    <span className="text-[10px] uppercase font-bold tracking-wider hidden sm:inline">
+                      {isCollapsed ? 'Abrir Pasta' : 'Fechar Pasta'}
                     </span>
-                    {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                    {isCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
                   </div>
                 </div>
 
-                {/* Category Products Table */}
+                {/* Folder Contents (Product Cards List) */}
                 {!isCollapsed && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                          <th className="p-3.5">Nome do Produto & Copiar</th>
-                          <th className="p-3.5">Marca</th>
-                          <th className="p-3.5">Código / Barcode</th>
-                          <th className="p-3.5 text-center">Estoque Atual</th>
-                          <th className="p-3.5">Localização</th>
-                          <th className="p-3.5 text-right">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 text-xs">
-                        {prods.map(p => {
-                          const isNegative = p.estoque < 0;
-                          const isZero = p.estoque === 0;
-                          const isLow = p.estoque > 0 && p.estoque <= p.estoque_minimo;
-                          const isCopied = copiedProdId === p.id;
+                  <div className="p-4 bg-slate-50/50">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {prods.map((p) => {
+                        const isZero = p.estoque === 0;
+                        const isNegative = p.estoque < 0;
+                        const isLow = p.estoque > 0 && p.estoque <= p.estoque_minimo;
 
-                          return (
-                            <tr key={p.id} className={`hover:bg-slate-50/80 transition-colors group ${isNegative ? 'bg-rose-50/30' : ''}`}>
-                              {/* Name with Copy Option */}
-                              <td className="p-3.5">
-                                <div className="flex items-center space-x-2">
-                                  <span className={`font-semibold transition-colors ${isNegative ? 'text-rose-700 font-extrabold' : 'text-slate-900 group-hover:text-blue-600'}`}>
-                                    {p.nome}
-                                  </span>
-                                  <button
-                                    onClick={() => copyProductName(p)}
-                                    className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center space-x-1 ${
-                                      isCopied
-                                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                        : 'bg-slate-100 hover:bg-blue-100 text-slate-600 hover:text-blue-700 border border-slate-200'
-                                    }`}
-                                    title="Copiar nome do produto"
-                                  >
-                                    {isCopied ? (
-                                      <>
-                                        <Check className="w-3 h-3 text-emerald-600" />
-                                        <span>Copiado!</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Copy className="w-3 h-3" />
-                                        <span>Copiar</span>
-                                      </>
-                                    )}
-                                  </button>
-                                </div>
-                              </td>
-
-                              {/* Brand */}
-                              <td className="p-3.5 text-slate-600 font-medium">
-                                <span className="inline-flex items-center space-x-1">
-                                  <Tag className="w-3 h-3 text-slate-400" />
-                                  <span>{p.marca}</span>
+                        return (
+                          <div
+                            key={p.id}
+                            className={`p-4 rounded-xl border bg-white transition hover:shadow-md flex flex-col justify-between space-y-3 ${
+                              isNegative
+                                ? 'border-rose-300 bg-rose-50/20'
+                                : isZero
+                                ? 'border-rose-200'
+                                : isLow
+                                ? 'border-amber-200'
+                                : 'border-slate-200/80'
+                            }`}
+                          >
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-slate-900 text-sm leading-tight">{p.nome}</h4>
+                              <div className="flex items-center space-x-2 text-[11px] text-slate-500 pt-0.5">
+                                <span className="px-2 py-0.5 bg-slate-100 rounded-md font-semibold text-slate-600">
+                                  {p.categoria}
                                 </span>
-                              </td>
-
-                              {/* Code & Barcode */}
-                              <td className="p-3.5 font-mono text-[11px]">
-                                <div className="font-bold text-slate-800">{p.codigo}</div>
-                                {p.codigo_barras && (
-                                  <div className="text-slate-400 text-[10px] flex items-center space-x-1 mt-0.5">
-                                    <Barcode className="w-3 h-3" />
-                                    <span>{p.codigo_barras}</span>
-                                  </div>
-                                )}
-                              </td>
-
-                              {/* Quantity Badge */}
-                              <td className="p-3.5 text-center">
-                                <div className="inline-flex flex-col items-center">
-                                  <span
-                                    className={`px-3 py-1 rounded-full font-bold text-xs flex items-center gap-1 ${
-                                      isNegative
-                                        ? 'bg-rose-600 text-white border border-rose-700 shadow-xs'
-                                        : isZero
-                                        ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                                        : isLow
-                                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                                        : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                    }`}
-                                  >
-                                    {isNegative && <AlertTriangle className="w-3.5 h-3.5 text-amber-300 animate-pulse" />}
-                                    {p.estoque} un
+                                {p.localizacao && (
+                                  <span className="flex items-center space-x-1 text-slate-500">
+                                    <MapPin className="w-3 h-3 text-blue-500" />
+                                    <span>{p.localizacao}</span>
                                   </span>
-                                  {isNegative ? (
-                                    <span className="text-[10px] text-rose-600 font-extrabold mt-0.5 uppercase tracking-wider">
-                                      Divergência
-                                    </span>
-                                  ) : (
-                                    <span className="text-[10px] text-slate-400 mt-0.5 font-medium">
-                                      Mín: {p.estoque_minimo}
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
+                                )}
+                              </div>
+                            </div>
 
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                              <div>
+                                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                                  Estoque
+                                </span>
+                                <span
+                                  className={`text-sm font-extrabold ${
+                                    isNegative
+                                      ? 'text-rose-600'
+                                      : isZero
+                                      ? 'text-rose-600'
+                                      : isLow
+                                      ? 'text-amber-600'
+                                      : 'text-emerald-700'
+                                  }`}
+                                >
+                                  {p.estoque} un
+                                </span>
+                              </div>
 
-                              {/* Location */}
-                              <td className="p-3.5">
-                                <div className="flex items-center space-x-1 text-slate-600">
-                                  <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                                  <span className="font-semibold">{p.localizacao}</span>
-                                </div>
-                              </td>
-
-                              {/* Actions */}
-                              <td className="p-3.5 text-right">
-                                <div className="flex items-center justify-end space-x-1">
-                                  {/* Favorite Toggle Button */}
+                              <div className="flex items-center space-x-1">
+                                {canPerform('edit_products') && (
                                   <button
-                                    onClick={() => {
-                                      localStore.toggleFavoriteProduct(p.id);
-                                      setRawProducts(prev =>
-                                        prev.map(item =>
-                                          item.id === p.id ? { ...item, favorito: !item.favorito } : item
-                                        )
-                                      );
-                                    }}
-                                    className={`p-1.5 rounded-xl transition-colors ${
-                                      p.favorito
-                                        ? 'text-amber-400 bg-amber-500/10'
-                                        : 'text-slate-300 hover:text-amber-500 hover:bg-slate-100'
-                                    }`}
-                                    title={p.favorito ? 'Remover dos Favoritos' : 'Marcar como Favorito'}
+                                    onClick={() => openEditModal(p)}
+                                    className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition"
+                                    title="Editar Produto"
                                   >
-                                    <Star className={`w-4 h-4 ${p.favorito ? 'fill-amber-400' : ''}`} />
+                                    <Edit2 className="w-4 h-4" />
                                   </button>
+                                )}
 
-                                  {/* Product History Modal Trigger */}
+                                {canPerform('delete_products') && (
                                   <button
-                                    onClick={() => {
-                                      window.dispatchEvent(
-                                        new CustomEvent('open_product_history', {
-                                          detail: { productId: p.id }
-                                        })
-                                      );
-                                    }}
-                                    className="p-1.5 rounded-xl text-slate-400 hover:text-orange-600 hover:bg-orange-50 transition-colors"
-                                    title="Ver Histórico de Movimentações"
+                                    onClick={() => setDeleteProductCandidate(p)}
+                                    className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                                    title="Excluir Produto"
                                   >
-                                    <History className="w-4 h-4" />
+                                    <Trash2 className="w-4 h-4" />
                                   </button>
-
-                                  {canPerform('edit_products') && (
-                                    <button
-                                      onClick={() => openEditModal(p)}
-                                      className="p-1.5 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                                      title="Editar Produto"
-                                    >
-                                      <Edit2 className="w-4 h-4" />
-                                    </button>
-                                  )}
-
-                                  {canPerform('delete_products') && (
-                                    <button
-                                      onClick={() => setDeleteProductCandidate(p)}
-                                      className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                                      title="Excluir Produto"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -628,66 +508,89 @@ export const Products: React.FC = () => {
         )}
       </div>
 
-      {/* Category Creation & Management Modal */}
+      {/* Category Modal ("Criar Categoria") */}
       {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
-            <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-xs p-4">
+          <div className="bg-[#111827] text-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-[#1F2937]">
+            <div className="bg-[#0B1220] p-5 flex items-center justify-between border-b border-[#1F2937]">
               <div className="flex items-center space-x-2">
-                <FolderPlus className="w-5 h-5 text-indigo-400" />
-                <h3 className="font-bold text-base">Gerenciar & Criar Categorias</h3>
+                <FolderPlus className="w-5 h-5 text-blue-400" />
+                <h3 className="font-bold text-base text-white">Criar Nova Categoria</h3>
               </div>
               <button
                 onClick={() => setIsCategoryModalOpen(false)}
-                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1 rounded-lg hover:bg-[#1F2937] text-slate-400 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-5 text-xs">
-              {/* Form to Add New Category */}
-              <form onSubmit={handleCreateCategory} className="space-y-3">
-                <label className="block font-bold text-slate-700">Nova Categoria de Produtos</label>
-                {catError && (
-                  <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 flex items-center space-x-2">
-                    <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
-                    <span>{catError}</span>
-                  </div>
-                )}
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={e => setNewCategoryName(e.target.value)}
-                    placeholder="Ex: Capas Premium, Fontes GaN, Caixas de Som"
-                    className="flex-1 px-3.5 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition shadow-md shrink-0"
-                  >
-                    Criar
-                  </button>
+            <form onSubmit={handleCreateCategory} className="p-6 space-y-4 text-xs">
+              {catError && (
+                <div className="p-3 bg-rose-950/40 border border-rose-800 rounded-xl text-rose-300 flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{catError}</span>
                 </div>
-              </form>
+              )}
 
-              {/* List of Existing Categories */}
               <div>
+                <label className="block font-bold text-slate-300 mb-1">Nome da Categoria *</label>
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="Ex: Cabos & Adaptadores, Capas, Películas"
+                  className="w-full px-3.5 py-2.5 bg-[#0B1220] border border-[#1F2937] text-white placeholder-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-300 mb-1.5">Cor do Ícone</label>
+                <div className="flex flex-wrap gap-2">
+                  {COLOR_OPTIONS.map((c) => (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onClick={() => setNewCategoryColor(c.value)}
+                      className={`w-7 h-7 rounded-full ${c.bg} flex items-center justify-center transition ${
+                        newCategoryColor === c.value ? 'ring-2 ring-offset-2 ring-blue-500 scale-110' : ''
+                      }`}
+                    >
+                      {newCategoryColor === c.value && <Check className="w-3.5 h-3.5 text-white" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-300 mb-1">Descrição (opcional)</label>
+                <input
+                  type="text"
+                  value={newCategoryDesc}
+                  onChange={(e) => setNewCategoryDesc(e.target.value)}
+                  placeholder="Ex: Acessórios gerais de conectividade e carregamento"
+                  className="w-full px-3.5 py-2 bg-[#0B1220] border border-[#1F2937] text-white placeholder-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                />
+              </div>
+
+              {/* List of Existing Categories with Deletion Restriction */}
+              <div className="pt-2">
                 <h4 className="font-bold text-slate-800 mb-2 border-b border-slate-100 pb-1">
-                  Categorias Existentes ({categories.length})
+                  Categorias Atuais ({categories.length})
                 </h4>
-                <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
                   {categories.map((c, idx) => (
                     <div
                       key={c.id ? `${c.id}-${idx}` : `${c.nome}-${idx}`}
-                      className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 hover:bg-slate-100 transition"
+                      className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200/80"
                     >
                       <span className="font-semibold text-slate-800">{c.nome}</span>
                       <button
+                        type="button"
                         onClick={() => handleDeleteCategory(c.id, c.nome)}
                         className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
-                        title="Remover Categoria"
+                        title="Excluir Categoria"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -695,18 +598,26 @@ export const Products: React.FC = () => {
                   ))}
                 </div>
               </div>
-            </div>
+
+              <div className="pt-3 flex space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryModalOpen(false)}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 hover:opacity-95 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition"
+                >
+                  Criar Categoria
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
-
-      {/* Barcode Scanner Modal */}
-      <BarcodeScannerModal
-        isOpen={isScannerOpen}
-        onClose={() => setIsScannerOpen(false)}
-        products={products}
-        onScanSuccess={handleScanSuccess}
-      />
 
       {/* Delete Product Confirmation Modal */}
       {deleteProductCandidate && (
@@ -717,7 +628,8 @@ export const Products: React.FC = () => {
             </div>
             <h3 className="font-bold text-slate-900 text-base">Excluir Produto?</h3>
             <p className="text-xs text-slate-500 mt-1">
-              Tem certeza que deseja excluir o produto <span className="font-bold text-slate-800 font-mono">"{deleteProductCandidate.nome}"</span>?
+              Tem certeza que deseja excluir o produto{' '}
+              <span className="font-bold text-slate-800">"{deleteProductCandidate.nome}"</span>?
             </p>
             <div className="flex space-x-2 mt-5">
               <button
@@ -739,18 +651,18 @@ export const Products: React.FC = () => {
 
       {/* Add / Edit Product Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 max-h-[90vh] flex flex-col">
-            <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-xs p-4">
+          <div className="bg-[#111827] text-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-[#1F2937] max-h-[90vh] flex flex-col">
+            <div className="bg-[#0B1220] p-5 flex items-center justify-between border-b border-[#1F2937]">
               <div className="flex items-center space-x-2">
                 <Boxes className="w-5 h-5 text-blue-400" />
-                <h3 className="font-bold text-base">
-                  {editingProduct ? 'Editar Produto do Estoque' : 'Cadastrar Novo Produto'}
+                <h3 className="font-bold text-base text-white">
+                  {editingProduct ? 'Editar Produto' : 'Cadastrar Novo Produto'}
                 </h3>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1 rounded-lg hover:bg-[#1F2937] text-slate-400 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -758,119 +670,74 @@ export const Products: React.FC = () => {
 
             <form onSubmit={handleSaveProduct} className="p-6 space-y-4 overflow-y-auto flex-1 text-xs">
               {formError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center space-x-2 text-rose-700">
-                  <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                <div className="p-3 bg-rose-950/40 border border-rose-800 rounded-xl flex items-center space-x-2 text-rose-300">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
                   <span>{formError}</span>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                  <label className="block text-slate-700 font-bold mb-1">Nome do Produto *</label>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">Nome do Produto *</label>
                   <input
                     type="text"
                     value={nome}
-                    onChange={e => setNome(e.target.value)}
+                    onChange={(e) => setNome(e.target.value)}
                     placeholder="Ex: Cabo USB-C Turbo 65W Nylon 1m"
-                    className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    className="w-full px-3.5 py-2.5 bg-[#0B1220] border border-[#1F2937] text-white placeholder-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Categoria *</label>
+                  <label className="block text-slate-300 font-bold mb-1">Categoria *</label>
                   <select
                     value={categoria}
-                    onChange={e => setCategoria(e.target.value)}
-                    className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                    onChange={(e) => setCategoria(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-[#0B1220] border border-[#1F2937] text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
                   >
                     {categories.map((c, idx) => (
-                      <option key={c.id ? `${c.id}-${idx}` : `${c.nome}-${idx}`} value={c.nome}>
+                      <option key={c.id ? `${c.id}-${idx}` : `${c.nome}-${idx}`} value={c.nome} className="bg-[#0B1220] text-white">
                         {c.nome}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Marca / Fabricante *</label>
-                  <input
-                    type="text"
-                    value={marca}
-                    onChange={e => setMarca(e.target.value)}
-                    placeholder="Ex: Baseus, Anker, Samsung"
-                    className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-300 font-bold mb-1">Estoque Inicial (UN) *</label>
+                    <input
+                      type="number"
+                      value={estoque}
+                      onChange={(e) => setEstoque(Number(e.target.value))}
+                      min="0"
+                      className="w-full px-3.5 py-2.5 bg-[#0B1220] border border-[#1F2937] text-white placeholder-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 font-bold mb-1">Estoque Mínimo *</label>
+                    <input
+                      type="number"
+                      value={estoqueMinimo}
+                      onChange={(e) => setEstoqueMinimo(Number(e.target.value))}
+                      min="1"
+                      className="w-full px-3.5 py-2.5 bg-[#0B1220] border border-[#1F2937] text-white placeholder-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Código Interno *</label>
-                  <input
-                    type="text"
-                    value={codigo}
-                    onChange={e => setCodigo(e.target.value)}
-                    placeholder="PROD-1020"
-                    className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono font-bold"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Código de Barras (Barcode)</label>
-                  <input
-                    type="text"
-                    value={codigoBarras}
-                    onChange={e => setCodigoBarras(e.target.value)}
-                    placeholder="7891234567890"
-                    className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Quantidade em Estoque (UN) *</label>
-                  <input
-                    type="number"
-                    value={estoque}
-                    onChange={e => setEstoque(Number(e.target.value))}
-                    min="0"
-                    className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-700"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Estoque Mínimo de Alerta *</label>
-                  <input
-                    type="number"
-                    value={estoqueMinimo}
-                    onChange={e => setEstoqueMinimo(Number(e.target.value))}
-                    min="1"
-                    className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
-                    required
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-slate-700 font-bold mb-1">Localização no Almoxarifado *</label>
+                  <label className="block text-slate-300 font-bold mb-1">Localização (opcional)</label>
                   <input
                     type="text"
                     value={localizacao}
-                    onChange={e => setLocalizacao(e.target.value)}
+                    onChange={(e) => setLocalizacao(e.target.value)}
                     placeholder="Ex: Prateleira B3 • Corredor 2"
-                    className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-                    required
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-slate-700 font-bold mb-1">Observações Internas</label>
-                  <textarea
-                    value={observacao}
-                    onChange={e => setObservacao(e.target.value)}
-                    rows={2}
-                    placeholder="Notas técnicas ou detalhes adicionais..."
-                    className="w-full px-3.5 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    className="w-full px-3.5 py-2.5 bg-[#0B1220] border border-[#1F2937] text-white placeholder-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                   />
                 </div>
               </div>
@@ -879,13 +746,13 @@ export const Products: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-3 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50"
+                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20"
+                  className="flex-1 py-3 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 hover:opacity-95 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition"
                 >
                   {editingProduct ? 'Salvar Alterações' : 'Cadastrar Produto'}
                 </button>

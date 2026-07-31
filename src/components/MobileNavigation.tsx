@@ -24,7 +24,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({ activeTab, o
   ];
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-40 px-2 py-1.5 flex items-center justify-around lg:hidden shadow-lg">
+    <nav className="fixed bottom-0 inset-x-0 bg-[#111827] border-t border-[#1F2937] z-40 px-2 py-1.5 flex items-center justify-around lg:hidden shadow-xl">
       {items.map(item => {
         const Icon = item.icon;
         const isActive = activeTab === item.id;
@@ -33,10 +33,10 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({ activeTab, o
             key={item.id}
             onClick={() => onTabChange(item.id)}
             className={`flex flex-col items-center justify-center w-14 py-1 rounded-xl transition-all ${
-              isActive ? 'text-blue-600 font-bold' : 'text-slate-400 hover:text-slate-600'
+              isActive ? 'text-blue-400 font-bold' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600 scale-110' : ''} transition-transform`} />
+            <Icon className={`w-5 h-5 ${isActive ? 'text-blue-400 scale-110' : ''} transition-transform`} />
             <span className="text-[10px] mt-0.5 leading-tight">{item.label}</span>
           </button>
         );

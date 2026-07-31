@@ -113,8 +113,8 @@ const initialDashboardConfig: DashboardCardConfig = {
 };
 
 const initialAppearance: StoreAppearance = {
-  nome_loja: 'Bytecas Estoque',
-  logotipo_texto: 'BYTECAS',
+  nome_loja: 'Bosteca Estoque',
+  logotipo_texto: 'BOSTECA',
   cor_tema: 'blue',
   densidade: 'confortavel',
   modo_escuro_header: true
@@ -136,7 +136,7 @@ const initialUsers: (User & { senha_hash: string })[] = [
   {
     id: 'usr_gerente',
     nome: 'Carlos Gerente',
-    email: 'gerente@bytecas.com',
+    email: 'gerente@bosteca.com',
     senha_hash: 'gerente123',
     cargo: 'gerente',
     ativo: true,
@@ -159,7 +159,7 @@ const initialProducts: Product[] = [
     id: 'prod_cabo_1',
     nome: 'Cabo USB Tipo-C',
     categoria: 'Cabos',
-    marca: 'Bytecas',
+    marca: 'Bosteca',
     codigo: 'CAB-USBC',
     codigo_barras: '7891234560101',
     estoque: 25,
@@ -173,7 +173,7 @@ const initialProducts: Product[] = [
     id: 'prod_cabo_2',
     nome: 'Cabo Lightning',
     categoria: 'Cabos',
-    marca: 'Bytecas',
+    marca: 'Bosteca',
     codigo: 'CAB-LIGHT',
     codigo_barras: '7891234560102',
     estoque: 18,
@@ -187,7 +187,7 @@ const initialProducts: Product[] = [
     id: 'prod_cabo_3',
     nome: 'Cabo Micro USB',
     categoria: 'Cabos',
-    marca: 'Bytecas',
+    marca: 'Bosteca',
     codigo: 'CAB-MICRO',
     codigo_barras: '7891234560103',
     estoque: 12,
@@ -887,16 +887,23 @@ export const localStore = {
     return getCategories();
   },
 
-  createCategory: (nome: string): Category => {
+  createCategory: (nome: string, cor?: string, icone?: string, descricao?: string): Category => {
     const categories = getCategories();
     const cleanName = nome.trim();
     const existing = categories.find(c => c.nome.toLowerCase() === cleanName.toLowerCase());
     if (existing) {
+      existing.cor = cor || existing.cor;
+      existing.icone = icone || existing.icone;
+      existing.descricao = descricao || existing.descricao;
+      setStored(CATEGORIES_KEY, categories);
       return existing;
     }
     const newCat: Category = {
       id: `cat_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       nome: cleanName,
+      cor: cor || '#3b82f6',
+      icone: icone || 'Folder',
+      descricao: descricao || '',
       created_at: new Date().toISOString()
     };
     categories.push(newCat);
@@ -1347,10 +1354,6 @@ export const localStore = {
     return config;
   },
 
-  getUsersList: (): User[] => {
-    return getUsers().map(({ senha_hash, ...u }) => u);
-  },
-
   saveUsersToLocal: (users: User[]) => {
     setStored(USERS_KEY, users);
   },
@@ -1465,6 +1468,7 @@ export const localStore = {
         !p.nome.includes('[TESTE]') &&
         !p.nome.includes('[BOT_TEST]') &&
         !p.codigo.includes('TST-') &&
+        p.marca !== 'Bosteca TestLab' &&
         p.marca !== 'Bytecas TestLab'
       ) {
         snapshot[p.id] = p.estoque;
@@ -1492,6 +1496,7 @@ export const localStore = {
       !p.nome.includes('[BOT_TEST]') &&
       !p.codigo.includes('TST-') &&
       !p.id.startsWith('test_prod_') &&
+      p.marca !== 'Bosteca TestLab' &&
       p.marca !== 'Bytecas TestLab'
     );
     setStored(PRODUCTS_KEY, products);
