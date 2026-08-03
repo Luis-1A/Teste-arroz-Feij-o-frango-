@@ -150,7 +150,13 @@ const initialCategories: Category[] = [
   { id: 'cat_carregadores', nome: 'Carregadores', created_at: new Date().toISOString() },
   { id: 'cat_fones', nome: 'Fones', created_at: new Date().toISOString() },
   { id: 'cat_peliculas', nome: 'Películas', created_at: new Date().toISOString() },
-  { id: 'cat_capinhas', nome: 'Capinhas', created_at: new Date().toISOString() }
+  { id: 'cat_capinhas', nome: 'Capinhas', created_at: new Date().toISOString() },
+  { id: 'cat_garrafas', nome: 'Garrafas', created_at: new Date().toISOString() },
+  { id: 'cat_suportes', nome: 'Suportes', created_at: new Date().toISOString() },
+  { id: 'cat_cabos_adaptadores', nome: 'Cabos e Adaptadores', created_at: new Date().toISOString() },
+  { id: 'cat_smartwatch', nome: 'Smartwatch', created_at: new Date().toISOString() },
+  { id: 'cat_jogos', nome: 'Jogos', created_at: new Date().toISOString() },
+  { id: 'cat_acessorios', nome: 'Acessórios', created_at: new Date().toISOString() }
 ];
 
 const initialProducts: Product[] = [
@@ -536,6 +542,351 @@ const initialProducts: Product[] = [
     ativo: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
+  },
+  // Garrafas
+  {
+    id: 'prod_gar_rosa',
+    nome: 'Garrafa Térmica Rosa',
+    categoria: 'Garrafas',
+    marca: 'Geral',
+    codigo: 'GAR-TERM-ROSA',
+    codigo_barras: '7891234560601',
+    estoque: 1,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira G1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_gar_cinza',
+    nome: 'Garrafa Térmica Cinza',
+    categoria: 'Garrafas',
+    marca: 'Geral',
+    codigo: 'GAR-TERM-CINZA',
+    codigo_barras: '7891234560602',
+    estoque: 2,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira G1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_gar_lilas',
+    nome: 'Garrafa Térmica Lilás',
+    categoria: 'Garrafas',
+    marca: 'Geral',
+    codigo: 'GAR-TERM-LILAS',
+    codigo_barras: '7891234560603',
+    estoque: 2,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira G1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_gar_creme',
+    nome: 'Garrafa Térmica Creme',
+    categoria: 'Garrafas',
+    marca: 'Geral',
+    codigo: 'GAR-TERM-CREME',
+    codigo_barras: '7891234560604',
+    estoque: 1,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira G1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  // Fones Bluetooth
+  {
+    id: 'prod_fon_head_preto',
+    nome: 'Headphone Bluetooth Preto',
+    categoria: 'Fones',
+    marca: 'Bluetooth',
+    codigo: 'FON-HEAD-PRETO',
+    codigo_barras: '7891234560605',
+    estoque: 3,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira F1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_fon_blu_branco',
+    nome: 'Fone Bluetooth (caixa branca)',
+    categoria: 'Fones',
+    marca: 'Bluetooth',
+    codigo: 'FON-BLU-BRANCO',
+    codigo_barras: '7891234560606',
+    estoque: 2,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira F1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  // Suportes
+  {
+    id: 'prod_sup_veicular',
+    nome: 'Suporte Veicular para Celular',
+    categoria: 'Suportes',
+    marca: 'Geral',
+    codigo: 'SUP-VEICULAR',
+    codigo_barras: '7891234560607',
+    estoque: 4,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira S1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_sup_mesa',
+    nome: 'Suporte de Mesa para Celular',
+    categoria: 'Suportes',
+    marca: 'Geral',
+    codigo: 'SUP-MESA',
+    codigo_barras: '7891234560608',
+    estoque: 2,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira S1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  // Cabos e Adaptadores
+  {
+    id: 'prod_cab_hdmi_18m',
+    nome: 'Cabo HDMI 1,8 m',
+    categoria: 'Cabos e Adaptadores',
+    marca: 'Geral',
+    codigo: 'CAB-HDMI-18M',
+    codigo_barras: '7891234560609',
+    estoque: 2,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira C1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_adp_usb',
+    nome: 'Adaptador USB',
+    categoria: 'Cabos e Adaptadores',
+    marca: 'Geral',
+    codigo: 'ADP-USB',
+    codigo_barras: '7891234560610',
+    estoque: 2,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira C1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_adp_otg',
+    nome: 'Adaptador OTG',
+    categoria: 'Cabos e Adaptadores',
+    marca: 'Geral',
+    codigo: 'ADP-OTG',
+    codigo_barras: '7891234560611',
+    estoque: 1,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira C1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_adp_tomada',
+    nome: 'Adaptador de Tomada',
+    categoria: 'Cabos e Adaptadores',
+    marca: 'Geral',
+    codigo: 'ADP-TOMADA',
+    codigo_barras: '7891234560612',
+    estoque: 2,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira C1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  // Carregadores
+  {
+    id: 'prod_car_powerbank',
+    nome: 'Carregador Portátil (Power Bank)',
+    categoria: 'Carregadores',
+    marca: 'PowerTech',
+    codigo: 'CAR-POWERBANK',
+    codigo_barras: '7891234560613',
+    estoque: 4,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira B1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_car_parede_usb',
+    nome: 'Carregador de Parede USB',
+    categoria: 'Carregadores',
+    marca: 'PowerTech',
+    codigo: 'CAR-PAREDE-USB',
+    codigo_barras: '7891234560614',
+    estoque: 2,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira B1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_car_veicular',
+    nome: 'Carregador Veicular',
+    categoria: 'Carregadores',
+    marca: 'PowerTech',
+    codigo: 'CAR-VEICULAR',
+    codigo_barras: '7891234560615',
+    estoque: 1,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira B1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  // Smartwatch
+  {
+    id: 'prod_sma_smartwatch',
+    nome: 'Smartwatch',
+    categoria: 'Smartwatch',
+    marca: 'Geral',
+    codigo: 'SMA-SMARTWATCH',
+    codigo_barras: '7891234560616',
+    estoque: 1,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira W1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  // Capinhas
+  {
+    id: 'prod_cap_iphone13',
+    nome: 'Capinha Transparente iPhone 13',
+    categoria: 'Capinhas',
+    marca: 'Geral',
+    codigo: 'CAP-IPHONE13',
+    codigo_barras: '7891234560617',
+    estoque: 2,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira P1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_cap_transp_div',
+    nome: 'Capinha Transparente (modelo diverso)',
+    categoria: 'Capinhas',
+    marca: 'Geral',
+    codigo: 'CAP-TRANSP-DIV',
+    codigo_barras: '7891234560618',
+    estoque: 3,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira P1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  // Jogos
+  {
+    id: 'prod_jog_uno',
+    nome: 'UNO',
+    categoria: 'Jogos',
+    marca: 'Mattel',
+    codigo: 'JOG-UNO',
+    codigo_barras: '7891234560619',
+    estoque: 2,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira J1',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  // Acessórios
+  {
+    id: 'prod_acs_mouse_usb',
+    nome: 'Mouse USB',
+    categoria: 'Acessórios',
+    marca: 'Geral',
+    codigo: 'ACS-MOUSE-USB',
+    codigo_barras: '7891234560620',
+    estoque: 1,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira A2',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_acs_antena_tv',
+    nome: 'Antena para TV Digital',
+    categoria: 'Acessórios',
+    marca: 'Geral',
+    codigo: 'ACS-ANTENA-TV',
+    codigo_barras: '7891234560621',
+    estoque: 1,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira A2',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_acs_hub_usb',
+    nome: 'Hub USB',
+    categoria: 'Acessórios',
+    marca: 'Geral',
+    codigo: 'ACS-HUB-USB',
+    codigo_barras: '7891234560622',
+    estoque: 1,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira A2',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_acs_leitor_cartao',
+    nome: 'Leitor de Cartão USB',
+    categoria: 'Acessórios',
+    marca: 'Geral',
+    codigo: 'ACS-LEITOR-CARTAO',
+    codigo_barras: '7891234560623',
+    estoque: 1,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira A2',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prod_acs_caixa_som',
+    nome: 'Caixa de Som Bluetooth',
+    categoria: 'Acessórios',
+    marca: 'Geral',
+    codigo: 'ACS-CAIXA-SOM',
+    codigo_barras: '7891234560624',
+    estoque: 1,
+    estoque_minimo: 2,
+    localizacao: 'Prateleira A2',
+    ativo: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   }
 ];
 
@@ -590,6 +941,17 @@ function getProducts(): Product[] {
   if (!hasInitKey && prods.length === 0) {
     prods = [...initialProducts];
     setStored(PRODUCTS_KEY, prods);
+  } else {
+    let addedNew = false;
+    for (const initProd of initialProducts) {
+      if (!prods.some(p => p.id === initProd.id || p.codigo === initProd.codigo || p.nome.toLowerCase() === initProd.nome.toLowerCase())) {
+        prods.push(initProd);
+        addedNew = true;
+      }
+    }
+    if (addedNew) {
+      setStored(PRODUCTS_KEY, prods);
+    }
   }
 
   const clean = prods.filter(
@@ -609,6 +971,17 @@ function getCategories(): Category[] {
   if (!hasInitKey && cats.length === 0) {
     cats = [...initialCategories];
     setStored(CATEGORIES_KEY, cats);
+  } else {
+    let addedCat = false;
+    for (const initCat of initialCategories) {
+      if (!cats.some(c => c.id === initCat.id || c.nome.toLowerCase() === initCat.nome.toLowerCase())) {
+        cats.push(initCat);
+        addedCat = true;
+      }
+    }
+    if (addedCat) {
+      setStored(CATEGORIES_KEY, cats);
+    }
   }
 
   const seenIds = new Set<string>();
@@ -1852,6 +2225,67 @@ export const localStore = {
     categories.push(newCat);
     setStored(CATEGORIES_KEY, categories);
     return newCat;
+  },
+
+  seedTestProductsList: (userName: string = 'Sistema'): number => {
+    const products = getProducts();
+    const categories = getCategories();
+
+    const requiredCategories = ['Garrafas', 'Fones', 'Suportes', 'Cabos e Adaptadores', 'Carregadores', 'Smartwatch', 'Capinhas', 'Jogos', 'Acessórios'];
+    requiredCategories.forEach(catName => {
+      if (!categories.some(c => c.nome.toLowerCase() === catName.toLowerCase())) {
+        categories.push({
+          id: `cat_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+          nome: catName,
+          created_at: new Date().toISOString()
+        });
+      }
+    });
+    setStored(CATEGORIES_KEY, categories);
+
+    let modifiedCount = 0;
+    const testListItems = initialProducts.filter(p =>
+      p.id.startsWith('prod_gar_') ||
+      p.id.startsWith('prod_fon_head_') ||
+      p.id.startsWith('prod_fon_blu_') ||
+      p.id.startsWith('prod_sup_') ||
+      p.id.startsWith('prod_cab_hdmi_') ||
+      p.id.startsWith('prod_adp_') ||
+      p.id.startsWith('prod_car_') ||
+      p.id.startsWith('prod_sma_') ||
+      p.id.startsWith('prod_cap_iphone13') ||
+      p.id.startsWith('prod_cap_transp_') ||
+      p.id.startsWith('prod_jog_') ||
+      p.id.startsWith('prod_acs_')
+    );
+
+    testListItems.forEach(item => {
+      const idx = products.findIndex(p => p.id === item.id || p.codigo === item.codigo || p.nome.toLowerCase() === item.nome.toLowerCase());
+      if (idx >= 0) {
+        products[idx] = {
+          ...products[idx],
+          estoque: item.estoque,
+          ativo: true,
+          updated_at: new Date().toISOString()
+        };
+      } else {
+        products.unshift({
+          ...item,
+          updated_at: new Date().toISOString()
+        });
+      }
+      modifiedCount++;
+    });
+
+    setStored(PRODUCTS_KEY, products);
+
+    localStore.addAuditLog({
+      usuario: userName,
+      acao: 'CADASTRO',
+      descricao: `Cadastrados/Atualizados ${modifiedCount} produtos da Lista de Teste no estoque.`
+    });
+
+    return modifiedCount;
   }
 };
 

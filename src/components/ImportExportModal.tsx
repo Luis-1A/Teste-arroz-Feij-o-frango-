@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { localStore } from '../services/localStore';
+import { firestoreSync } from '../services/firestoreSync';
 import { Product, Category } from '../types';
 import {
   FileSpreadsheet,
@@ -11,7 +12,9 @@ import {
   FileCode,
   FileText,
   Layers,
-  Boxes
+  Boxes,
+  Sparkles,
+  PackageCheck
 } from 'lucide-react';
 
 interface ImportExportModalProps {
@@ -142,6 +145,16 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
     reader.readAsText(file);
   };
 
+  const handleSeedList = async () => {
+    try {
+      const added = await firestoreSync.seedTestProductsList(userName);
+      setImportCount(added);
+      setImportStatus(`Sucesso! ${added} produtos da Lista de Teste (Garrafas, Fones, Suportes, Carregadores, etc.) foram cadastrados/atualizados.`);
+    } catch (err) {
+      setImportStatus('Erro ao cadastrar lista de teste. Tente novamente.');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md" onClick={onClose} />
@@ -254,6 +267,35 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Quick Seed Card */}
+              <div className="p-5 bg-gradient-to-r from-blue-950/60 via-indigo-950/40 to-slate-950 border border-indigo-500/30 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3 text-indigo-400">
+                    <Sparkles className="w-5 h-5 animate-pulse" />
+                    <span className="font-extrabold text-white text-sm">Cadastrar Lista de Teste (24 Itens)</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                    Garrafas, Fones, Carregadores, etc.
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Cadastre instantaneamente a lista de teste de mercadorias no estoque (Garrafas Térmicas, Headphone Bluetooth Preto, Suportes, Cabos, Carregadores, Smartwatch, Capinhas, UNO e Acessórios).
+                </p>
+                <button
+                  onClick={handleSeedList}
+                  className="w-full py-2.5 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-extrabold rounded-xl shadow-lg shadow-indigo-950/50 transition flex items-center justify-center gap-2"
+                >
+                  <PackageCheck className="w-4 h-4" />
+                  <span>Cadastrar Lista de Teste Agora</span>
+                </button>
+              </div>
+
+              <div className="relative flex items-center my-2">
+                <div className="flex-grow border-t border-slate-800"></div>
+                <span className="shrink-0 mx-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">ou Importar via Arquivo</span>
+                <div className="flex-grow border-t border-slate-800"></div>
+              </div>
+
               <p className="text-xs text-slate-300 font-medium leading-relaxed">
                 Selecione um arquivo <strong>.CSV</strong> ou <strong>.JSON</strong> do seu dispositivo para adicionar produtos em lote automaticamente.
               </p>

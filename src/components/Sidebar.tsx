@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { firestoreSync } from '../services/firestoreSync';
 import {
   LayoutDashboard,
   Boxes,
@@ -70,6 +71,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { user } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [lowStockCount, setLowStockCount] = useState<number>(0);
+  const [divergenceCount, setDivergenceCount] = useState<number>(0);
+
+  useEffect(() => {
+    const unsubProds = firestoreSync.subscribeProducts((products) => {
+      const lowStockItems = (products || []).filter(
+        (p) => p.ativo !== false && p.estoque <= (p.estoque_minimo || 5)
+      );
+      setLowStockCount(lowStockItems.length);
+    });
+
+    const unsubDivs = firestoreSync.subscribeDivergences((divergences) => {
+      const openDivs = (divergences || []).filter((d) => d.status === 'Aberta');
+      setDivergenceCount(openDivs.length);
+    });
+
+    return () => {
+      unsubProds();
+      unsubDivs();
+    };
+  }, []);
 
   const navGroups: { groupLabel: string; items: NavItem[] }[] = [
     {
@@ -124,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: 'restock-list' as TabType,
           label: 'Lista de Reposição',
           icon: ClipboardList,
-          badge: 'AUTO',
+          badge: 'FOTO',
           roles: ['admin_supremo', 'gerente', 'funcionario']
         },
         {
@@ -268,6 +290,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 const Icon = item.icon;
                 const isActive = activeTab === item.id && !item.extraMode;
 
+                const isLowStock = item.id === 'low-stock';
+                const isStockDivergence = item.id === 'stock-divergences';
+
+                const hasLowStockAlert = isLowStock && lowStockCount > 0;
+                const hasDivergenceAlert = isStockDivergence && divergenceCount > 0;
+                const hasCriticalAlert = hasLowStockAlert || hasDivergenceAlert;
+
+                let badgeText = item.badge;
+                if (hasLowStockAlert) {
+                  badgeText = `${lowStockCount} FALTA`;
+                } else if (hasDivergenceAlert) {
+                  badgeText = `${divergenceCount} ALERTA`;
+                }
+
+                let buttonStyle = isActive
+                  ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white shadow-md shadow-indigo-600/30'
+                  : 'bg-transparent text-slate-300 hover:bg-[#1F2937] hover:text-white';
+
+                if (hasLowStockAlert) {
+                  buttonStyle = isActive
+                    ? 'bg-gradient-to-r from-rose-600 via-rose-700 to-rose-600 text-white shadow-md shadow-rose-600/30 ring-2 ring-rose-400/80 animate-pulse'
+                    : 'bg-rose-950/40 text-rose-200 border border-rose-500/40 hover:bg-rose-900/50 animate-pulse shadow-xs shadow-rose-900/30';
+                } else if (hasDivergenceAlert) {
+                  buttonStyle = isActive
+                    ? 'bg-gradient-to-r from-amber-600 via-amber-700 to-amber-600 text-white shadow-md shadow-amber-600/30 ring-2 ring-amber-400/80 animate-pulse'
+                    : 'bg-amber-950/40 text-amber-200 border border-amber-500/40 hover:bg-amber-900/50 animate-pulse shadow-xs shadow-amber-900/30';
+                }
+
+                let iconStyle = isActive ? 'text-white' : 'text-slate-400';
+                if (hasLowStockAlert) {
+                  iconStyle = 'text-rose-400 animate-pulse';
+                } else if (hasDivergenceAlert) {
+                  iconStyle = 'text-amber-400 animate-pulse';
+                }
+
                 return (
                   <button
                     key={`${item.id}-${item.extraMode || itemIdx}`}
@@ -282,26 +339,61 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     title={isCollapsed ? item.label : undefined}
                     className={`w-full flex items-center ${
                       isCollapsed ? 'justify-center px-2' : 'justify-between px-3.5'
-                    } py-2.5 rounded-xl text-xs font-bold transition-all duration-150 relative ${
-                      isActive
-                        ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white shadow-md shadow-indigo-600/30'
-                        : 'bg-transparent text-slate-300 hover:bg-[#1F2937] hover:text-white'
-                    }`}
+                    } py-2.5 rounded-xl text-xs font-bold transition-all duration-150 relative ${buttonStyle}`}
                   >
                     <div className="flex items-center space-x-3 truncate">
-                      <Icon className={`w-4.5 h-4.5 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                      {!isCollapsed && <span className="truncate">{item.label}</span>}
+                      <div className="relative flex items-center justify-center shrink-0">
+                        <Icon className={`w-4.5 h-4.5 ${iconStyle}`} />
+                        {hasCriticalAlert && isCollapsed && (
+                          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                            <span
+                              className={`animate-ping absolute inline-flex h-full w-full rounded-full ${
+                                hasLowStockAlert ? 'bg-rose-400' : 'bg-amber-400'
+                              } opacity-75`}
+                            ></span>
+                            <span
+                              className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                                hasLowStockAlert ? 'bg-rose-500' : 'bg-amber-500'
+                              }`}
+                            ></span>
+                          </span>
+                        )}
+                      </div>
+
+                      {!isCollapsed && (
+                        <div className="flex items-center space-x-2 truncate">
+                          <span className="truncate">{item.label}</span>
+                          {hasCriticalAlert && (
+                            <span className="relative flex h-2 w-2 shrink-0">
+                              <span
+                                className={`animate-ping absolute inline-flex h-full w-full rounded-full ${
+                                  hasLowStockAlert ? 'bg-rose-400' : 'bg-amber-400'
+                                } opacity-75`}
+                              ></span>
+                              <span
+                                className={`relative inline-flex rounded-full h-2 w-2 ${
+                                  hasLowStockAlert ? 'bg-rose-500' : 'bg-amber-500'
+                                }`}
+                              ></span>
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
-                    {!isCollapsed && item.badge && (
+                    {!isCollapsed && badgeText && (
                       <span
                         className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
-                          isActive
+                          hasLowStockAlert
+                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
+                            : hasDivergenceAlert
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse'
+                            : isActive
                             ? 'bg-black/30 text-white'
                             : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                         }`}
                       >
-                        {item.badge}
+                        {badgeText}
                       </span>
                     )}
                   </button>

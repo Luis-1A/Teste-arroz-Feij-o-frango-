@@ -1135,6 +1135,24 @@ class FirestoreSyncService {
       };
     }
   }
+
+  public async seedTestProductsList(userName: string = 'Sistema'): Promise<number> {
+    const count = localStore.seedTestProductsList(userName);
+    const products = localStore.getProducts();
+    const categories = localStore.getCategories();
+
+    for (const cat of categories) {
+      await setDoc(doc(db, 'categories', cat.id), cat, { merge: true }).catch(() => {});
+    }
+
+    for (const prod of products) {
+      await setDoc(doc(db, 'products', prod.id), prod, { merge: true }).catch(() => {});
+    }
+
+    this.notifyCategories(categories);
+    this.notifyProducts(products);
+    return count;
+  }
 }
 
 export const firestoreSync = new FirestoreSyncService();
