@@ -90,8 +90,8 @@ export const ProductExchangeModal: React.FC<ProductExchangeModalProps> = ({
       .filter((p) => p.ativo)
       .filter(
         (p) =>
-          p.nome.toLowerCase().includes(term) ||
-          p.categoria.toLowerCase().includes(term)
+          (p.nome || '').toLowerCase().includes(term) ||
+          (p.categoria || '').toLowerCase().includes(term)
       )
       .slice(0, 6);
   }, [returnedSearch, products]);
@@ -104,8 +104,8 @@ export const ProductExchangeModal: React.FC<ProductExchangeModalProps> = ({
       .filter((p) => p.ativo)
       .filter(
         (p) =>
-          p.nome.toLowerCase().includes(term) ||
-          p.categoria.toLowerCase().includes(term)
+          (p.nome || '').toLowerCase().includes(term) ||
+          (p.categoria || '').toLowerCase().includes(term)
       )
       .slice(0, 6);
   }, [takenSearch, products]);

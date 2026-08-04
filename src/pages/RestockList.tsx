@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { api } from '../services/api';
+import { firestoreSync } from '../services/firestoreSync';
 import { useAuth } from '../context/AuthContext';
 import { Product, CustomerDemand } from '../types';
+import { smartMatch } from '../utils/searchUtils';
 import {
   ClipboardList,
   Copy,
@@ -103,6 +105,62 @@ export const RestockList: React.FC<RestockListProps> = ({
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
+  // Real-time synchronization for active snapshot
+  useEffect(() => {
+    const unsubProds = firestoreSync.subscribeProducts((allProducts) => {
+      if (!allProducts) return;
+      setSnapshot(prev => {
+        if (!prev) return prev;
+        const restockItems: RestockItem[] = allProducts
+          .filter(p => {
+            if (p.ativo === false) return false;
+            if (p.nao_relevante) {
+              return p.estoque <= 0;
+            }
+            return p.estoque <= (p.estoque_minimo || 5);
+          })
+          .map(p => {
+            const minRequired = p.estoque_minimo || 5;
+            const sugerido = Math.max(1, minRequired * 2 - p.estoque);
+            const nivel =
+              p.estoque <= 0 || p.estoque <= Math.floor(minRequired / 2)
+                ? 'CRITICO'
+                : 'ALERTA';
+            return {
+              ...p,
+              sugerido_compra: sugerido,
+              nivel_urgencia: nivel
+            };
+          });
+        return {
+          ...prev,
+          productsAnalyzed: allProducts.length,
+          allProducts,
+          items: restockItems
+        };
+      });
+    });
+
+    const unsubDemands = firestoreSync.subscribeDemands((allDemands) => {
+      if (!allDemands) return;
+      setSnapshot(prev => {
+        if (!prev) return prev;
+        const demandsList = allDemands
+          .filter(d => d.status !== 'resolvido')
+          .sort((a, b) => b.quantidade_solicitacoes - a.quantidade_solicitacoes);
+        return {
+          ...prev,
+          customerDemands: demandsList
+        };
+      });
+    });
+
+    return () => {
+      unsubProds();
+      unsubDemands();
+    };
+  }, []);
+
   /**
    * Triggers explicit step-by-step analysis of database with intentional 4-6 second duration.
    */
@@ -136,12 +194,18 @@ export const RestockList: React.FC<RestockListProps> = ({
       const timeSpent = Math.round(endTime - startTime);
 
       const categoryNames = Array.from(
-        new Set((allCategories || []).map(c => c.nome.trim()).filter(Boolean))
+        new Set((allCategories || []).map(c => (c?.nome || '').trim()).filter(Boolean))
       );
 
-      // Filter items needing restock mathematically (estoque <= estoque_minimo)
+      // Filter items needing restock mathematically (estoque <= estoque_minimo, or <= 0 for non-relevant)
       const restockItems: RestockItem[] = (allProducts || [])
-        .filter(p => p.ativo !== false && p.estoque <= (p.estoque_minimo || 5))
+        .filter(p => {
+          if (p.ativo === false) return false;
+          if (p.nao_relevante) {
+            return p.estoque <= 0;
+          }
+          return p.estoque <= (p.estoque_minimo || 5);
+        })
         .map(p => {
           const minRequired = p.estoque_minimo || 5;
           const sugerido = Math.max(1, minRequired * 2 - p.estoque);
@@ -189,10 +253,7 @@ export const RestockList: React.FC<RestockListProps> = ({
   const filteredRestockItems = useMemo(() => {
     if (!snapshot) return [];
     return snapshot.items.filter(item => {
-      const matchesSearch =
-        item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.marca.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = !searchTerm.trim() || smartMatch(item.nome, searchTerm);
       const matchesCategory =
         selectedCategory === 'Todas' || item.categoria === selectedCategory;
       return matchesSearch && matchesCategory;
@@ -204,7 +265,7 @@ export const RestockList: React.FC<RestockListProps> = ({
     const groups: { [catName: string]: RestockItem[] } = {};
 
     const sortedItems = [...filteredRestockItems].sort((a, b) =>
-      a.nome.localeCompare(b.nome, 'pt-BR')
+      (a.nome || '').localeCompare(b.nome || '', 'pt-BR')
     );
 
     for (const item of sortedItems) {
@@ -269,7 +330,7 @@ export const RestockList: React.FC<RestockListProps> = ({
 
     for (const catName of sortedCategories) {
       const sortedProds = groups[catName].sort((a, b) =>
-        a.nome.localeCompare(b.nome, 'pt-BR')
+        (a.nome || '').localeCompare(b.nome || '', 'pt-BR')
       );
       const prodLines = sortedProds.map(p => `• ${p.nome}`).join('\n');
       categoryBlocks.push(`${catName}\n\n${prodLines}`);
@@ -314,7 +375,7 @@ export const RestockList: React.FC<RestockListProps> = ({
     for (const catName of sortedCats) {
       text += `📦 ${catName}\n`;
       const sortedProds = groups[catName].sort((a, b) =>
-        a.nome.localeCompare(b.nome, 'pt-BR')
+        (a.nome || '').localeCompare(b.nome || '', 'pt-BR')
       );
       sortedProds.forEach(item => {
         text += `• ${item.nome} [CÓD: ${item.codigo}]\n`;
@@ -383,7 +444,7 @@ export const RestockList: React.FC<RestockListProps> = ({
       // Group products by category
       const categoryMap: { [catName: string]: RestockItem[] } = {};
       const sortedItems = [...snapshot.items].sort((a, b) =>
-        a.nome.localeCompare(b.nome, 'pt-BR')
+        (a.nome || '').localeCompare(b.nome || '', 'pt-BR')
       );
       for (const item of sortedItems) {
         const cat = item.categoria || 'Outros';
@@ -1099,7 +1160,7 @@ export const RestockList: React.FC<RestockListProps> = ({
           {Object.entries(groupedRestockItems).map(
             ([catName, items]: [string, RestockItem[]]) => {
               const sortedItems = [...items].sort((a, b) =>
-                a.nome.localeCompare(b.nome, 'pt-BR')
+                (a.nome || '').localeCompare(b.nome || '', 'pt-BR')
               );
 
               return (

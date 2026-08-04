@@ -1,6 +1,20 @@
 import { Product } from '../types';
 
 /**
+ * Normalizes text by removing accents, converting to lowercase, stripping punctuation and collapsing whitespace.
+ */
+export function normalizeText(text: string): string {
+  if (!text) return '';
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^\w\s]/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
  * Standardizes product names according to Bosteca store guidelines:
  * - Proper Title Case (e.g., "Cabo Lightning", "Carregador Turbo 20W", "Película A56")
  * - Correct uppercase for technical terms & acronyms (USB, USB-C, Tipo-C, V8, P2, TWS, iPhone, etc.)
@@ -128,18 +142,23 @@ export function findDuplicateProduct<T extends { id?: string; nome: string; cate
   inputCategory: string,
   excludeId?: string
 ): T | null {
-  const stdInputName = standardizeProductName(inputName).trim().toLowerCase();
-  const stdInputCat = inputCategory.trim().toLowerCase();
+  const stdInputName = normalizeText(standardizeProductName(inputName));
+  const stdInputCat = normalizeText(inputCategory);
 
   return (
     products.find((p) => {
       if (p.ativo === false) return false;
       if (excludeId && p.id === excludeId) return false;
 
-      const pCat = (p.categoria || '').trim().toLowerCase();
-      const pName = standardizeProductName(p.nome).trim().toLowerCase();
+      const pCat = normalizeText(p.categoria || '');
+      const pName = normalizeText(p.nome);
 
-      return pCat === stdInputCat && pName === stdInputName;
+      if (pCat !== stdInputCat) return false;
+
+      if (pName === stdInputName) return true;
+      if (pName.replace(/\s+/g, '') === stdInputName.replace(/\s+/g, '')) return true;
+
+      return false;
     }) || null
   );
 }

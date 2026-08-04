@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { localStore } from '../services/localStore';
+import { firestoreSync } from '../services/firestoreSync';
 import { StoreTemplate } from '../types';
 import { Layers, CheckCircle2, Sparkles, X, ArrowRight, Building } from 'lucide-react';
 
@@ -46,9 +47,9 @@ export const StoreTemplatesModal: React.FC<StoreTemplatesModalProps> = ({
   ];
 
   const handleApplyTemplate = (template: StoreTemplate) => {
-    // Add categories to localStore
+    // Add categories via firestoreSync
     template.categorias.forEach(catName => {
-      localStore.addCategory(catName);
+      firestoreSync.createCategory(catName);
     });
 
     localStore.addAuditLog({

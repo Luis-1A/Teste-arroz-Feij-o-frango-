@@ -4,6 +4,7 @@ import { firestoreSync } from '../services/firestoreSync';
 import { Product, Category } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { standardizeProductName, findDuplicateProduct } from '../utils/productStandardizer';
+import { smartMatch } from '../utils/searchUtils';
 import {
   Search,
   Plus,
@@ -78,12 +79,14 @@ export const Products: React.FC = () => {
   const [marca, setMarca] = useState('Padrão');
   const [estoque, setEstoque] = useState<number>(0);
   const [estoqueMinimo, setEstoqueMinimo] = useState<number>(5);
+  const [naoRelevante, setNaoRelevante] = useState<boolean>(false);
   const [localizacao, setLocalizacao] = useState('');
   const [observacao, setObservacao] = useState('');
   const [formError, setFormError] = useState('');
 
   // Delete Confirmation Modal
   const [deleteProductCandidate, setDeleteProductCandidate] = useState<Product | null>(null);
+  const [deleteCategoryCandidate, setDeleteCategoryCandidate] = useState<{ id: string; nome: string } | null>(null);
 
   // Collapsed Category Accordions State (default: open)
   const [collapsedCategories, setCollapsedCategories] = useState<{ [catName: string]: boolean }>({});
@@ -115,15 +118,14 @@ export const Products: React.FC = () => {
     };
   }, []);
 
-  // Filter products strictly by NAME
+  // Filter products using smart flexible search
   const filteredProducts = useMemo(() => {
     let filtered = rawProducts.filter((p) => p.ativo !== false);
     if (selectedCategoryFilter && selectedCategoryFilter !== 'Todas') {
       filtered = filtered.filter((p) => p.categoria === selectedCategoryFilter);
     }
     if (searchTerm.trim()) {
-      const term = searchTerm.trim().toLowerCase();
-      filtered = filtered.filter((p) => p.nome.toLowerCase().includes(term));
+      filtered = filtered.filter((p) => smartMatch(p.nome, searchTerm));
     }
     return filtered;
   }, [rawProducts, selectedCategoryFilter, searchTerm]);
@@ -170,9 +172,10 @@ export const Products: React.FC = () => {
   };
 
   const handleDeleteCategory = async (catId: string, catName: string) => {
+    const targetCat = (catName || '').trim().toLowerCase();
     // Prevent deletion if products exist in this category
     const productsInCat = rawProducts.filter(
-      (p) => p.categoria?.trim().toLowerCase() === catName.trim().toLowerCase() && p.ativo !== false
+      (p) => (p.categoria || '').trim().toLowerCase() === targetCat && p.ativo !== false
     );
 
     if (productsInCat.length > 0) {
@@ -182,12 +185,16 @@ export const Products: React.FC = () => {
       return;
     }
 
-    if (window.confirm(`Excluir a categoria "${catName}"?`)) {
-      try {
-        await firestoreSync.deleteCategory(catId);
-      } catch (err: any) {
-        alert(err.message || 'Erro ao remover categoria.');
-      }
+    setDeleteCategoryCandidate({ id: catId, nome: catName });
+  };
+
+  const handleConfirmDeleteCategory = async () => {
+    if (!deleteCategoryCandidate) return;
+    try {
+      await firestoreSync.deleteCategory(deleteCategoryCandidate.id);
+      setDeleteCategoryCandidate(null);
+    } catch (err: any) {
+      alert(err.message || 'Erro ao remover categoria.');
     }
   };
 
@@ -198,6 +205,7 @@ export const Products: React.FC = () => {
     setMarca('Padrão');
     setEstoque(10);
     setEstoqueMinimo(5);
+    setNaoRelevante(false);
     setLocalizacao('Prateleira A1');
     setObservacao('');
     setFormError('');
@@ -210,7 +218,8 @@ export const Products: React.FC = () => {
     setCategoria(p.categoria);
     setMarca(p.marca || 'Padrão');
     setEstoque(p.estoque);
-    setEstoqueMinimo(p.estoque_minimo);
+    setEstoqueMinimo(p.estoque_minimo || 5);
+    setNaoRelevante(Boolean(p.nao_relevante));
     setLocalizacao(p.localizacao || '');
     setObservacao(p.observacao || '');
     setFormError('');
@@ -244,7 +253,8 @@ export const Products: React.FC = () => {
           marca: marca || 'Padrão',
           codigo: generatedCode,
           estoque: Number(estoque),
-          estoque_minimo: Number(estoqueMinimo),
+          estoque_minimo: naoRelevante ? 0 : Number(estoqueMinimo),
+          nao_relevante: naoRelevante,
           localizacao: localizacao || 'Prateleira A1',
           observacao
         });
@@ -255,7 +265,8 @@ export const Products: React.FC = () => {
           marca: marca || 'Padrão',
           codigo: generatedCode,
           estoque: Number(estoque),
-          estoque_minimo: Number(estoqueMinimo),
+          estoque_minimo: naoRelevante ? 0 : Number(estoqueMinimo),
+          nao_relevante: naoRelevante,
           localizacao: localizacao || 'Prateleira A1',
           observacao
         });
@@ -279,8 +290,12 @@ export const Products: React.FC = () => {
     }
   };
 
-  const getCategoryMeta = (catName: string) => {
-    const found = categories.find((c) => c.nome.toLowerCase() === catName.toLowerCase());
+  const getCategoryMeta = (catName?: string) => {
+    if (!catName) {
+      return { cor: '#3b82f6', icone: 'Folder', descricao: '' };
+    }
+    const target = catName.toLowerCase();
+    const found = categories.find((c) => c && c.nome && c.nome.toLowerCase() === target);
     return {
       cor: found?.cor || '#3b82f6',
       icone: found?.icone || 'Folder',
@@ -424,7 +439,7 @@ export const Products: React.FC = () => {
                       {prods.map((p) => {
                         const isZero = p.estoque === 0;
                         const isNegative = p.estoque < 0;
-                        const isLow = p.estoque > 0 && p.estoque <= p.estoque_minimo;
+                        const isLow = !p.nao_relevante && p.estoque > 0 && p.estoque <= (p.estoque_minimo || 5);
 
                         return (
                           <div
@@ -441,10 +456,15 @@ export const Products: React.FC = () => {
                           >
                             <div className="space-y-1">
                               <h4 className="font-bold text-slate-900 text-sm leading-tight">{p.nome}</h4>
-                              <div className="flex items-center space-x-2 text-[11px] text-slate-500 pt-0.5">
+                              <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 pt-0.5">
                                 <span className="px-2 py-0.5 bg-slate-100 rounded-md font-semibold text-slate-600">
                                   {p.categoria}
                                 </span>
+                                {p.nao_relevante && (
+                                  <span className="px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-200/80 rounded-md font-semibold text-[10px]">
+                                    Sem Est. Mínimo
+                                  </span>
+                                )}
                                 {p.localizacao && (
                                   <span className="flex items-center space-x-1 text-slate-500">
                                     <MapPin className="w-3 h-3 text-blue-500" />
@@ -619,6 +639,36 @@ export const Products: React.FC = () => {
         </div>
       )}
 
+      {/* Delete Category Confirmation Modal */}
+      {deleteCategoryCandidate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 border border-slate-100 text-center">
+            <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <h3 className="font-bold text-slate-900 text-base">Excluir Categoria?</h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Tem certeza que deseja excluir a categoria{' '}
+              <span className="font-bold text-slate-800">"{deleteCategoryCandidate.nome}"</span>?
+            </p>
+            <div className="flex space-x-2 mt-5">
+              <button
+                onClick={() => setDeleteCategoryCandidate(null)}
+                className="flex-1 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDeleteCategory}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Product Confirmation Modal */}
       {deleteProductCandidate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
@@ -704,6 +754,21 @@ export const Products: React.FC = () => {
                   </select>
                 </div>
 
+                {/* Checkbox Produto Nao Relevante */}
+                <div className="p-3 bg-[#0B1220] border border-[#1F2937] rounded-xl flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    id="nao_relevante_chk"
+                    checked={naoRelevante}
+                    onChange={(e) => setNaoRelevante(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 text-blue-600 rounded border-[#1F2937] focus:ring-blue-500 bg-[#111827] shrink-0 cursor-pointer"
+                  />
+                  <label htmlFor="nao_relevante_chk" className="text-xs cursor-pointer select-none">
+                    <span className="font-bold text-white block">Produto não relevante</span>
+                    <span className="text-[11px] text-slate-400">Este produto não possui estoque mínimo.</span>
+                  </label>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-slate-300 font-bold mb-1">Estoque Inicial (UN) *</label>
@@ -721,11 +786,14 @@ export const Products: React.FC = () => {
                     <label className="block text-slate-300 font-bold mb-1">Estoque Mínimo *</label>
                     <input
                       type="number"
-                      value={estoqueMinimo}
+                      value={naoRelevante ? 0 : estoqueMinimo}
                       onChange={(e) => setEstoqueMinimo(Number(e.target.value))}
-                      min="1"
-                      className="w-full px-3.5 py-2.5 bg-[#0B1220] border border-[#1F2937] text-white placeholder-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
-                      required
+                      min="0"
+                      disabled={naoRelevante}
+                      className={`w-full px-3.5 py-2.5 bg-[#0B1220] border border-[#1F2937] text-white placeholder-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold ${
+                        naoRelevante ? 'opacity-40 cursor-not-allowed' : ''
+                      }`}
+                      required={!naoRelevante}
                     />
                   </div>
                 </div>

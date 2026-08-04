@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { firestoreSync } from '../services/firestoreSync';
 import { Product, CustomerDemand } from '../types';
+import { smartMatch } from '../utils/searchUtils';
 import {
   UserX,
   Search,
@@ -82,6 +83,7 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
   // Filter & tab state
   const [activeTab, setActiveTab] = useState<'nao_cadastrados' | 'cadastrados_sem_estoque'>('nao_cadastrados');
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleteDemandCandidate, setDeleteDemandCandidate] = useState<CustomerDemand | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -93,7 +95,7 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
       setProducts(prods || []);
     });
     const unsubCats = firestoreSync.subscribeCategories((cats) => {
-      const names = Array.from(new Set((cats || []).map((c) => c.nome.trim()).filter(Boolean)));
+      const names = Array.from(new Set((cats || []).map((c) => (c?.nome || '').trim()).filter(Boolean)));
       setCategories(names);
     });
 
@@ -104,13 +106,10 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
     };
   }, []);
 
-  // Filtered autocomplete options
+  // Filtered autocomplete options using smartMatch
   const autocompleteSuggestions = inputValue.trim().length > 0
     ? products.filter(
-        p =>
-          p.nome.toLowerCase().includes(inputValue.toLowerCase()) ||
-          p.codigo.toLowerCase().includes(inputValue.toLowerCase()) ||
-          p.marca.toLowerCase().includes(inputValue.toLowerCase())
+        p => smartMatch(p.nome, inputValue) || smartMatch(p.marca || '', inputValue)
       ).slice(0, 5)
     : [];
 
@@ -184,15 +183,16 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
     }
   };
 
-  const handleDeleteDemand = async (id: string) => {
-    if (!confirm('Deseja remover este registro da lista?')) return;
+  const handleDeleteDemandConfirm = async () => {
+    if (!deleteDemandCandidate) return;
     try {
-      await api.deleteCustomerDemand(id);
-      setDemands(prev => prev.filter(d => d.id !== id));
+      await api.deleteCustomerDemand(deleteDemandCandidate.id);
+      setDemands(prev => prev.filter(d => d.id !== deleteDemandCandidate.id));
       setFeedback({
         type: 'success',
         text: 'Registro removido com sucesso.'
       });
+      setDeleteDemandCandidate(null);
     } catch (err: any) {
       alert(err.message || 'Erro ao deletar registro.');
     }
@@ -239,7 +239,7 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
 
   const filteredDemands = (
     activeTab === 'nao_cadastrados' ? unregisteredDemands : registeredNoStockDemands
-  ).filter(d => d.produto_nome.toLowerCase().includes(searchTerm.toLowerCase()));
+  ).filter(d => !searchTerm.trim() || smartMatch(d.produto_nome, searchTerm));
 
   if (loading) {
     return (
@@ -563,7 +563,7 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
                               <span>Cadastrar Produto</span>
                             </button>
                             <button
-                              onClick={() => handleDeleteDemand(demand.id)}
+                              onClick={() => setDeleteDemandCandidate(demand)}
                               className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                               title="Remover solicitação"
                             >
@@ -667,7 +667,7 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
                               </button>
                             )}
                             <button
-                              onClick={() => handleDeleteDemand(demand.id)}
+                              onClick={() => setDeleteDemandCandidate(demand)}
                               className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                               title="Remover solicitação"
                             >
@@ -814,6 +814,36 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Demand Confirmation Modal */}
+      {deleteDemandCandidate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 border border-slate-100 text-center">
+            <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <h3 className="font-bold text-slate-900 text-base">Excluir Solicitação?</h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Tem certeza que deseja excluir esta solicitação para{' '}
+              <span className="font-bold text-slate-800">"{deleteDemandCandidate.produto_nome}"</span>?
+            </p>
+            <div className="flex space-x-2 mt-5">
+              <button
+                onClick={() => setDeleteDemandCandidate(null)}
+                className="flex-1 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteDemandConfirm}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md"
+              >
+                Excluir
+              </button>
+            </div>
           </div>
         </div>
       )}

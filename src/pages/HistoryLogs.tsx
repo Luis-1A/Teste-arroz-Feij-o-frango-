@@ -41,8 +41,8 @@ export const HistoryLogs: React.FC = () => {
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch =
-      log.usuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.descricao.toLowerCase().includes(searchTerm.toLowerCase());
+      (log.usuario || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.descricao || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesAction = filterAction === 'TODAS' || log.acao === filterAction;
 

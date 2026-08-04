@@ -66,18 +66,13 @@ export const Header: React.FC<HeaderProps> = ({
 
   const getRoleBadge = (cargo?: string) => {
     switch (cargo) {
-      case 'admin_supremo':
-        return {
-          label: 'Administrador Supremo',
-          bg: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
-          icon: ShieldAlert
-        };
       case 'gerente':
         return {
           label: 'Gerente',
           bg: 'bg-sky-500/10 border-sky-500/30 text-sky-400',
           icon: ShieldCheck
         };
+      case 'admin_supremo':
       case 'funcionario':
       default:
         return {
@@ -115,7 +110,7 @@ export const Header: React.FC<HeaderProps> = ({
       case 'system_test':
         return 'Central de Testes do Sistema';
       case 'admin_supreme_hub':
-        return 'Hub Administrador Supremo';
+        return 'Painel de Gestão Avançada';
       default:
         return 'Frente de Caixa';
     }
@@ -194,11 +189,11 @@ export const Header: React.FC<HeaderProps> = ({
                 title="Minha Conta"
               >
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white border border-indigo-400/30 flex items-center justify-center font-black text-sm shadow-md group-hover:scale-105 transition">
-                  {user.nome.charAt(0).toUpperCase()}
+                  {(user?.nome || 'U').charAt(0).toUpperCase()}
                 </div>
                 <div className="hidden sm:block text-left">
                   <div className="text-xs font-black text-white leading-tight">
-                    {user.nome}
+                    {user?.nome || 'Usuário'}
                   </div>
                   <div className="text-[10px] font-semibold text-slate-400 capitalize">
                     {roleInfo.label}

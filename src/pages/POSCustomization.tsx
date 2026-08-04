@@ -44,9 +44,9 @@ export const POSCustomization: React.FC = () => {
     return (
       <div className="p-8 text-center bg-white rounded-2xl shadow-xs border border-slate-200/80 max-w-xl mx-auto my-12">
         <ShieldAlert className="w-12 h-12 text-amber-500 mx-auto mb-3" />
-        <h2 className="text-lg font-bold text-slate-800">Acesso Restrito ao Administrador Supremo</h2>
+        <h2 className="text-lg font-bold text-slate-800">Acesso Restrito</h2>
         <p className="text-xs text-slate-500 mt-2">
-          Apenas o Administrador Supremo possui autorização para alterar a estrutura visual e os parâmetros da Frente de Caixa para todos os dispositivos da loja.
+          Você não possui autorização para alterar a estrutura visual e os parâmetros da Frente de Caixa.
         </p>
       </div>
     );

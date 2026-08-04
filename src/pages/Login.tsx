@@ -20,7 +20,7 @@ export const Login: React.FC = () => {
   const [regEmail, setRegEmail] = useState('');
   const [regSenha, setRegSenha] = useState('');
   const [showRegPassword, setShowRegPassword] = useState(false);
-  const [regCargo, setRegCargo] = useState<'admin_supremo' | 'gerente' | 'funcionario'>('admin_supremo');
+  const [regCargo, setRegCargo] = useState<'gerente' | 'funcionario'>('funcionario');
 
   // Forgot password state
   const [showForgot, setShowForgot] = useState(false);
@@ -49,10 +49,6 @@ export const Login: React.FC = () => {
     setErrorMsg('');
     if (!regNome || !regEmail || !regSenha) {
       setErrorMsg('Por favor, preencha nome, e-mail e senha para se cadastrar.');
-      return;
-    }
-    if (regCargo === 'admin_supremo' && regEmail.trim().toLowerCase() !== 'luisfernandosantossilva1940@gmail.com') {
-      setErrorMsg('⚠️ O cargo de Administrador Supremo é exclusivo do e-mail "luisfernandosantossilva1940@gmail.com".');
       return;
     }
     setLoading(true);
@@ -248,7 +244,7 @@ export const Login: React.FC = () => {
                     required
                     value={regEmail}
                     onChange={e => setRegEmail(e.target.value)}
-                    placeholder="luisfernandosantossilva1940@gmail.com"
+                    placeholder="seu.email@exemplo.com"
                     className="w-full px-3.5 py-2.5 text-sm font-bold text-white bg-[#0B1220] border border-[#1F2937] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 placeholder:text-slate-600 placeholder:font-normal"
                   />
                 </div>
@@ -288,7 +284,6 @@ export const Login: React.FC = () => {
                   >
                     <option value="funcionario">Funcionário (Acesso padrão a vendas e consultas)</option>
                     <option value="gerente">Gerente de Estoque (Máximo 1 Gerente no sistema)</option>
-                    <option value="admin_supremo">Administrador Supremo (Exclusivo para luisfernandosantossilva1940@gmail.com)</option>
                   </select>
                 </div>
 

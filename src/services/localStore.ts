@@ -63,7 +63,7 @@ const initialAnnouncements: Announcement[] = [
     titulo: '⚠️ Conferência Obrigatória ao Receber Mercadorias',
     conteudo: 'Todas as entradas de produtos devem ser registradas com código de barras ou SKU completo no momento da descarga.',
     prioridade: 'urgente',
-    autor_nome: 'Administrador Supremo',
+    autor_nome: 'Administração',
     ativo: true,
     created_at: new Date().toISOString()
   },
@@ -72,7 +72,7 @@ const initialAnnouncements: Announcement[] = [
     titulo: '💡 Lixeira Inteligente Ativa',
     conteudo: 'Os produtos excluídos agora ficam salvos na Lixeira por segurança antes da remoção definitiva.',
     prioridade: 'normal',
-    autor_nome: 'Administrador Supremo',
+    autor_nome: 'Administração',
     ativo: true,
     created_at: new Date().toISOString()
   }
@@ -145,92 +145,9 @@ const initialUsers: (User & { senha_hash: string })[] = [
   }
 ];
 
-const initialCategories: Category[] = [
-  { id: 'cat_cabos', nome: 'Cabos', created_at: new Date().toISOString() },
-  { id: 'cat_carregadores', nome: 'Carregadores', created_at: new Date().toISOString() },
-  { id: 'cat_fones', nome: 'Fones', created_at: new Date().toISOString() },
-  { id: 'cat_peliculas', nome: 'Películas', created_at: new Date().toISOString() },
-  { id: 'cat_capinhas', nome: 'Capinhas', created_at: new Date().toISOString() },
-  { id: 'cat_garrafas', nome: 'Garrafas', created_at: new Date().toISOString() },
-  { id: 'cat_suportes', nome: 'Suportes', created_at: new Date().toISOString() },
-  { id: 'cat_cabos_adaptadores', nome: 'Cabos e Adaptadores', created_at: new Date().toISOString() },
-  { id: 'cat_smartwatch', nome: 'Smartwatch', created_at: new Date().toISOString() },
-  { id: 'cat_jogos', nome: 'Jogos', created_at: new Date().toISOString() },
-  { id: 'cat_acessorios', nome: 'Acessórios', created_at: new Date().toISOString() }
-];
+const initialCategories: Category[] = [];
 
 const initialProducts: Product[] = [
-  // Cabos
-  {
-    id: 'prod_cabo_1',
-    nome: 'Cabo USB Tipo-C',
-    categoria: 'Cabos',
-    marca: 'Bosteca',
-    codigo: 'CAB-USBC',
-    codigo_barras: '7891234560101',
-    estoque: 25,
-    estoque_minimo: 5,
-    localizacao: 'Prateleira A1',
-    ativo: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 'prod_cabo_2',
-    nome: 'Cabo Lightning',
-    categoria: 'Cabos',
-    marca: 'Bosteca',
-    codigo: 'CAB-LIGHT',
-    codigo_barras: '7891234560102',
-    estoque: 18,
-    estoque_minimo: 5,
-    localizacao: 'Prateleira A1',
-    ativo: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 'prod_cabo_3',
-    nome: 'Cabo Micro USB',
-    categoria: 'Cabos',
-    marca: 'Bosteca',
-    codigo: 'CAB-MICRO',
-    codigo_barras: '7891234560103',
-    estoque: 12,
-    estoque_minimo: 5,
-    localizacao: 'Prateleira A1',
-    ativo: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 'prod_cabo_kingo_v8',
-    nome: 'Cabo Kingo V8',
-    categoria: 'Cabos',
-    marca: 'Kingo',
-    codigo: 'CAB-KINGO-V8',
-    codigo_barras: '7891234560104',
-    estoque: 10,
-    estoque_minimo: 5,
-    localizacao: 'Prateleira A1',
-    ativo: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 'prod_cabo_kimaster_usbc',
-    nome: 'Cabo Kimaster USB-C',
-    categoria: 'Cabos',
-    marca: 'Kimaster',
-    codigo: 'CAB-KIM-USBC',
-    codigo_barras: '7891234560105',
-    estoque: 3,
-    estoque_minimo: 5,
-    localizacao: 'Prateleira A1',
-    ativo: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
   {
     id: 'prod_cabo_kimaster_usblight',
     nome: 'Cabo Kimaster USB-Lightning',
@@ -859,34 +776,6 @@ const initialProducts: Product[] = [
     ativo: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
-  },
-  {
-    id: 'prod_acs_leitor_cartao',
-    nome: 'Leitor de Cartão USB',
-    categoria: 'Acessórios',
-    marca: 'Geral',
-    codigo: 'ACS-LEITOR-CARTAO',
-    codigo_barras: '7891234560623',
-    estoque: 1,
-    estoque_minimo: 2,
-    localizacao: 'Prateleira A2',
-    ativo: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 'prod_acs_caixa_som',
-    nome: 'Caixa de Som Bluetooth',
-    categoria: 'Acessórios',
-    marca: 'Geral',
-    codigo: 'ACS-CAIXA-SOM',
-    codigo_barras: '7891234560624',
-    estoque: 1,
-    estoque_minimo: 2,
-    localizacao: 'Prateleira A2',
-    ativo: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
   }
 ];
 
@@ -935,55 +824,14 @@ function getUsers(): (User & { senha_hash: string })[] {
 }
 
 function getProducts(): Product[] {
-  const hasInitKey = localStorage.getItem(PRODUCTS_KEY) !== null;
-  let prods = getStored<Product[]>(PRODUCTS_KEY, initialProducts);
-  
-  if (!hasInitKey && prods.length === 0) {
-    prods = [...initialProducts];
-    setStored(PRODUCTS_KEY, prods);
-  } else {
-    let addedNew = false;
-    for (const initProd of initialProducts) {
-      if (!prods.some(p => p.id === initProd.id || p.codigo === initProd.codigo || p.nome.toLowerCase() === initProd.nome.toLowerCase())) {
-        prods.push(initProd);
-        addedNew = true;
-      }
-    }
-    if (addedNew) {
-      setStored(PRODUCTS_KEY, prods);
-    }
-  }
-
-  const clean = prods.filter(
-    (p) => !p.id.startsWith('test_prod_') && !p.nome.includes('[BOT_TEST]')
+  const prods = getStored<Product[]>(PRODUCTS_KEY, []);
+  return prods.filter(
+    (p) => p && p.nome && !p.id.startsWith('test_prod_') && !p.nome.includes('[BOT_TEST]')
   );
-
-  if (clean.length !== prods.length) {
-    setStored(PRODUCTS_KEY, clean);
-  }
-  return clean;
 }
 
 function getCategories(): Category[] {
-  const hasInitKey = localStorage.getItem(CATEGORIES_KEY) !== null;
-  let cats = getStored<Category[]>(CATEGORIES_KEY, initialCategories);
-
-  if (!hasInitKey && cats.length === 0) {
-    cats = [...initialCategories];
-    setStored(CATEGORIES_KEY, cats);
-  } else {
-    let addedCat = false;
-    for (const initCat of initialCategories) {
-      if (!cats.some(c => c.id === initCat.id || c.nome.toLowerCase() === initCat.nome.toLowerCase())) {
-        cats.push(initCat);
-        addedCat = true;
-      }
-    }
-    if (addedCat) {
-      setStored(CATEGORIES_KEY, cats);
-    }
-  }
-
+  const cats = getStored<Category[]>(CATEGORIES_KEY, []);
   const seenIds = new Set<string>();
   const seenNames = new Set<string>();
   const uniqueCats: Category[] = [];
@@ -992,7 +840,6 @@ function getCategories(): Category[] {
     if (!c || !c.nome) continue;
     const normName = c.nome.trim().toLowerCase();
     const catId = c.id || `cat_${normName}`;
-    if (!normName) continue;
     if (seenIds.has(catId) || seenNames.has(normName)) continue;
     seenIds.add(catId);
     seenNames.add(normName);
@@ -1180,11 +1027,11 @@ export const localStore = {
     }
     if (userData.cargo === 'admin_supremo') {
       if (cleanEmail !== 'luisfernandosantossilva1940@gmail.com') {
-        throw new Error('O cargo de Administrador Supremo é exclusivo do e-mail "luisfernandosantossilva1940@gmail.com".');
+        throw new Error('Apenas o Administrador do sistema pode possuir esta permissão.');
       }
       const currentSupremo = users.find(u => u.cargo === 'admin_supremo' && u.ativo);
       if (currentSupremo) {
-        throw new Error(`O sistema permite apenas 1 Administrador Supremo ativo ("${currentSupremo.email}").`);
+        throw new Error('O sistema permite apenas 1 Administrador principal ativo.');
       }
     }
     if (userData.cargo === 'gerente') {
@@ -1219,11 +1066,11 @@ export const localStore = {
     if (userData.cargo === 'admin_supremo') {
       const targetEmail = (userData.email || existing.email).trim().toLowerCase();
       if (targetEmail !== 'luisfernandosantossilva1940@gmail.com') {
-        throw new Error('O cargo de Administrador Supremo é exclusivo do e-mail "luisfernandosantossilva1940@gmail.com".');
+        throw new Error('Apenas o Administrador do sistema pode possuir esta permissão.');
       }
       const currentSupremo = users.find(u => u.cargo === 'admin_supremo' && u.ativo && u.id !== id);
       if (currentSupremo) {
-        throw new Error(`O sistema permite apenas 1 Administrador Supremo ativo ("${currentSupremo.email}").`);
+        throw new Error('O sistema permite apenas 1 Administrador principal ativo.');
       }
     }
 
@@ -1262,8 +1109,8 @@ export const localStore = {
 
   createCategory: (nome: string, cor?: string, icone?: string, descricao?: string): Category => {
     const categories = getCategories();
-    const cleanName = nome.trim();
-    const existing = categories.find(c => c.nome.toLowerCase() === cleanName.toLowerCase());
+    const cleanName = (nome || '').trim();
+    const existing = categories.find(c => (c.nome || '').toLowerCase() === cleanName.toLowerCase());
     if (existing) {
       existing.cor = cor || existing.cor;
       existing.icone = icone || existing.icone;
@@ -1297,14 +1144,14 @@ export const localStore = {
       const q = search.toLowerCase();
       list = list.filter(
         p =>
-          p.nome.toLowerCase().includes(q) ||
-          p.codigo.toLowerCase().includes(q) ||
+          (p.nome || '').toLowerCase().includes(q) ||
+          (p.codigo || '').toLowerCase().includes(q) ||
           (p.codigo_barras && p.codigo_barras.toLowerCase().includes(q)) ||
-          p.marca.toLowerCase().includes(q)
+          (p.marca || '').toLowerCase().includes(q)
       );
     }
     if (categoria && categoria !== 'Todas') {
-      list = list.filter(p => p.categoria.toLowerCase() === categoria.toLowerCase());
+      list = list.filter(p => (p.categoria || '').toLowerCase() === categoria.toLowerCase());
     }
     return list;
   },
@@ -1645,9 +1492,10 @@ export const localStore = {
   }) => {
     const products = getProducts().filter(p => p.ativo);
     const demands = getDemands();
+    const normInputName = (data.produto_nome || '').trim().toLowerCase();
 
     const prod = products.find(
-      p => p.nome.toLowerCase() === data.produto_nome.trim().toLowerCase() || p.id === data.produto_id
+      p => (p.nome || '').toLowerCase() === normInputName || p.id === data.produto_id
     );
 
     if (prod) {
@@ -1662,6 +1510,25 @@ export const localStore = {
       if (data.confirmou_erro_contagem && prod.estoque > 0) {
         prod.estoque = 0;
         setStored(PRODUCTS_KEY, products);
+      }
+
+      // Check if demand entry for this registered product already exists
+      const existingDemand = demands.find(
+        d => d.produto_id === prod.id || (d.produto_nome && (prod.nome || '') && d.produto_nome.trim().toLowerCase() === (prod.nome || '').trim().toLowerCase())
+      );
+
+      if (existingDemand) {
+        existingDemand.quantidade_solicitacoes = (existingDemand.quantidade_solicitacoes || 1) + 1;
+        existingDemand.estoque_no_momento = prod.estoque;
+        existingDemand.updated_at = new Date().toISOString();
+        setStored(DEMANDS_KEY, demands);
+
+        return {
+          status_code: 'EXISTS_STOCK_ZEROED' as const,
+          message: `Solicitação registrada. "${prod.nome}" procurado ${existingDemand.quantidade_solicitacoes}x.`,
+          product: prod,
+          demand: existingDemand
+        };
       }
 
       const demand: CustomerDemand = {
@@ -1682,9 +1549,26 @@ export const localStore = {
 
       return {
         status_code: 'EXISTS_STOCK_ZEROED' as const,
-        message: `Solicitação registrada. Estoque de "${prod.nome}" ajustado para 0 UN.`,
+        message: `Solicitação registrada para "${prod.nome}".`,
         product: prod,
         demand
+      };
+    }
+
+    // Unregistered product demand check for duplicates
+    const existingDemand = demands.find(
+      d => !d.cadastrado && (d.produto_nome || '').trim().toLowerCase() === normInputName
+    );
+
+    if (existingDemand) {
+      existingDemand.quantidade_solicitacoes = (existingDemand.quantidade_solicitacoes || 1) + 1;
+      existingDemand.updated_at = new Date().toISOString();
+      setStored(DEMANDS_KEY, demands);
+
+      return {
+        status_code: 'NOT_REGISTERED_SAVED' as const,
+        message: `Procura por "${data.produto_nome}" registrada (${existingDemand.quantidade_solicitacoes}x).`,
+        demand: existingDemand
       };
     }
 
@@ -2233,7 +2117,7 @@ export const localStore = {
 
     const requiredCategories = ['Garrafas', 'Fones', 'Suportes', 'Cabos e Adaptadores', 'Carregadores', 'Smartwatch', 'Capinhas', 'Jogos', 'Acessórios'];
     requiredCategories.forEach(catName => {
-      if (!categories.some(c => c.nome.toLowerCase() === catName.toLowerCase())) {
+      if (!categories.some(c => (c.nome || '').toLowerCase() === catName.toLowerCase())) {
         categories.push({
           id: `cat_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
           nome: catName,
@@ -2260,7 +2144,7 @@ export const localStore = {
     );
 
     testListItems.forEach(item => {
-      const idx = products.findIndex(p => p.id === item.id || p.codigo === item.codigo || p.nome.toLowerCase() === item.nome.toLowerCase());
+      const idx = products.findIndex(p => p.id === item.id || p.codigo === item.codigo || (p.nome || '').toLowerCase() === (item.nome || '').toLowerCase());
       if (idx >= 0) {
         products[idx] = {
           ...products[idx],
@@ -2286,8 +2170,29 @@ export const localStore = {
     });
 
     return modifiedCount;
+  },
+
+  clearAllTestData: (): void => {
+    setStored(PRODUCTS_KEY, []);
+    setStored(CATEGORIES_KEY, []);
+    setStored(MOVEMENTS_KEY, []);
+    setStored(HISTORY_KEY, []);
+    setStored(DEMANDS_KEY, []);
+    setStored(DIVERGENCES_KEY, []);
+    setStored(AUDIT_SESSIONS_KEY, []);
+    setStored(DRAFTS_KEY, []);
+    localStorage.setItem('bytecas_cleaned_for_real_tests_v3', 'true');
   }
 };
+
+// Automatic cleanup run for real production tests
+try {
+  if (typeof window !== 'undefined' && localStorage.getItem('bytecas_cleaned_for_real_tests_v3') !== 'true') {
+    localStore.clearAllTestData();
+  }
+} catch (e) {
+  console.warn('Auto cleanup failed', e);
+}
 
 
 

@@ -46,10 +46,10 @@ export const StockDivergences: React.FC<StockDivergencesProps> = ({
 
   const filteredDivergences = divergences.filter((d) => {
     const matchesSearch =
-      d.produto_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.categoria.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (d.produto_nome || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (d.categoria || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (d.produto_id && d.produto_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      d.usuario_nome.toLowerCase().includes(searchTerm.toLowerCase());
+      (d.usuario_nome || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'todos' || d.status === statusFilter;
 

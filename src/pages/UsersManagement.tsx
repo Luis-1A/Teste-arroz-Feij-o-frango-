@@ -78,19 +78,6 @@ export const UsersManagement: React.FC = () => {
       return;
     }
 
-    if (cargo === 'admin_supremo') {
-      const cleanEmail = email.trim().toLowerCase();
-      if (cleanEmail !== 'luisfernandosantossilva1940@gmail.com') {
-        setFormError('⚠️ O cargo de Administrador Supremo é exclusivo do e-mail "luisfernandosantossilva1940@gmail.com".');
-        return;
-      }
-      const existingSupremo = users.find(u => u.cargo === 'admin_supremo' && u.id !== editingUser?.id);
-      if (existingSupremo) {
-        setFormError(`⚠️ O sistema permite apenas 1 Administrador Supremo ativo ("${existingSupremo.email}").`);
-        return;
-      }
-    }
-
     if (cargo === 'gerente') {
       const existingGerente = users.find(u => u.cargo === 'gerente' && u.id !== editingUser?.id);
       if (existingGerente) {
@@ -126,17 +113,11 @@ export const UsersManagement: React.FC = () => {
     }
   };
 
-  const getRoleBadge = (c: UserRole, targetUserEmail?: string) => {
-    // If the viewer is not Admin Supremo, mask Admin Supremo as Funcionário
-    if (currentUser?.cargo !== 'admin_supremo' && (c === 'admin_supremo' || targetUserEmail === 'luisfernandosantossilva1940@gmail.com')) {
-      return { label: 'Funcionário', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: UserCheck };
-    }
-
+  const getRoleBadge = (c: UserRole) => {
     switch (c) {
-      case 'admin_supremo':
-        return { label: 'Administrador Supremo', bg: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: ShieldAlert };
       case 'gerente':
         return { label: 'Gerente', bg: 'bg-blue-50 text-blue-700 border-blue-200', icon: ShieldCheck };
+      case 'admin_supremo':
       case 'funcionario':
       default:
         return { label: 'Funcionário', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: UserCheck };
@@ -153,7 +134,7 @@ export const UsersManagement: React.FC = () => {
             <span>Gestão de Usuários e Níveis de Permissão</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Área restrita ao Administrador Supremo para controle de acessos da equipe Bosteca.
+            Controle de acessos da equipe Bosteca.
           </p>
         </div>
 
@@ -194,7 +175,7 @@ export const UsersManagement: React.FC = () => {
                 </tr>
               ) : (
                 users.map(u => {
-                  const roleBadge = getRoleBadge(u.cargo, u.email);
+                  const roleBadge = getRoleBadge(u.cargo);
                   const Icon = roleBadge.icon;
                   const isSupremo = u.cargo === 'admin_supremo';
 
@@ -204,10 +185,10 @@ export const UsersManagement: React.FC = () => {
                       <td className="p-4">
                         <div className="font-bold text-slate-900 flex items-center space-x-2.5">
                           <div className="w-8 h-8 rounded-xl bg-slate-100/80 border border-slate-200/80 font-bold text-xs flex items-center justify-center text-slate-700 shrink-0 shadow-2xs">
-                            {u.nome.charAt(0).toUpperCase()}
+                            {(u.nome || 'U').charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-bold text-slate-900">{u.nome}</p>
+                            <p className="font-bold text-slate-900">{u.nome || 'Sem Nome'}</p>
                             <p className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
                               <span>Ativo • Acesso Autorizado</span>
@@ -339,7 +320,6 @@ export const UsersManagement: React.FC = () => {
                 >
                   <option value="funcionario" className="bg-[#0B1220] text-white">Funcionário (Estoque, Entradas, Saídas, Consultas)</option>
                   <option value="gerente" className="bg-[#0B1220] text-white">Gerente (Gestão completa de estoque e relatórios - Máximo 1)</option>
-                  <option value="admin_supremo" className="bg-[#0B1220] text-white">Administrador Supremo (Apenas luisfernandosantossilva1940@gmail.com)</option>
                 </select>
               </div>
 

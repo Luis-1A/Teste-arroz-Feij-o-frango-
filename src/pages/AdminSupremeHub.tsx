@@ -172,7 +172,7 @@ export const AdminSupremeHub: React.FC<AdminSupremeHubProps> = ({ onNavigate }) 
         { label: 'Prefixo Padrão dos Códigos de Produtos', desc: 'PROD-' },
         { label: 'Formato de Exibição das Datas', desc: 'DD/MM/AAAA HH:mm' },
         { label: 'Politica de Senhas Fortes', desc: 'Habilitada' },
-        { label: 'Sessão do Administrador Supremo', desc: 'Acesso total irrestrito' }
+        { label: 'Sessão Principal de Gestão', desc: 'Acesso total irrestrito' }
       ]
     },
     {
@@ -181,14 +181,14 @@ export const AdminSupremeHub: React.FC<AdminSupremeHubProps> = ({ onNavigate }) 
       icon: Users,
       count: 10,
       items: [
-        { label: 'Conta do Administrador Supremo', desc: 'Luis Fernando Silva (Ativa)' },
+        { label: 'Conta do Gestor Principal', desc: 'Ativa' },
         { label: 'Gerente Principal Ativo', desc: 'Carlos Gerente (Ativo)' },
         { label: 'Funcionário do Balcão', desc: 'Ana Funcionária (Ativa)' },
         { label: 'Gerenciamento de Acessos', desc: 'Redireciona para Módulo Usuários' },
         { label: 'Bloqueio de Gerentes durante Teste', desc: 'Ativado no Modo de Teste' },
         { label: 'Sessões Ativas no Sistema', desc: '1 Conexão Detectada' },
         { label: 'Segurança de Credenciais', desc: 'Criptografia em Armazenamento' },
-        { label: 'Recuperação de Acesso do Supremo', desc: 'Chave Master: @Luisoo5' },
+        { label: 'Recuperação de Acesso Principal', desc: 'Chave Master: @Luisoo5' },
         { label: 'Permissões por Função (RBAC)', desc: 'Hierarquia Estrita' },
         { label: 'Controle de Múltiplos Logins', desc: 'Habilitado' }
       ]
@@ -224,7 +224,7 @@ export const AdminSupremeHub: React.FC<AdminSupremeHubProps> = ({ onNavigate }) 
   const filteredSections = sections.map(sec => ({
     ...sec,
     items: sec.items.filter(item =>
-      item.label.toLowerCase().includes(searchTerm.toLowerCase())
+      (item.label || '').toLowerCase().includes((searchTerm || '').toLowerCase())
     )
   })).filter(sec => sec.items.length > 0);
 
@@ -244,10 +244,10 @@ export const AdminSupremeHub: React.FC<AdminSupremeHubProps> = ({ onNavigate }) 
           <div className="space-y-1.5">
             <div className="inline-flex items-center space-x-2 bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-extrabold border border-indigo-500/30">
               <Crown className="w-3.5 h-3.5 text-amber-400" />
-              <span>Painel do Administrador Supremo • Ferramentas Funcionais</span>
+              <span>Painel Avançado • Ferramentas Funcionais</span>
             </div>
             <h2 className="text-2xl font-black tracking-tight text-white flex items-center space-x-2">
-              <span>Central Suprema de Gestão & Configuração</span>
+              <span>Central Avançada de Gestão & Configuração</span>
             </h2>
             <p className="text-xs text-slate-300 max-w-2xl font-medium">
               Controle total e em tempo real: altere configurações do PDV, faça backups em JSON, exporte relatórios e execute o Modo de Testes do Sistema.

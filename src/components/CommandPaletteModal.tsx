@@ -69,21 +69,21 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   const matchingProducts = cleanQuery
     ? products.filter(
         p =>
-          p.nome.toLowerCase().includes(cleanQuery) ||
-          p.codigo.toLowerCase().includes(cleanQuery) ||
-          p.marca.toLowerCase().includes(cleanQuery) ||
-          p.categoria.toLowerCase().includes(cleanQuery) ||
-          p.etiquetas?.some(t => t.toLowerCase().includes(cleanQuery))
+          (p.nome || '').toLowerCase().includes(cleanQuery) ||
+          (p.codigo || '').toLowerCase().includes(cleanQuery) ||
+          (p.marca || '').toLowerCase().includes(cleanQuery) ||
+          (p.categoria || '').toLowerCase().includes(cleanQuery) ||
+          p.etiquetas?.some(t => (t || '').toLowerCase().includes(cleanQuery))
       ).slice(0, 5)
     : [];
 
   const matchingCategories = cleanQuery
-    ? categories.filter(c => c.nome.toLowerCase().includes(cleanQuery)).slice(0, 3)
+    ? categories.filter(c => (c.nome || '').toLowerCase().includes(cleanQuery)).slice(0, 3)
     : [];
 
   const matchingAnnouncements = cleanQuery
     ? announcements.filter(
-        a => a.titulo.toLowerCase().includes(cleanQuery) || a.conteudo.toLowerCase().includes(cleanQuery)
+        a => (a.titulo || '').toLowerCase().includes(cleanQuery) || (a.conteudo || '').toLowerCase().includes(cleanQuery)
       ).slice(0, 3)
     : [];
 

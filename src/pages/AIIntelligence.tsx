@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { firestoreSync } from '../services/firestoreSync';
 import { AIInsight } from '../types';
 import {
   Sparkles,
@@ -33,6 +34,10 @@ export const AIIntelligence: React.FC = () => {
 
   useEffect(() => {
     loadAIInsights();
+    const unsub = firestoreSync.subscribeProducts(() => {
+      loadAIInsights();
+    });
+    return () => unsub();
   }, []);
 
   const getPriorityBadge = (prio: string) => {

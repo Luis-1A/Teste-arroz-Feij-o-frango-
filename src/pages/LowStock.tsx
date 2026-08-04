@@ -10,7 +10,8 @@ import {
   MapPin,
   Clock,
   Layers,
-  CheckCircle2
+  CheckCircle2,
+  Trash2
 } from 'lucide-react';
 
 interface LowStockProps {
@@ -20,13 +21,22 @@ interface LowStockProps {
 export const LowStock: React.FC<LowStockProps> = ({ onNavigateToEntry }) => {
   const [items, setItems] = useState<(Product & { prioridade: string; ultima_venda: string })[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteCandidate, setDeleteCandidate] = useState<Product | null>(null);
+
+  const isLowStock = (p: Product) => {
+    if (p.ativo === false) return false;
+    if (p.nao_relevante) {
+      return p.estoque <= 0;
+    }
+    return p.estoque <= (p.estoque_minimo || 5);
+  };
 
   const loadData = async () => {
     setLoading(true);
     try {
       const prods = await api.getProducts();
       const outOfStockItems = (prods || [])
-        .filter((p) => p.ativo !== false && p.estoque <= (p.estoque_minimo || 5))
+        .filter(isLowStock)
         .map((p) => {
           const isZero = p.estoque === 0;
           return {
@@ -47,7 +57,7 @@ export const LowStock: React.FC<LowStockProps> = ({ onNavigateToEntry }) => {
     setLoading(true);
     const unsub = firestoreSync.subscribeProducts((prods) => {
       const outOfStockItems = (prods || [])
-        .filter((p) => p.ativo !== false && p.estoque <= (p.estoque_minimo || 5))
+        .filter(isLowStock)
         .map((p) => {
           const isZero = p.estoque === 0;
           return {
@@ -61,6 +71,16 @@ export const LowStock: React.FC<LowStockProps> = ({ onNavigateToEntry }) => {
     });
     return () => unsub();
   }, []);
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteCandidate) return;
+    try {
+      await api.deleteProduct(deleteCandidate.id);
+      setDeleteCandidate(null);
+    } catch (err: any) {
+      alert(err.message || 'Erro ao excluir produto.');
+    }
+  };
 
   return (
     <div className="space-y-6 pb-12">
@@ -169,28 +189,67 @@ export const LowStock: React.FC<LowStockProps> = ({ onNavigateToEntry }) => {
                         <div className="flex items-center space-x-1">
                           <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span>
-                            {p.ultima_venda.includes('T')
+                            {p.ultima_venda && p.ultima_venda.includes('T')
                               ? new Date(p.ultima_venda).toLocaleString('pt-BR')
-                              : p.ultima_venda}
+                              : (p.ultima_venda || 'Sem registro')}
                           </span>
                         </div>
                       </td>
 
                       {/* Action */}
                       <td className="p-4 text-right">
-                        <button
-                          onClick={onNavigateToEntry}
-                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center space-x-1.5 ml-auto"
-                        >
-                          <PackagePlus className="w-3.5 h-3.5" />
-                          <span>Repor Estoque</span>
-                        </button>
+                        <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={onNavigateToEntry}
+                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center space-x-1.5"
+                          >
+                            <PackagePlus className="w-3.5 h-3.5" />
+                            <span>Repor Estoque</span>
+                          </button>
+                          <button
+                            onClick={() => setDeleteCandidate(p)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                            title="Excluir Produto"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteCandidate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 border border-slate-100 text-center">
+            <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <h3 className="font-bold text-slate-900 text-base">Excluir Produto?</h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Tem certeza que deseja excluir o produto{' '}
+              <span className="font-bold text-slate-800">"{deleteCandidate.nome}"</span>?
+            </p>
+            <div className="flex space-x-2 mt-5">
+              <button
+                onClick={() => setDeleteCandidate(null)}
+                className="flex-1 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md"
+              >
+                Excluir
+              </button>
+            </div>
           </div>
         </div>
       )}

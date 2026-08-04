@@ -19,7 +19,6 @@ import {
   PackageMinus,
   ArrowLeftRight,
   Cpu,
-  Crown,
   FileBarChart,
   ClipboardCheck,
   Megaphone,
@@ -225,13 +224,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       groupLabel: 'Administração',
       items: [
-        {
-          id: 'admin_supreme_hub' as TabType,
-          label: 'Central Supremo (100+)',
-          icon: Crown,
-          badge: '100+',
-          roles: ['admin_supremo']
-        },
         {
           id: 'users' as TabType,
           label: 'Controle de Usuários',

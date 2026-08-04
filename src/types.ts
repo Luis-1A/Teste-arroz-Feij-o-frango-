@@ -31,6 +31,7 @@ export interface Product {
   preco_venda?: number;
   estoque: number;
   estoque_minimo: number;
+  nao_relevante?: boolean;
   localizacao: string;
   observacao?: string;
   ativo: boolean;

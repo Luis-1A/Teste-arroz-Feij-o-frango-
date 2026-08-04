@@ -22,6 +22,7 @@ import { SystemTestHub } from './pages/SystemTestHub';
 import { AdminSupremeHub } from './pages/AdminSupremeHub';
 import { testRunnerService } from './services/testRunnerService';
 import { ShieldAlert, RefreshCw, LogOut } from 'lucide-react';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Feature Modals
 import { CommandPaletteModal } from './components/CommandPaletteModal';
@@ -143,7 +144,7 @@ const AppContent: React.FC = () => {
           <div className="space-y-2">
             <h2 className="text-xl font-black text-white tracking-tight">Sistema em Modo de Teste</h2>
             <p className="text-xs text-slate-300 leading-relaxed font-medium">
-              O sistema está passando por um teste no momento para melhorar a experiência do usuário. Por favor, tente novamente mais tarde ou contate o Administrador Supremo.
+              O sistema está passando por um teste no momento para melhorar a experiência do usuário. Por favor, tente novamente mais tarde ou contate a administração.
             </p>
           </div>
 
@@ -249,38 +250,38 @@ const AppContent: React.FC = () => {
       <GuidedInventoryModal
         isOpen={isGuidedInventoryOpen}
         onClose={() => setIsGuidedInventoryOpen(false)}
-        userName={user.nome}
+        userName={user?.nome || 'Usuário'}
       />
 
       <ImportExportModal
         isOpen={isImportExportOpen}
         onClose={() => setIsImportExportOpen(false)}
-        userName={user.nome}
+        userName={user?.nome || 'Usuário'}
       />
 
       <AnnouncementsBoardModal
         isOpen={isAnnouncementsOpen}
         onClose={() => setIsAnnouncementsOpen(false)}
-        userName={user.nome}
-        isSupremeAdmin={user.cargo === 'admin_supremo'}
+        userName={user?.nome || 'Usuário'}
+        isSupremeAdmin={user?.cargo === 'admin_supremo'}
       />
 
       <CalendarModal
         isOpen={isCalendarOpen}
         onClose={() => setIsCalendarOpen(false)}
-        userName={user.nome}
+        userName={user?.nome || 'Usuário'}
       />
 
       <StoreGoalsModal
         isOpen={isStoreGoalsOpen}
         onClose={() => setIsStoreGoalsOpen(false)}
-        userName={user.nome}
+        userName={user?.nome || 'Usuário'}
       />
 
       <RecycleBinModal
         isOpen={isRecycleBinOpen}
         onClose={() => setIsRecycleBinOpen(false)}
-        userName={user.nome}
+        userName={user?.nome || 'Usuário'}
       />
 
       <SystemHealthModal
@@ -291,19 +292,19 @@ const AppContent: React.FC = () => {
       <StoreTemplatesModal
         isOpen={isStoreTemplatesOpen}
         onClose={() => setIsStoreTemplatesOpen(false)}
-        userName={user.nome}
+        userName={user?.nome || 'Usuário'}
       />
 
       <AppearanceModal
         isOpen={isAppearanceOpen}
         onClose={() => setIsAppearanceOpen(false)}
-        userName={user.nome}
+        userName={user?.nome || 'Usuário'}
       />
 
       <DraftsModal
         isOpen={isDraftsOpen}
         onClose={() => setIsDraftsOpen(false)}
-        userName={user.nome}
+        userName={user?.nome || 'Usuário'}
       />
 
       <ProductHistoryModal
@@ -316,8 +317,10 @@ const AppContent: React.FC = () => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

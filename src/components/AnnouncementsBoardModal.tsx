@@ -67,7 +67,7 @@ export const AnnouncementsBoardModal: React.FC<AnnouncementsBoardModalProps> = (
             <div>
               <h2 className="text-lg font-black text-white">Mural de Avisos da Loja</h2>
               <p className="text-xs text-slate-400 font-medium">
-                Comunicados oficiais do Administrador Supremo para a equipe
+                Comunicados oficiais da loja para a equipe
               </p>
             </div>
           </div>

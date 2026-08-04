@@ -28,7 +28,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     if (!code) return;
 
     const found = products.find(
-      p => (p.codigo_barras && p.codigo_barras === code) || p.codigo.toLowerCase() === code.toLowerCase()
+      p => (p.codigo_barras && p.codigo_barras === code) || (p.codigo || '').toLowerCase() === code.toLowerCase()
     );
 
     if (found) {

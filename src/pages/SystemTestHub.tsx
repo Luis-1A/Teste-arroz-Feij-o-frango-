@@ -68,9 +68,9 @@ export const SystemTestHub: React.FC = () => {
     return (
       <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 shadow-2xs">
         <ShieldAlert className="w-12 h-12 text-rose-500 mx-auto mb-3" />
-        <h3 className="text-base font-bold text-slate-900">Acesso Restrito ao Administrador Supremo</h3>
+        <h3 className="text-base font-bold text-slate-900">Acesso Restrito</h3>
         <p className="text-xs text-slate-500 mt-1">
-          O Modo de Teste do Sistema é exclusivo para a conta do Administrador Supremo.
+          O Modo de Teste do Sistema é de acesso restrito.
         </p>
       </div>
     );

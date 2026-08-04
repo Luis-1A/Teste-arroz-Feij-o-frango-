@@ -40,14 +40,14 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
     const headers = ['id', 'nome', 'codigo', 'categoria', 'marca', 'estoque', 'estoque_minimo', 'localizacao', 'ativo'];
     const rows = products.map(p => [
       p.id,
-      `"${p.nome.replace(/"/g, '""')}"`,
-      p.codigo,
-      `"${p.categoria}"`,
-      `"${p.marca}"`,
-      p.estoque,
-      p.estoque_minimo,
+      `"${(p.nome || '').replace(/"/g, '""')}"`,
+      p.codigo || '',
+      `"${p.categoria || ''}"`,
+      `"${p.marca || ''}"`,
+      p.estoque ?? 0,
+      p.estoque_minimo ?? 0,
       `"${p.localizacao || ''}"`,
-      p.ativo
+      p.ativo ?? true
     ]);
 
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -84,16 +84,16 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = event => {
+    reader.onload = async event => {
       try {
         const text = event.target?.result as string;
         if (file.name.endsWith('.json')) {
           const data = JSON.parse(text);
           if (Array.isArray(data)) {
             let added = 0;
-            data.forEach(item => {
+            for (const item of data) {
               if (item.nome && item.codigo) {
-                localStore.addProduct({
+                await firestoreSync.createProduct({
                   nome: item.nome,
                   codigo: item.codigo,
                   categoria: item.categoria || 'Geral',
@@ -102,12 +102,11 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
                   estoque_minimo: parseInt(item.estoque_minimo) || 5,
                   localizacao: item.localizacao || 'Depósito Central',
                   observacao: item.observacao || 'Importado via arquivo JSON',
-                  ativo: true,
                   alterado_por: userName
                 });
                 added++;
               }
-            });
+            }
             setImportCount(added);
             setImportStatus(`Sucesso! ${added} produtos importados do JSON.`);
           }
@@ -119,7 +118,7 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
             if (!line) continue;
             const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
             if (cols.length >= 3 && cols[1] && cols[2]) {
-              localStore.addProduct({
+              await firestoreSync.createProduct({
                 nome: cols[1],
                 codigo: cols[2],
                 categoria: cols[3] || 'Geral',
@@ -127,7 +126,6 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
                 estoque: parseInt(cols[5]) || 0,
                 estoque_minimo: parseInt(cols[6]) || 5,
                 localizacao: cols[7] || 'Depósito Central',
-                ativo: true,
                 alterado_por: userName
               });
               added++;

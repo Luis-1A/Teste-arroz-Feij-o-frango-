@@ -105,11 +105,8 @@ class FirestoreSyncService {
         productsRef,
         async (snapshot) => {
           if (snapshot.empty) {
-            // Seed initial products from localStore if cloud DB is completely empty
-            const initialProds = localStore.getProducts();
-            for (const prod of initialProds) {
-              await setDoc(doc(db, 'products', prod.id), prod).catch(() => {});
-            }
+            localStore.saveProductsToLocal([]);
+            this.notifyProducts([]);
           } else {
             const products: Product[] = [];
             snapshot.forEach((docSnap) => {
@@ -133,10 +130,8 @@ class FirestoreSyncService {
         categoriesRef,
         async (snapshot) => {
           if (snapshot.empty) {
-            const initialCats = localStore.getCategories();
-            for (const cat of initialCats) {
-              await setDoc(doc(db, 'categories', cat.id), cat).catch(() => {});
-            }
+            localStore.saveCategoriesToLocal([]);
+            this.notifyCategories([]);
           } else {
             const cats: Category[] = [];
             snapshot.forEach((docSnap) => {
@@ -1153,7 +1148,34 @@ class FirestoreSyncService {
     this.notifyProducts(products);
     return count;
   }
+
+  public async clearAllTestData(): Promise<void> {
+    localStore.clearAllTestData();
+    const collectionsToPurge = ['products', 'categories', 'movements', 'demands', 'divergences', 'history', 'announcements', 'calendar', 'goals', 'audit_sessions'];
+    for (const colName of collectionsToPurge) {
+      try {
+        const colRef = collection(db, colName);
+        const snap = await getDocs(colRef);
+        for (const d of snap.docs) {
+          await deleteDoc(doc(db, colName, d.id)).catch(() => {});
+        }
+      } catch (e) {
+        console.warn(`Failed to purge Firestore collection ${colName}`, e);
+      }
+    }
+    this.notifyProducts([]);
+    this.notifyCategories([]);
+    this.notifyMovements([]);
+    this.notifyDemands([]);
+    this.notifyDivergences([]);
+    localStorage.setItem('bytecas_firestore_purged_v3', 'true');
+  }
 }
 
 export const firestoreSync = new FirestoreSyncService();
+
+// Trigger background purge of test data for real tests
+if (typeof window !== 'undefined' && localStorage.getItem('bytecas_firestore_purged_v3') !== 'true') {
+  firestoreSync.clearAllTestData().catch((e) => console.warn('Background Firestore purge error:', e));
+}
 

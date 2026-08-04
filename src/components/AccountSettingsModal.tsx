@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { localStore } from '../services/localStore';
+import { firestoreSync } from '../services/firestoreSync';
 import {
   User,
   Mail,
@@ -36,7 +37,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
   if (!isOpen || !user) return null;
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
 
@@ -64,8 +65,8 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     setIsSaving(true);
 
     try {
-      // Update in localStore
-      localStore.updateUser(user.id, {
+      // Update in firestoreSync
+      await firestoreSync.updateUser(user.id, {
         nome: nome.trim(),
         email: email.trim().toLowerCase(),
         ...(novaSenha ? { senha: novaSenha } : {})
@@ -93,10 +94,9 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
   const getRoleLabel = (cargo: string) => {
     switch (cargo) {
-      case 'admin_supremo':
-        return 'Administrador Supremo';
       case 'gerente':
         return 'Gerente de Estoque';
+      case 'admin_supremo':
       case 'funcionario':
       default:
         return 'Funcionário';

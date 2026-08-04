@@ -42,9 +42,9 @@ export const StockEntry: React.FC = () => {
   }, [selectedProduct?.id]);
 
   const filteredProducts = products.filter(p =>
-    p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.codigo_barras && p.codigo_barras.toLowerCase().includes(searchTerm.toLowerCase()))
+    (p.nome || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+    (p.codigo || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+    (p.codigo_barras && p.codigo_barras.toLowerCase().includes((searchTerm || '').toLowerCase()))
   );
 
   const handleSubmitEntry = async (e: React.FormEvent) => {
@@ -80,7 +80,7 @@ export const StockEntry: React.FC = () => {
 
   const handleScanSuccess = (prod: Product) => {
     setSelectedProduct(prod);
-    setSearchTerm(prod.nome);
+    setSearchTerm(prod.nome || '');
   };
 
   return (

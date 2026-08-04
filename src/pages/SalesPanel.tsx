@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { firestoreSync } from '../services/firestoreSync';
 import { Product, POSConfig, Category } from '../types';
+import { smartMatch } from '../utils/searchUtils';
 import { DEFAULT_POS_CONFIG } from '../config/posDefault';
 import { soundEffects } from '../utils/audio';
 import { triggerHaptic } from '../utils/haptics';
@@ -186,8 +187,8 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
       .filter((p) => p.ativo)
       .filter(
         (p) =>
-          p.nome.toLowerCase().includes(term) ||
-          p.categoria.toLowerCase().includes(term)
+          smartMatch(p.nome, term) ||
+          smartMatch(p.categoria, term)
       )
       .slice(0, 8);
 
@@ -237,7 +238,7 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
       } else if (searchTerm.trim()) {
         const term = searchTerm.trim().toLowerCase();
         const exactMatch = products.find(
-          (p) => p.ativo && (p.codigo.toLowerCase() === term || p.codigo_barras?.toLowerCase() === term)
+          (p) => p.ativo && ((p.codigo || '').toLowerCase() === term || p.codigo_barras?.toLowerCase() === term)
         );
         if (exactMatch) {
           handleSelectProduct(exactMatch);

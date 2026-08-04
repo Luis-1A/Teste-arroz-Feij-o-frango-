@@ -125,8 +125,8 @@ export const GuidedInventoryModal: React.FC<GuidedInventoryModalProps> = ({
 
   const visibleItems = items.filter(
     i =>
-      i.produto_nome.toLowerCase().includes(filterQuery.toLowerCase()) ||
-      i.codigo.toLowerCase().includes(filterQuery.toLowerCase())
+      (i.produto_nome || '').toLowerCase().includes(filterQuery.toLowerCase()) ||
+      (i.codigo || '').toLowerCase().includes(filterQuery.toLowerCase())
   );
 
   return (
