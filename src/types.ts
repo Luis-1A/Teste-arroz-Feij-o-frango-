@@ -32,7 +32,7 @@ export interface Product {
   estoque: number;
   estoque_minimo: number;
   nao_relevante?: boolean;
-  localizacao: string;
+  localizacao?: string;
   observacao?: string;
   ativo: boolean;
   favorito?: boolean;

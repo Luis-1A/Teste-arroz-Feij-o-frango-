@@ -155,14 +155,11 @@ export const Header: React.FC<HeaderProps> = ({
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="font-black text-white text-lg md:text-xl tracking-tight leading-none">
-                  Bosteca
+                  Facilitando Meu Trabalho
                 </h1>
-                <span className="text-[10px] font-black bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-md uppercase tracking-wider font-mono">
-                  Estoque
-                </span>
               </div>
               <p className="text-[11px] text-slate-400 font-medium hidden sm:block mt-0.5">
-                Sistema de Gestão
+                Sistema de Gestão de Estoque
               </p>
             </div>
           </div>

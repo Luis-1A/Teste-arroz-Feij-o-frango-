@@ -94,7 +94,7 @@ const initialData: DatabaseSchema = {
   users: [
     {
       id: 'usr_luis',
-      nome: 'Luis Fernando Silva',
+      nome: 'Luis Fernando Santos',
       email: 'luisfernandosantossilva1940@gmail.com',
       senha_hash: '@Luisoo5',
       cargo: 'admin_supremo',
@@ -105,7 +105,7 @@ const initialData: DatabaseSchema = {
     {
       id: 'usr_gerente',
       nome: 'Carlos Gerente',
-      email: 'gerente@bytecas.com',
+      email: 'gerente@facilitandomeutrabalho.com',
       senha_hash: 'gerente123',
       cargo: 'gerente',
       ativo: true,
@@ -115,7 +115,7 @@ const initialData: DatabaseSchema = {
     {
       id: 'usr_funcionario',
       nome: 'Ana Funcionária',
-      email: 'funcionario@bytecas.com',
+      email: 'funcionario@facilitandomeutrabalho.com',
       senha_hash: 'func123',
       cargo: 'funcionario',
       ativo: true,
@@ -148,7 +148,7 @@ class LocalDatabase {
           if (!this.db.users.some(u => u.email.toLowerCase() === 'luisfernandosantossilva1940@gmail.com')) {
             this.db.users.unshift({
               id: 'usr_luis',
-              nome: 'Luis Fernando Silva',
+              nome: 'Luis Fernando Santos',
               email: 'luisfernandosantossilva1940@gmail.com',
               senha_hash: '@Luisoo5',
               cargo: 'admin_supremo',
@@ -183,7 +183,7 @@ class LocalDatabase {
     if (!loaded.users.some(u => u.email.toLowerCase() === 'luisfernandosantossilva1940@gmail.com')) {
       loaded.users.unshift({
         id: 'usr_luis',
-        nome: 'Luis Fernando Silva',
+        nome: 'Luis Fernando Santos',
         email: 'luisfernandosantossilva1940@gmail.com',
         senha_hash: '@Luisoo5',
         cargo: 'admin_supremo',
@@ -806,6 +806,8 @@ class LocalDatabase {
         !p.nome.includes('[TESTE]') &&
         !p.nome.includes('[BOT_TEST]') &&
         !p.codigo.includes('TST-') &&
+        p.marca !== 'Facilitando Meu Trabalho TestLab' &&
+        p.marca !== 'Bosteca TestLab' &&
         p.marca !== 'Bytecas TestLab'
       ) {
         snapshot[p.id] = p.estoque;
@@ -836,6 +838,8 @@ class LocalDatabase {
       !p.nome.includes('[BOT_TEST]') &&
       !p.codigo.includes('TST-') &&
       !p.id.startsWith('test_prod_') &&
+      p.marca !== 'Facilitando Meu Trabalho TestLab' &&
+      p.marca !== 'Bosteca TestLab' &&
       p.marca !== 'Bytecas TestLab'
     );
 

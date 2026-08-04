@@ -977,6 +977,7 @@ class FirestoreSyncService {
           docSnap.id.startsWith('test_prod_') ||
           (data.nome && (data.nome.includes('[BOT_TEST]') || data.nome.includes('[TESTE]'))) ||
           (data.codigo && data.codigo.includes('TST-')) ||
+          data.marca === 'Facilitando Meu Trabalho TestLab' ||
           data.marca === 'Bosteca TestLab' ||
           data.marca === 'Bytecas TestLab'
         ) {

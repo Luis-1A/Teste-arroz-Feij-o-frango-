@@ -606,25 +606,12 @@ export const POSCustomization: React.FC = () => {
             <div className="flex items-center justify-between pt-3">
               <div>
                 <p className="text-xs font-bold text-slate-800">Marca / Fabricante</p>
-                <p className="text-[11px] text-slate-500">Exemplo: Kimaster, Bosteca Pro</p>
+                <p className="text-[11px] text-slate-500">Exemplo: Kimaster, Facilitando Meu Trabalho Pro</p>
               </div>
               <input
                 type="checkbox"
                 checked={config.showProductBrand}
                 onChange={(e) => setConfig({ ...config, showProductBrand: e.target.checked })}
-                className="w-4 h-4 text-blue-600 rounded-sm focus:ring-blue-500"
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-3">
-              <div>
-                <p className="text-xs font-bold text-slate-800">Localização Física no Estoque</p>
-                <p className="text-[11px] text-slate-500">Exemplo: Prateleira A1, Gaveta B2</p>
-              </div>
-              <input
-                type="checkbox"
-                checked={config.showProductLocation}
-                onChange={(e) => setConfig({ ...config, showProductLocation: e.target.checked })}
                 className="w-4 h-4 text-blue-600 rounded-sm focus:ring-blue-500"
               />
             </div>
@@ -774,10 +761,10 @@ export const POSCustomization: React.FC = () => {
               >
                 <div className="flex items-center space-x-3">
                   <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-xs">
-                    B
+                    F
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900">Bosteca Estoque</h4>
+                    <h4 className="text-xs font-bold text-slate-900">Facilitando Meu Trabalho</h4>
                     <span className="text-[10px] text-blue-600 font-bold">Frente de Caixa (POS)</span>
                   </div>
                 </div>
@@ -851,7 +838,6 @@ export const POSCustomization: React.FC = () => {
                           <p className="text-xs font-bold text-slate-800">Carregador Kimaster Tipo-C 20W</p>
                           <div className="flex items-center space-x-2 text-[10px] text-slate-400">
                             {config.showProductCode && <span>COD: CAR-KIM-20W</span>}
-                            {config.showProductLocation && <span>Prateleira A1</span>}
                           </div>
                         </div>
                       </div>

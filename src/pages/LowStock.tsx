@@ -159,13 +159,9 @@ export const LowStock: React.FC<LowStockProps> = ({ onNavigateToEntry }) => {
                         </div>
                       </td>
 
-                      {/* Category & Location */}
+                      {/* Category */}
                       <td className="p-4">
                         <div className="text-slate-700 font-semibold">{p.categoria}</div>
-                        <div className="text-[10px] text-slate-400 flex items-center space-x-1 mt-0.5 font-medium">
-                          <MapPin className="w-3 h-3 text-blue-500 shrink-0" />
-                          <span>{p.localizacao}</span>
-                        </div>
                       </td>
 
                       {/* Current vs Min Qty */}

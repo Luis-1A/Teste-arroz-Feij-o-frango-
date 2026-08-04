@@ -84,13 +84,6 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({ produc
             <span className="text-base font-black text-amber-400">{product.estoque_minimo} un</span>
           </div>
           <div className="p-3 bg-slate-900/80 rounded-2xl border border-slate-800">
-            <span className="text-[10px] text-slate-400 uppercase font-extrabold block">Localização</span>
-            <span className="text-xs font-bold text-slate-200 truncate flex items-center gap-1 mt-0.5">
-              <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-              {product.localizacao || 'Não informada'}
-            </span>
-          </div>
-          <div className="p-3 bg-slate-900/80 rounded-2xl border border-slate-800">
             <span className="text-[10px] text-slate-400 uppercase font-extrabold block">Etiquetas</span>
             <div className="flex flex-wrap gap-1 mt-1">
               {product.etiquetas && product.etiquetas.length > 0 ? (

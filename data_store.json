@@ -2,7 +2,7 @@
   "users": [
     {
       "id": "usr_luis",
-      "nome": "Luis Fernando Silva",
+      "nome": "Luis Fernando Santos",
       "email": "luisfernandosantossilva1940@gmail.com",
       "senha_hash": "@Luisoo5",
       "cargo": "admin_supremo",
@@ -13,7 +13,7 @@
     {
       "id": "usr_supremo",
       "nome": "Administrador Supremo",
-      "email": "admin@bytecas.com",
+      "email": "admin@facilitandomeutrabalho.com",
       "senha_hash": "admin123",
       "cargo": "admin_supremo",
       "ativo": true,
@@ -23,7 +23,7 @@
     {
       "id": "usr_gerente",
       "nome": "Carlos Gerente",
-      "email": "gerente@bytecas.com",
+      "email": "gerente@facilitandomeutrabalho.com",
       "senha_hash": "gerente123",
       "cargo": "gerente",
       "ativo": true,
@@ -33,7 +33,7 @@
     {
       "id": "usr_funcionario",
       "nome": "Ana Funcionária",
-      "email": "funcionario@bytecas.com",
+      "email": "funcionario@facilitandomeutrabalho.com",
       "senha_hash": "func123",
       "cargo": "funcionario",
       "ativo": true,

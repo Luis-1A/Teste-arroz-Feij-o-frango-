@@ -254,7 +254,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           {!isCollapsed && (
             <div className="min-w-0">
-              <h2 className="text-xs font-black text-white tracking-tight truncate">Bosteca Estoque</h2>
+              <h2 className="text-xs font-black text-white tracking-tight truncate">Facilitando Meu Trabalho</h2>
               <p className="text-[10px] text-slate-400 font-bold truncate">Menu do Sistema</p>
             </div>
           )}
@@ -400,7 +400,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-3 border-t border-[#1F2937] bg-[#0B1220]/60 flex items-center justify-between">
         {!isCollapsed && (
           <p className="text-[10px] font-bold text-slate-400 truncate">
-            Bosteca Estoque • Balcão
+            Facilitando Meu Trabalho • Balcão
           </p>
         )}
         <button

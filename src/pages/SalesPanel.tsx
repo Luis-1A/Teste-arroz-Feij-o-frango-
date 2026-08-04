@@ -412,11 +412,11 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
           {/* Left Brand Info */}
           <div className="flex items-center space-x-4">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-700 to-indigo-600 text-white flex items-center justify-center font-black text-lg shadow-md shadow-blue-500/20 shrink-0">
-              B
+              F
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h1 className="text-base font-extrabold tracking-tight">Bosteca Estoque</h1>
+                <h1 className="text-base font-extrabold tracking-tight">Facilitando Meu Trabalho</h1>
                 <span className="bg-blue-100 text-blue-700 border border-blue-200 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase">
                   Frente de Caixa (POS)
                 </span>
@@ -545,12 +545,6 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
                           <p className="text-xs font-bold text-slate-900 dark:text-white">{item.nome}</p>
                           <div className="flex items-center space-x-3 text-[11px] text-slate-400 mt-0.5">
                             {posConfig.showProductCategory && <span>Categoria: {item.categoria}</span>}
-                            {posConfig.showProductLocation && (
-                              <span className="flex items-center space-x-1">
-                                <MapPin className="w-3 h-3 text-slate-400" />
-                                <span>{item.localizacao}</span>
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -727,12 +721,6 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
                               </span>
                             )}
                             {posConfig.showProductCode && <span>COD: {item.product.codigo}</span>}
-                            {posConfig.showProductLocation && (
-                              <span className="flex items-center space-x-1">
-                                <MapPin className="w-3 h-3 text-slate-400" />
-                                <span>{item.product.localizacao}</span>
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -934,7 +922,7 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
               <span className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md text-slate-700 dark:text-slate-300 font-bold">[ESC] Sair</span>
             </div>
             <div>
-              <span>Bosteca Estoque v2.4 • Banco de Dados Central Sincronizado</span>
+              <span>Facilitando Meu Trabalho v2.4 • Banco de Dados Central Sincronizado</span>
             </div>
           </div>
         </footer>

@@ -138,7 +138,7 @@ async function startServer() {
     const { email } = req.body;
     const user = db.getUserByEmail(email);
     if (!user) {
-      return res.status(404).json({ error: 'E-mail não cadastrado no sistema Bytecas.' });
+      return res.status(404).json({ error: 'E-mail não cadastrado no sistema Facilitando Meu Trabalho.' });
     }
     // Simulated reset email
     res.json({ message: `Instruções de recuperação enviadas com sucesso para ${email}.` });
@@ -545,7 +545,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server Bytecas running at http://0.0.0.0:${PORT}`);
+    console.log(`Server Facilitando Meu Trabalho running at http://0.0.0.0:${PORT}`);
   });
 }
 

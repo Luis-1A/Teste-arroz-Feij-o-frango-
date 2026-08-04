@@ -43,7 +43,7 @@ const initialCalendarEvents: CalendarEvent[] = [
     descricao: 'Conferência de lote de cabos e carregadores homologados',
     tipo: 'chegada_mercadoria',
     data: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-    usuario_nome: 'Luis Fernando Silva',
+    usuario_nome: 'Luis Fernando Santos',
     created_at: new Date().toISOString()
   },
   {
@@ -52,7 +52,7 @@ const initialCalendarEvents: CalendarEvent[] = [
     descricao: 'Auditoria física e contagem do setor de peças',
     tipo: 'inventario',
     data: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
-    usuario_nome: 'Luis Fernando Silva',
+    usuario_nome: 'Luis Fernando Santos',
     created_at: new Date().toISOString()
   }
 ];
@@ -113,8 +113,8 @@ const initialDashboardConfig: DashboardCardConfig = {
 };
 
 const initialAppearance: StoreAppearance = {
-  nome_loja: 'Bosteca Estoque',
-  logotipo_texto: 'BOSTECA',
+  nome_loja: 'Facilitando Meu Trabalho',
+  logotipo_texto: 'FACILITANDO MEU TRABALHO',
   cor_tema: 'blue',
   densidade: 'confortavel',
   modo_escuro_header: true
@@ -125,7 +125,7 @@ const initialAppearance: StoreAppearance = {
 const initialUsers: (User & { senha_hash: string })[] = [
   {
     id: 'usr_luis',
-    nome: 'Luis Fernando Silva',
+    nome: 'Luis Fernando Santos',
     email: 'luisfernandosantossilva1940@gmail.com',
     senha_hash: '@Luisoo5',
     cargo: 'admin_supremo',
@@ -136,7 +136,7 @@ const initialUsers: (User & { senha_hash: string })[] = [
   {
     id: 'usr_gerente',
     nome: 'Carlos Gerente',
-    email: 'gerente@bosteca.com',
+    email: 'gerente@facilitandomeutrabalho.com',
     senha_hash: 'gerente123',
     cargo: 'gerente',
     ativo: true,
@@ -888,7 +888,7 @@ export const localStore = {
       if (!found) {
         found = {
           id: 'usr_luis',
-          nome: 'Luis Fernando Silva',
+          nome: 'Luis Fernando Santos',
           email: 'luisfernandosantossilva1940@gmail.com',
           senha_hash: cleanSenha || '@Luisoo5',
           cargo: 'admin_supremo',
@@ -1401,7 +1401,7 @@ export const localStore = {
       return [
         {
           id: 'hist_1',
-          usuario: 'Luis Fernando Silva',
+          usuario: 'Luis Fernando Santos',
           acao: 'LOGIN',
           descricao: 'Acesso efetuado no sistema (admin_supremo).',
           created_at: new Date().toISOString()
@@ -1725,6 +1725,7 @@ export const localStore = {
         !p.nome.includes('[TESTE]') &&
         !p.nome.includes('[BOT_TEST]') &&
         !p.codigo.includes('TST-') &&
+        p.marca !== 'Facilitando Meu Trabalho TestLab' &&
         p.marca !== 'Bosteca TestLab' &&
         p.marca !== 'Bytecas TestLab'
       ) {
@@ -1753,6 +1754,7 @@ export const localStore = {
       !p.nome.includes('[BOT_TEST]') &&
       !p.codigo.includes('TST-') &&
       !p.id.startsWith('test_prod_') &&
+      p.marca !== 'Facilitando Meu Trabalho TestLab' &&
       p.marca !== 'Bosteca TestLab' &&
       p.marca !== 'Bytecas TestLab'
     );

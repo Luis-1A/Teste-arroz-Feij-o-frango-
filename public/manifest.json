@@ -1,6 +1,6 @@
 {
-  "short_name": "Bytecas POS",
-  "name": "Bytecas Loja e Estoque",
+  "short_name": "Facilitando Meu Trabalho",
+  "name": "Facilitando Meu Trabalho",
   "icons": [
     {
       "src": "pwa-192.png",
@@ -19,5 +19,5 @@
   "display": "standalone",
   "orientation": "any",
   "scope": "/",
-  "description": "Sistema de Gestão de Estoque e Frente de Caixa Centralizado Bytecas"
+  "description": "Sistema de Gestão de Estoque e Frente de Caixa Centralizado Facilitando Meu Trabalho"
 }

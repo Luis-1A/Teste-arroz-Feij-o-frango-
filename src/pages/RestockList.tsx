@@ -356,7 +356,7 @@ export const RestockList: React.FC<RestockListProps> = ({
   const generateDetailedReportText = () => {
     if (!snapshot) return '';
 
-    let text = `📋 LISTA DETALHADA DE REPOSIÇÃO - BYTECAS\n`;
+    let text = `📋 LISTA DETALHADA DE REPOSIÇÃO - FACILITANDO MEU TRABALHO\n`;
     text += `Geração: ${snapshot.generatedAtDate} às ${snapshot.generatedAtTime}\n`;
     text += `Gerado por: ${snapshot.generatedByUser}\n`;
     text += `--------------------------------------------------\n\n`;
@@ -515,8 +515,8 @@ export const RestockList: React.FC<RestockListProps> = ({
 
       // Store Logo & Name
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 28px sans-serif';
-      ctx.fillText('BYTECAS', 40, 52);
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText('FACILITANDO MEU TRABALHO', 40, 52);
 
       ctx.fillStyle = '#38bdf8';
       ctx.font = 'bold 12px sans-serif';
@@ -696,7 +696,7 @@ export const RestockList: React.FC<RestockListProps> = ({
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(
-        'SISTEMA BYTECAS • LISTA DE REPOSIÇÃO DE ESTOQUE • GERADO SOB DEMANDA',
+        'SISTEMA FACILITANDO MEU TRABALHO • LISTA DE REPOSIÇÃO DE ESTOQUE • GERADO SOB DEMANDA',
         canvasWidth / 2,
         totalCanvasHeight - 20
       );
@@ -707,7 +707,7 @@ export const RestockList: React.FC<RestockListProps> = ({
 
       // Auto download link
       const link = document.createElement('a');
-      link.download = `Lista_Reposicao_Bytecas_${snapshot.generatedAtDate.replace(/\//g, '-')}.png`;
+      link.download = `Lista_Reposicao_Facilitando_Meu_Trabalho_${snapshot.generatedAtDate.replace(/\//g, '-')}.png`;
       link.href = dataUrl;
       link.click();
 
@@ -1255,7 +1255,6 @@ export const RestockList: React.FC<RestockListProps> = ({
                             </td>
                             <td className="py-3 px-4 text-slate-600">
                               <p className="font-semibold text-slate-800">{item.marca}</p>
-                              <p className="text-[10px] text-slate-400">{item.localizacao}</p>
                             </td>
                             <td className="py-3 px-4 text-center">
                               <span
@@ -1438,7 +1437,7 @@ export const RestockList: React.FC<RestockListProps> = ({
             <div className="p-6 overflow-y-auto flex-1 flex justify-center bg-slate-950/50">
               <img
                 src={generatedImageUrl}
-                alt="Lista de Reposição Bytecas"
+                alt="Lista de Reposição Facilitando Meu Trabalho"
                 className="rounded-2xl border border-slate-800 shadow-2xl max-w-full h-auto object-contain"
               />
             </div>
@@ -1452,7 +1451,7 @@ export const RestockList: React.FC<RestockListProps> = ({
               <div className="flex items-center space-x-2">
                 <a
                   href={generatedImageUrl}
-                  download={`Lista_Reposicao_Bytecas_${snapshot.generatedAtDate.replace(/\//g, '-')}.png`}
+                  download={`Lista_Reposicao_Facilitando_Meu_Trabalho_${snapshot.generatedAtDate.replace(/\//g, '-')}.png`}
                   className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold rounded-xl transition shadow-md inline-flex items-center space-x-2"
                 >
                   <Download className="w-4 h-4" />

@@ -51,19 +51,19 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
     ]);
 
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    downloadFile(csvContent, 'produtos_bosteca_estoque.csv', 'text/csv;charset=utf-8;');
+    downloadFile(csvContent, 'produtos_facilitando_meu_trabalho.csv', 'text/csv;charset=utf-8;');
   };
 
   const handleExportProductsJSON = () => {
     const products = localStore.getProducts();
     const jsonStr = JSON.stringify(products, null, 2);
-    downloadFile(jsonStr, 'produtos_bosteca_estoque.json', 'application/json');
+    downloadFile(jsonStr, 'produtos_facilitando_meu_trabalho.json', 'application/json');
   };
 
   const handleExportCategoriesJSON = () => {
     const categories = localStore.getCategories();
     const jsonStr = JSON.stringify(categories, null, 2);
-    downloadFile(jsonStr, 'categorias_bosteca_estoque.json', 'application/json');
+    downloadFile(jsonStr, 'categorias_facilitando_meu_trabalho.json', 'application/json');
   };
 
   const downloadFile = (content: string, fileName: string, contentType: string) => {
@@ -100,7 +100,6 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
                   marca: item.marca || 'Genérica',
                   estoque: parseInt(item.estoque) || 0,
                   estoque_minimo: parseInt(item.estoque_minimo) || 5,
-                  localizacao: item.localizacao || 'Depósito Central',
                   observacao: item.observacao || 'Importado via arquivo JSON',
                   alterado_por: userName
                 });
@@ -125,7 +124,6 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
                 marca: cols[4] || 'Genérica',
                 estoque: parseInt(cols[5]) || 0,
                 estoque_minimo: parseInt(cols[6]) || 5,
-                localizacao: cols[7] || 'Depósito Central',
                 alterado_por: userName
               });
               added++;

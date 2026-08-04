@@ -78,7 +78,7 @@ export const AIIntelligence: React.FC = () => {
             </div>
             <h2 className="text-2xl font-bold tracking-tight">Análise Preditiva de Estoque</h2>
             <p className="text-xs text-slate-300 mt-1 max-w-xl">
-              Algoritmos neurais da Bosteca analisam continuamente velocidade de movimentação, estoque crítico e produtos estocados sem saída.
+              Algoritmos neurais do Facilitando Meu Trabalho analisam continuamente velocidade de movimentação, estoque crítico e produtos estocados sem saída.
             </p>
           </div>
 

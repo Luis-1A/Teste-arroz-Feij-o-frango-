@@ -70,7 +70,6 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
     codigo: '',
     estoque: 0,
     estoque_minimo: 5,
-    localizacao: 'Geral',
     observacao: ''
   });
 
@@ -206,7 +205,6 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
       codigo: `PROD-${Math.floor(1000 + Math.random() * 9000)}`,
       estoque: 0,
       estoque_minimo: 5,
-      localizacao: 'Geral',
       observacao: `Produto cadastrado a partir de ${demand.quantidade_solicitacoes} solicitação(ões) de cliente(s).`
     });
     setNewProductModal({ open: true, demand });
@@ -782,19 +780,6 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
                     className="w-full px-3 py-2 bg-[#0B1220] border border-[#1F2937] rounded-xl text-xs font-bold text-white"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-300 uppercase mb-1">
-                  Localização no Estoque
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newProdForm.localizacao}
-                  onChange={e => setNewProdForm({ ...newProdForm, localizacao: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#0B1220] border border-[#1F2937] rounded-xl text-xs text-white"
-                />
               </div>
 
               <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">

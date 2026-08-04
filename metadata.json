@@ -1,6 +1,6 @@
 {
-  "name": "Bosteca Loja e Estoque",
-  "description": "Sistema completo de controle de estoque para a empresa Bosteca Loja e Estoque (Web e Mobile), sem funcionalidades financeiras.",
+  "name": "Facilitando Meu Trabalho",
+  "description": "Sistema completo de controle de estoque para a empresa Facilitando Meu Trabalho (Web e Mobile), sem funcionalidades financeiras.",
   "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

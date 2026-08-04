@@ -94,7 +94,7 @@ export const Login: React.FC = () => {
           <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl shadow-lg shadow-indigo-500/20 mb-3 border border-blue-400/30">
             <Package className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Bosteca Loja e Estoque</h1>
+          <h1 className="text-2xl font-black text-white tracking-tight">Facilitando Meu Trabalho</h1>
           <p className="text-xs text-slate-400 mt-1 font-medium">
             Sistema Integrado de Controle Físico de Estoque
           </p>
@@ -309,7 +309,7 @@ export const Login: React.FC = () => {
         {/* Security Note */}
         <div className="mt-6 text-center text-[11px] text-slate-500 flex items-center justify-center space-x-1.5 font-medium">
           <ShieldCheck className="w-4 h-4 text-blue-500" />
-          <span>Bosteca • Controle 100% de Estoque • Sem funções financeiras</span>
+          <span>Facilitando Meu Trabalho • Controle 100% de Estoque • Sem funções financeiras</span>
         </div>
       </div>
 

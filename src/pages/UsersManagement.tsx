@@ -134,7 +134,7 @@ export const UsersManagement: React.FC = () => {
             <span>Gestão de Usuários e Níveis de Permissão</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Controle de acessos da equipe Bosteca.
+            Controle de acessos da equipe Facilitando Meu Trabalho.
           </p>
         </div>
 
@@ -289,7 +289,7 @@ export const UsersManagement: React.FC = () => {
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="roberto@bytecas.com"
+                  placeholder="roberto@facilitandomeutrabalho.com"
                   className="w-full px-3.5 py-2.5 text-sm font-bold text-white bg-[#0B1220] border border-[#1F2937] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-slate-400 placeholder:font-normal"
                 />
               </div>
@@ -350,7 +350,7 @@ export const UsersManagement: React.FC = () => {
             <h3 className="font-bold text-base text-slate-900">Remover Usuário?</h3>
             <p className="text-xs text-slate-500 mt-2">
               Confirma a remoção do usuário <strong className="text-slate-800">{deleteCandidate.nome}</strong>?
-              A conta deixará de ter acesso ao sistema Bosteca.
+              A conta deixará de ter acesso ao sistema Facilitando Meu Trabalho.
             </p>
             <div className="mt-5 flex space-x-2">
               <button

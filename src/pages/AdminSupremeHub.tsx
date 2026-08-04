@@ -91,7 +91,7 @@ export const AdminSupremeHub: React.FC<AdminSupremeHubProps> = ({ onNavigate }) 
 
     const backupData = {
       timestamp: new Date().toISOString(),
-      app: 'Bosteca Estoque',
+      app: 'Facilitando Meu Trabalho',
       versao: '2.5.0-SUPREMO',
       produtosCount: products.length,
       categoriasCount: categories.length,
@@ -109,7 +109,7 @@ export const AdminSupremeHub: React.FC<AdminSupremeHubProps> = ({ onNavigate }) 
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `bosteca_backup_completo_${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `facilitando_meu_trabalho_backup_completo_${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -146,7 +146,7 @@ export const AdminSupremeHub: React.FC<AdminSupremeHubProps> = ({ onNavigate }) 
 
   const handleCopyInventorySummary = () => {
     const products = localStore.getProducts();
-    let txt = `📊 RESUMO DO INVENTÁRIO - BOSTECA ESTOQUE (${new Date().toLocaleDateString('pt-BR')})\n\n`;
+    let txt = `📊 RESUMO DO INVENTÁRIO - FACILITANDO MEU TRABALHO (${new Date().toLocaleDateString('pt-BR')})\n\n`;
     products.forEach((p, idx) => {
       txt += `${idx + 1}. ${p.nome} | Qtd: ${p.estoque} UN | Cód: ${p.codigo} | Mín: ${p.estoque_minimo}\n`;
     });
@@ -163,7 +163,7 @@ export const AdminSupremeHub: React.FC<AdminSupremeHubProps> = ({ onNavigate }) 
       icon: Settings,
       count: 10,
       items: [
-        { label: 'Nome da Empresa e Identificação no Relatório', desc: 'Bosteca Vendas & Estoque Pro' },
+        { label: 'Nome da Empresa e Identificação no Relatório', desc: 'Facilitando Meu Trabalho Vendas & Estoque Pro' },
         { label: 'Fuso Horário Oficial e Região', desc: 'América/São_Paulo (UTC-3)' },
         { label: 'Tempo Limite de Inatividade da Sessão', desc: 'Ativo - 15 minutos' },
         { label: 'Idioma Principal da Interface', desc: 'Português BR' },

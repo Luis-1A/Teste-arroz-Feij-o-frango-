@@ -270,7 +270,7 @@ class TestRunnerService {
         await firestoreSync.createProduct({
           nome: `[TESTE] Fone Wireless SoundBox ${randId}`,
           categoria: cat,
-          marca: 'Bosteca TestLab',
+          marca: 'Facilitando Meu Trabalho TestLab',
           codigo: `TST-${randId}`,
           codigo_barras: `789999000${randId}`,
           estoque: 12,

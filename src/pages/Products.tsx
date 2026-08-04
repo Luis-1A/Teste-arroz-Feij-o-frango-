@@ -80,7 +80,6 @@ export const Products: React.FC = () => {
   const [estoque, setEstoque] = useState<number>(0);
   const [estoqueMinimo, setEstoqueMinimo] = useState<number>(5);
   const [naoRelevante, setNaoRelevante] = useState<boolean>(false);
-  const [localizacao, setLocalizacao] = useState('');
   const [observacao, setObservacao] = useState('');
   const [formError, setFormError] = useState('');
 
@@ -206,7 +205,6 @@ export const Products: React.FC = () => {
     setEstoque(10);
     setEstoqueMinimo(5);
     setNaoRelevante(false);
-    setLocalizacao('Prateleira A1');
     setObservacao('');
     setFormError('');
     setIsModalOpen(true);
@@ -220,7 +218,6 @@ export const Products: React.FC = () => {
     setEstoque(p.estoque);
     setEstoqueMinimo(p.estoque_minimo || 5);
     setNaoRelevante(Boolean(p.nao_relevante));
-    setLocalizacao(p.localizacao || '');
     setObservacao(p.observacao || '');
     setFormError('');
     setIsModalOpen(true);
@@ -255,7 +252,6 @@ export const Products: React.FC = () => {
           estoque: Number(estoque),
           estoque_minimo: naoRelevante ? 0 : Number(estoqueMinimo),
           nao_relevante: naoRelevante,
-          localizacao: localizacao || 'Prateleira A1',
           observacao
         });
       } else {
@@ -267,7 +263,6 @@ export const Products: React.FC = () => {
           estoque: Number(estoque),
           estoque_minimo: naoRelevante ? 0 : Number(estoqueMinimo),
           nao_relevante: naoRelevante,
-          localizacao: localizacao || 'Prateleira A1',
           observacao
         });
       }
@@ -463,12 +458,6 @@ export const Products: React.FC = () => {
                                 {p.nao_relevante && (
                                   <span className="px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-200/80 rounded-md font-semibold text-[10px]">
                                     Sem Est. Mínimo
-                                  </span>
-                                )}
-                                {p.localizacao && (
-                                  <span className="flex items-center space-x-1 text-slate-500">
-                                    <MapPin className="w-3 h-3 text-blue-500" />
-                                    <span>{p.localizacao}</span>
                                   </span>
                                 )}
                               </div>
@@ -796,17 +785,6 @@ export const Products: React.FC = () => {
                       required={!naoRelevante}
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-bold mb-1">Localização (opcional)</label>
-                  <input
-                    type="text"
-                    value={localizacao}
-                    onChange={(e) => setLocalizacao(e.target.value)}
-                    placeholder="Ex: Prateleira B3 • Corredor 2"
-                    className="w-full px-3.5 py-2.5 bg-[#0B1220] border border-[#1F2937] text-white placeholder-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-                  />
                 </div>
               </div>
 
