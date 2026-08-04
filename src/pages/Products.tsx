@@ -76,12 +76,16 @@ export const Products: React.FC = () => {
   // Form Fields for Product
   const [nome, setNome] = useState('');
   const [categoria, setCategoria] = useState('');
+  const [lastUsedCategory, setLastUsedCategory] = useState<string>(() => {
+    return localStorage.getItem('facilitando_last_used_category') || '';
+  });
   const [marca, setMarca] = useState('Padrão');
   const [estoque, setEstoque] = useState<number>(0);
   const [estoqueMinimo, setEstoqueMinimo] = useState<number>(5);
   const [naoRelevante, setNaoRelevante] = useState<boolean>(false);
   const [observacao, setObservacao] = useState('');
   const [formError, setFormError] = useState('');
+  const [saveAndAddAnother, setSaveAndAddAnother] = useState(false);
 
   // Delete Confirmation Modal
   const [deleteProductCandidate, setDeleteProductCandidate] = useState<Product | null>(null);
@@ -197,10 +201,12 @@ export const Products: React.FC = () => {
     }
   };
 
-  const openAddModal = () => {
+  const openAddModal = (presetCategory?: string) => {
     setEditingProduct(null);
     setNome('');
-    setCategoria(categories[0]?.nome || 'Geral');
+    const savedLast = localStorage.getItem('facilitando_last_used_category') || lastUsedCategory;
+    const initialCategory = presetCategory || savedLast || categories[0]?.nome || 'Geral';
+    setCategoria(initialCategory);
     setMarca('Padrão');
     setEstoque(10);
     setEstoqueMinimo(5);
@@ -267,7 +273,24 @@ export const Products: React.FC = () => {
         });
       }
 
-      setIsModalOpen(false);
+      // Always save last used category
+      if (categoria) {
+        localStorage.setItem('facilitando_last_used_category', categoria);
+        setLastUsedCategory(categoria);
+      }
+
+      if (saveAndAddAnother) {
+        // Reset form fields while keeping category intact for fast sequence registration
+        setNome('');
+        setEstoque(10);
+        setEstoqueMinimo(5);
+        setNaoRelevante(false);
+        setObservacao('');
+        setFormError('');
+        setSaveAndAddAnother(false);
+      } else {
+        setIsModalOpen(false);
+      }
     } catch (err: any) {
       setFormError(err.message || 'Erro ao salvar produto.');
     }
@@ -420,6 +443,20 @@ export const Products: React.FC = () => {
                   </div>
 
                   <div className="flex items-center space-x-2 text-slate-400">
+                    {canPerform('edit_products') && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openAddModal(catName);
+                        }}
+                        className="px-2.5 py-1 bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 border border-blue-500/30 rounded-lg text-[11px] font-bold transition flex items-center space-x-1"
+                        title={`Adicionar novo produto na categoria ${catName}`}
+                      >
+                        <Plus className="w-3 h-3 text-blue-400" />
+                        <span>+ Item</span>
+                      </button>
+                    )}
                     <span className="text-[10px] uppercase font-bold tracking-wider hidden sm:inline">
                       {isCollapsed ? 'Abrir Pasta' : 'Fechar Pasta'}
                     </span>
@@ -788,20 +825,30 @@ export const Products: React.FC = () => {
                 </div>
               </div>
 
-              <div className="pt-2 flex space-x-2">
+              <div className="pt-2 flex flex-col sm:flex-row gap-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition"
+                  className="py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 hover:opacity-95 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition"
+                  onClick={() => setSaveAndAddAnother(false)}
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 hover:opacity-95 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition"
                 >
                   {editingProduct ? 'Salvar Alterações' : 'Cadastrar Produto'}
                 </button>
+                {!editingProduct && (
+                  <button
+                    type="submit"
+                    onClick={() => setSaveAndAddAnother(true)}
+                    className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition shadow-md shadow-blue-500/20"
+                  >
+                    Salvar e Criar Outro
+                  </button>
+                )}
               </div>
             </form>
           </div>

@@ -198,9 +198,10 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
   };
 
   const handleOpenRegisterProductModal = (demand: CustomerDemand) => {
+    const savedLast = localStorage.getItem('facilitando_last_used_category');
     setNewProdForm({
       nome: demand.produto_nome,
-      categoria: categories[0] || 'Geral',
+      categoria: savedLast || categories[0] || 'Geral',
       marca: 'A definir',
       codigo: `PROD-${Math.floor(1000 + Math.random() * 9000)}`,
       estoque: 0,
@@ -217,6 +218,10 @@ export const CustomerDemandPage: React.FC<CustomerDemandPageProps> = ({
         ...newProdForm,
         ativo: true
       });
+
+      if (newProdForm.categoria) {
+        localStorage.setItem('facilitando_last_used_category', newProdForm.categoria);
+      }
 
       if (newProductModal.demand) {
         await api.deleteCustomerDemand(newProductModal.demand.id);
