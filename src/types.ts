@@ -32,6 +32,7 @@ export interface Product {
   estoque: number;
   estoque_minimo: number;
   nao_relevante?: boolean;
+  excluir_ao_zerar?: boolean;
   localizacao?: string;
   observacao?: string;
   ativo: boolean;
@@ -46,6 +47,13 @@ export interface Product {
   data_modificacao?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface CategoryProfile {
+  categoria: string;
+  estoque_minimo: number;
+  nao_relevante?: boolean;
+  excluir_ao_zerar?: boolean;
 }
 
 export interface Supplier {

@@ -109,10 +109,14 @@ class FirestoreSyncService {
             this.notifyProducts([]);
           } else {
             const products: Product[] = [];
-            snapshot.forEach((docSnap) => {
+            for (const docSnap of snapshot.docs) {
               const p = { id: docSnap.id, ...docSnap.data() } as Product;
-              products.push(p);
-            });
+              if (p.excluir_ao_zerar && p.estoque <= 0) {
+                deleteDoc(doc(db, 'products', p.id)).catch(() => {});
+              } else {
+                products.push(p);
+              }
+            }
             localStore.saveProductsToLocal(products);
             this.notifyProducts(products);
           }
@@ -432,6 +436,34 @@ class FirestoreSyncService {
 
   // --- ACTIONS (Write to Firestore & Local) ---
 
+  public async saveDashboardLayout(userId: string, layout: string[]): Promise<void> {
+    const cleanId = userId || 'default';
+    localStore.saveDashboardLayout(cleanId, layout);
+    try {
+      const layoutRef = doc(db, 'user_layouts', cleanId);
+      await setDoc(layoutRef, { layout, updated_at: new Date().toISOString() }, { merge: true });
+    } catch (e) {
+      handleFirestoreError(e, OperationType.WRITE, `user_layouts/${cleanId}`);
+    }
+  }
+
+  public async loadDashboardLayout(userId: string): Promise<string[]> {
+    const cleanId = userId || 'default';
+    const local = localStore.getDashboardLayout(cleanId);
+    try {
+      const layoutRef = doc(db, 'user_layouts', cleanId);
+      const snap = await getDoc(layoutRef);
+      if (snap.exists() && snap.data()?.layout) {
+        const remoteLayout = snap.data().layout as string[];
+        localStore.saveDashboardLayout(cleanId, remoteLayout);
+        return remoteLayout;
+      }
+    } catch (e) {
+      // fallback to local
+    }
+    return local || ['card_header', 'card_stats', 'card_shortcuts', 'card_alerts', 'card_restock', 'card_activities'];
+  }
+
   public async updatePOSConfig(newConfig: POSConfig, userEmail: string = 'admin'): Promise<POSConfig> {
     const configToSave: POSConfig = {
       ...newConfig,
@@ -463,8 +495,15 @@ class FirestoreSyncService {
     const nowIso = new Date().toISOString();
 
     for (const item of items) {
-      const product = localStore.getProductById(item.productId);
-      if (!product) continue;
+      let product = localStore.getProductById(item.productId);
+      if (!product) {
+        const allLocal = localStore.getProducts();
+        product = allLocal.find(p => p.id === item.productId || p.codigo === item.productId) || null;
+      }
+      if (!product) {
+        console.warn(`Produto com ID/código ${item.productId} não foi encontrado no estoque.`);
+        continue;
+      }
 
       const newQty = product.estoque - item.quantity;
 
@@ -535,7 +574,12 @@ class FirestoreSyncService {
       }
 
       // Update localStore product directly with exact newQty (preventing double subtraction)
-      localStore.updateProduct(product.id, { estoque: newQty });
+      if (product.excluir_ao_zerar && newQty <= 0) {
+        localStore.deleteProduct(product.id);
+        deleteDoc(doc(db, 'products', product.id)).catch(() => {});
+      } else {
+        localStore.updateProduct(product.id, { estoque: newQty });
+      }
 
       // Save movement to localStore movements list without subtracting stock a second time
       const localMovs = localStore.getMovements();
@@ -625,6 +669,17 @@ class FirestoreSyncService {
     }
 
     const updatedProd = localStore.updateProductStock(productId, newStock, user, tipo, quantidadeAlterada, observacao);
+    
+    // Auto-delete if zero and excluir_ao_zerar is true
+    if (product.excluir_ao_zerar && newStock <= 0) {
+      localStore.deleteProduct(productId);
+      try {
+        await deleteDoc(doc(db, 'products', productId)).catch(async () => {
+          await updateDoc(doc(db, 'products', productId), { ativo: false, updated_at: nowIso });
+        });
+      } catch (e) {}
+    }
+
     const localMovs = localStore.getMovements();
     if (!localMovs.some(m => m.id === newMovement.id)) {
       localMovs.unshift(newMovement);
@@ -648,16 +703,39 @@ class FirestoreSyncService {
     return newProd;
   }
 
+  public async createProductBatch(items: Omit<Product, 'id' | 'ativo' | 'created_at' | 'updated_at'>[]): Promise<Product[]> {
+    const createdList: Product[] = [];
+    for (const item of items) {
+      const newProd = localStore.createProduct(item);
+      createdList.push(newProd);
+      try {
+        await setDoc(doc(db, 'products', newProd.id), newProd, { merge: true });
+      } catch (e) {}
+    }
+    this.notifyProducts(localStore.getProducts());
+    return createdList;
+  }
+
   public async updateProduct(id: string, productData: Partial<Product>): Promise<Product> {
     const updated = localStore.updateProduct(id, productData);
-    this.notifyProducts(localStore.getProducts());
-    try {
-      await setDoc(doc(db, 'products', id), {
-        ...productData,
-        updated_at: new Date().toISOString()
-      }, { merge: true });
-    } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, `products/${id}`);
+    if (updated.excluir_ao_zerar && updated.estoque <= 0) {
+      localStore.deleteProduct(id);
+      this.notifyProducts(localStore.getProducts());
+      try {
+        await deleteDoc(doc(db, 'products', id)).catch(async () => {
+          await updateDoc(doc(db, 'products', id), { ativo: false, updated_at: new Date().toISOString() });
+        });
+      } catch (e) {}
+    } else {
+      this.notifyProducts(localStore.getProducts());
+      try {
+        await setDoc(doc(db, 'products', id), {
+          ...productData,
+          updated_at: new Date().toISOString()
+        }, { merge: true });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `products/${id}`);
+      }
     }
     return updated;
   }
@@ -897,6 +975,19 @@ class FirestoreSyncService {
       handleFirestoreError(err, OperationType.WRITE, `categories/${newCat.id}`);
     }
     return newCat;
+  }
+
+  public async updateCategory(id: string, data: Partial<Category>): Promise<Category | null> {
+    const updated = localStore.updateCategory(id, data);
+    this.notifyCategories(localStore.getCategories());
+    if (updated) {
+      try {
+        await setDoc(doc(db, 'categories', id), updated, { merge: true });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `categories/${id}`);
+      }
+    }
+    return updated;
   }
 
   public async deleteCategory(id: string): Promise<{ message: string }> {

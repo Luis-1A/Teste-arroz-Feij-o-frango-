@@ -21,7 +21,7 @@ import { POSCustomization } from './pages/POSCustomization';
 import { SystemTestHub } from './pages/SystemTestHub';
 import { AdminSupremeHub } from './pages/AdminSupremeHub';
 import { testRunnerService } from './services/testRunnerService';
-import { ShieldAlert, RefreshCw, LogOut } from 'lucide-react';
+import { ShieldAlert, RefreshCw, LogOut, Construction } from 'lucide-react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Feature Modals
@@ -234,6 +234,42 @@ const AppContent: React.FC = () => {
           {activeTab === 'pos-customization' && <POSCustomization />}
           {activeTab === 'system_test' && <SystemTestHub />}
           {activeTab === 'admin_supreme_hub' && <AdminSupremeHub onNavigate={tab => setActiveTab(tab as TabType)} />}
+
+          {/* Fallback for unrecognized/under-development routes */}
+          {![
+            'dashboard',
+            'products',
+            'entry',
+            'sales',
+            'customer-demand',
+            'low-stock',
+            'top-selling',
+            'restock-list',
+            'stock-divergences',
+            'history',
+            'users',
+            'pos-customization',
+            'system_test',
+            'admin_supreme_hub'
+          ].includes(activeTab) && (
+            <div className="bg-[#111827] border border-[#1F2937] rounded-3xl p-8 text-center max-w-lg mx-auto space-y-4 my-12 shadow-2xl animate-fadeIn">
+              <div className="w-16 h-16 bg-blue-500/10 text-blue-400 rounded-2xl border border-blue-500/20 flex items-center justify-center mx-auto">
+                <Construction className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <h2 className="text-lg font-black text-white">Esta funcionalidade ainda está em desenvolvimento</h2>
+                <p className="text-xs text-slate-400">
+                  Estamos aprimorando esta seção. Em breve ela estará disponível com todos os recursos.
+                </p>
+              </div>
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition shadow-lg"
+              >
+                Voltar para o Painel Inicial
+              </button>
+            </div>
+          )}
         </main>
       </div>
 

@@ -85,7 +85,7 @@ export const StockEntry: React.FC = () => {
     }).sort((a, b) => a.nome.localeCompare(b.nome));
   }, [categories, products]);
 
-  // Filter products by selected category and optional search term
+  // Filter products by selected category, optional subcategory and search term
   const categoryProducts = useMemo(() => {
     if (!selectedCategory) return [];
     return products.filter(p => {
@@ -275,7 +275,7 @@ export const StockEntry: React.FC = () => {
                       <span>📦</span>
                       <span className="truncate">{p.nome}</span>
                     </p>
-                    <div className="text-[11px] text-slate-400 mt-1 font-medium flex items-center gap-2">
+                    <div className="text-[11px] text-slate-400 mt-1 font-medium flex items-center gap-2 flex-wrap">
                       <span>Estoque: <strong className="text-slate-200">{p.estoque} un</strong></span>
                       <span>•</span>
                       <span>{p.categoria}</span>

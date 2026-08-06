@@ -24,6 +24,7 @@ import {
   Megaphone,
   Trash2,
   FileSpreadsheet,
+  FolderTree,
   FileEdit,
   Palette
 } from 'lucide-react';

@@ -1,6 +1,7 @@
 import {
   User,
   Category,
+  CategoryProfile,
   Product,
   Movement,
   AuditLog,
@@ -35,6 +36,14 @@ const DASHBOARD_CONFIG_KEY = 'bytecas_local_dashboard_config';
 const APPEARANCE_KEY = 'bytecas_local_appearance';
 const AUDIT_SESSIONS_KEY = 'bytecas_local_audit_sessions';
 const DIVERGENCES_KEY = 'bytecas_local_divergences';
+const CATEGORY_PROFILES_KEY = 'bytecas_local_category_profiles';
+
+const DEFAULT_CATEGORY_PROFILES: Record<string, CategoryProfile> = {
+  'Películas': { categoria: 'Películas', estoque_minimo: 5, nao_relevante: false, excluir_ao_zerar: false },
+  'Capinhas': { categoria: 'Capinhas', estoque_minimo: 3, nao_relevante: false, excluir_ao_zerar: false },
+  'Cabos': { categoria: 'Cabos', estoque_minimo: 3, nao_relevante: false, excluir_ao_zerar: false },
+  'Garrafas': { categoria: 'Garrafas', estoque_minimo: 2, nao_relevante: false, excluir_ao_zerar: false }
+};
 
 const initialCalendarEvents: CalendarEvent[] = [
   {
@@ -825,25 +834,63 @@ function getUsers(): (User & { senha_hash: string })[] {
 
 function getProducts(): Product[] {
   const prods = getStored<Product[]>(PRODUCTS_KEY, []);
-  return prods.filter(
-    (p) => p && p.nome && !p.id.startsWith('test_prod_') && !p.nome.includes('[BOT_TEST]')
-  );
+  const validProds: Product[] = [];
+  let shouldPrune = false;
+  for (const p of prods) {
+    if (!p || !p.nome || p.id.startsWith('test_prod_') || p.nome.includes('[BOT_TEST]')) {
+      continue;
+    }
+    if (p.excluir_ao_zerar && p.estoque <= 0) {
+      shouldPrune = true;
+      continue;
+    }
+    validProds.push(p);
+  }
+  if (shouldPrune) {
+    setStored(PRODUCTS_KEY, validProds);
+  }
+  return validProds;
 }
 
 function getCategories(): Category[] {
-  const cats = getStored<Category[]>(CATEGORIES_KEY, []);
+  let cats = getStored<Category[]>(CATEGORIES_KEY, []);
   const seenIds = new Set<string>();
   const seenNames = new Set<string>();
   const uniqueCats: Category[] = [];
+  let needsSave = false;
+
+  if (!cats || cats.length === 0) {
+    cats = [
+      { id: 'cat_peliculas', nome: 'Películas', cor: '#3b82f6', icone: 'Smartphone', created_at: new Date().toISOString() },
+      { id: 'cat_capinhas', nome: 'Capinhas', cor: '#ec4899', icone: 'Shield', created_at: new Date().toISOString() },
+      { id: 'cat_cabos', nome: 'Cabos', cor: '#10b981', icone: 'Zap', created_at: new Date().toISOString() },
+      { id: 'cat_carregadores', nome: 'Carregadores', cor: '#f59e0b', icone: 'BatteryCharging', created_at: new Date().toISOString() },
+      { id: 'cat_fones', nome: 'Fones', cor: '#8b5cf6', icone: 'Headphones', created_at: new Date().toISOString() },
+      { id: 'cat_garrafas', nome: 'Garrafas', cor: '#06b6d4', icone: 'Package', created_at: new Date().toISOString() },
+      { id: 'cat_smartwatch', nome: 'Smartwatch', cor: '#a855f7', icone: 'Watch', created_at: new Date().toISOString() },
+      { id: 'cat_baterias', nome: 'Baterias', cor: '#ef4444', icone: 'Battery', created_at: new Date().toISOString() }
+    ];
+    needsSave = true;
+  }
 
   for (const c of cats) {
     if (!c || !c.nome) continue;
-    const normName = c.nome.trim().toLowerCase();
-    const catId = c.id || `cat_${normName}`;
-    if (seenIds.has(catId) || seenNames.has(normName)) continue;
+    const normName = c.nome.trim();
+    const normNameLower = normName.toLowerCase();
+    const catId = c.id || `cat_${normNameLower}`;
+    if (seenIds.has(catId) || seenNames.has(normNameLower)) continue;
     seenIds.add(catId);
-    seenNames.add(normName);
-    uniqueCats.push({ ...c, id: catId, nome: c.nome.trim() });
+    seenNames.add(normNameLower);
+
+    uniqueCats.push({
+      ...c,
+      id: catId,
+      nome: normName
+    });
+  }
+
+  if (needsSave) {
+    setStored(CATEGORIES_KEY, uniqueCats);
   }
 
   return uniqueCats;
@@ -876,6 +923,32 @@ function getDemands(): CustomerDemand[] {
 }
 
 export const localStore = {
+  getCategoryProfiles: (): Record<string, CategoryProfile> => {
+    const stored = getStored<Record<string, CategoryProfile>>(CATEGORY_PROFILES_KEY, {});
+    return { ...DEFAULT_CATEGORY_PROFILES, ...stored };
+  },
+
+  getCategoryProfile: (categoriaName: string): CategoryProfile | null => {
+    const profiles = localStore.getCategoryProfiles();
+    const key = (categoriaName || '').trim();
+    if (!key) return null;
+    if (profiles[key]) return profiles[key];
+    const foundKey = Object.keys(profiles).find(k => k.toLowerCase() === key.toLowerCase());
+    return foundKey ? profiles[foundKey] : null;
+  },
+
+  saveCategoryProfile: (profile: CategoryProfile): void => {
+    if (!profile.categoria) return;
+    const profiles = getStored<Record<string, CategoryProfile>>(CATEGORY_PROFILES_KEY, {});
+    profiles[profile.categoria.trim()] = {
+      categoria: profile.categoria.trim(),
+      estoque_minimo: profile.estoque_minimo ?? 5,
+      nao_relevante: Boolean(profile.nao_relevante),
+      excluir_ao_zerar: Boolean(profile.excluir_ao_zerar)
+    };
+    setStored(CATEGORY_PROFILES_KEY, profiles);
+  },
+
   login: (email: string, senha: string): { token: string; user: User } => {
     const cleanEmail = (email || '').trim().toLowerCase();
     const cleanSenha = (senha || '').trim();
@@ -1138,8 +1211,33 @@ export const localStore = {
     return { message: 'Categoria removida com sucesso' };
   },
 
+  updateCategory: (id: string, data: Partial<Category>): Category | null => {
+    const categories = getCategories();
+    const idx = categories.findIndex(c => c.id === id);
+    if (idx === -1) return null;
+    const oldName = categories[idx].nome;
+    const updated = { ...categories[idx], ...data };
+    categories[idx] = updated;
+    setStored(CATEGORIES_KEY, categories);
+
+    if (data.nome && data.nome !== oldName) {
+      const products = getProducts();
+      let prodUpdated = false;
+      for (const p of products) {
+        if (p.categoria === oldName) {
+          p.categoria = data.nome;
+          prodUpdated = true;
+        }
+      }
+      if (prodUpdated) {
+        setStored(PRODUCTS_KEY, products);
+      }
+    }
+    return updated;
+  },
+
   getProductsList: (search?: string, categoria?: string): Product[] => {
-    let list = getProducts().filter(p => p.ativo);
+    let list = getProducts().filter(p => p.ativo !== false && !p.lixeira);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -1156,10 +1254,14 @@ export const localStore = {
     return list;
   },
 
-  getProductById: (id: string): Product => {
-    const p = getProducts().find(prod => prod.id === id && prod.ativo);
-    if (!p) throw new Error('Produto não encontrado');
-    return p;
+  getProductById: (id: string): Product | null => {
+    if (!id) return null;
+    const prods = getStored<Product[]>(PRODUCTS_KEY, []);
+    let p = prods.find(prod => prod.id === id);
+    if (!p) {
+      p = getProducts().find(prod => prod.id === id);
+    }
+    return p || null;
   },
 
   createProduct: (data: Omit<Product, 'id' | 'ativo' | 'created_at' | 'updated_at'>): Product => {
@@ -1178,14 +1280,44 @@ export const localStore = {
   },
 
   updateProduct: (id: string, data: Partial<Product>): Product => {
-    const products = getProducts();
-    const idx = products.findIndex(p => p.id === id);
-    if (idx === -1) throw new Error('Produto não encontrado');
+    const products = getStored<Product[]>(PRODUCTS_KEY, []);
+    let idx = products.findIndex(p => p.id === id);
+    if (idx === -1) {
+      const allProds = getProducts();
+      idx = allProds.findIndex(p => p.id === id);
+      if (idx !== -1) {
+        products.push(allProds[idx]);
+        idx = products.length - 1;
+      }
+    }
+    if (idx === -1) {
+      const newProd: Product = {
+        id,
+        nome: data.nome || 'Produto',
+        categoria: data.categoria || 'Geral',
+        marca: data.marca || 'Padrão',
+        codigo: data.codigo || id,
+        estoque: data.estoque ?? 0,
+        estoque_minimo: data.estoque_minimo ?? 5,
+        ativo: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ...data
+      };
+      products.push(newProd);
+      setStored(PRODUCTS_KEY, products);
+      return newProd;
+    }
     const updated = {
       ...products[idx],
       ...data,
       updated_at: new Date().toISOString()
     };
+    if (updated.excluir_ao_zerar && updated.estoque <= 0) {
+      const filtered = products.filter(p => p.id !== id);
+      setStored(PRODUCTS_KEY, filtered);
+      return { ...updated, ativo: false, estoque: 0 };
+    }
     products[idx] = updated;
     setStored(PRODUCTS_KEY, products);
     return updated;
@@ -1317,7 +1449,8 @@ export const localStore = {
       }
     }
 
-    setStored(PRODUCTS_KEY, products);
+    const finalProducts = products.filter(p => !(p.excluir_ao_zerar && p.estoque <= 0));
+    setStored(PRODUCTS_KEY, finalProducts);
     setStored(MOVEMENTS_KEY, movements);
 
     return { message: 'Saída registrada com sucesso', movements: createdMovements };
@@ -1413,10 +1546,7 @@ export const localStore = {
 
   getRestockAnalysis: () => {
     const products = getProducts().filter(p => p.ativo && p.estoque <= p.estoque_minimo);
-    let totalUnidades = 0;
     const items = products.map(p => {
-      const sugerida = Math.max(0, p.estoque_minimo * 2 - p.estoque);
-      totalUnidades += sugerida;
       return {
         id: p.id,
         nome: p.nome,
@@ -1426,14 +1556,12 @@ export const localStore = {
         localizacao: p.localizacao,
         estoque_atual: p.estoque,
         estoque_minimo: p.estoque_minimo,
-        quantidade_sugerida: sugerida,
         nivel_risco: (p.estoque === 0 ? 'CRITICO' : 'ALERTA') as any
       };
     });
 
     return {
       total_produtos_criticos: products.length,
-      total_unidades_sugeridas: totalUnidades,
       items,
       source: 'Análise Local de Estoque'
     };
@@ -1714,6 +1842,16 @@ export const localStore = {
 
   saveDivergencesToLocal: (divergences: StockDivergenceRecord[]) => {
     setStored(DIVERGENCES_KEY, divergences);
+  },
+
+  getDashboardLayout: (userId: string): string[] | null => {
+    const key = `bytecas_dash_layout_${userId || 'default'}`;
+    return getStored<string[] | null>(key, null);
+  },
+
+  saveDashboardLayout: (userId: string, layout: string[]) => {
+    const key = `bytecas_dash_layout_${userId || 'default'}`;
+    setStored(key, layout);
   },
 
 

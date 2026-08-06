@@ -31,6 +31,8 @@ export interface ProductRecord {
   codigo_barras?: string;
   estoque: number;
   estoque_minimo: number;
+  nao_relevante?: boolean;
+  excluir_ao_zerar?: boolean;
   localizacao: string;
   observacao?: string;
   ativo: boolean;
@@ -341,6 +343,16 @@ class LocalDatabase {
     };
 
     this.db.products[index] = updated;
+
+    if (updated.excluir_ao_zerar && updated.estoque <= 0) {
+      this.deleteProductLogical(id, usuarioNome || 'Sistema');
+      this.addHistory(
+        usuarioNome || 'Sistema',
+        'EXCLUSAO_LOGICA',
+        `Exclusão automática ao zerar estoque do produto "${updated.nome}" (Cód: ${updated.codigo}).`
+      );
+      return { ...updated, ativo: false, estoque: 0 };
+    }
 
     this.addHistory(
       usuarioNome,

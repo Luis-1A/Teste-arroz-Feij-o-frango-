@@ -8,7 +8,8 @@ import {
   DashboardStats,
   TopMovedProduct,
   CustomerDemand,
-  POSConfig
+  POSConfig,
+  StockDivergenceRecord
 } from '../types';
 import { localStore } from './localStore';
 import { firestoreSync } from './firestoreSync';
@@ -183,6 +184,14 @@ export const api = {
     return firestoreSync.createCategory(nome);
   },
 
+  updateCategory: async (id: string, data: Partial<Category>) => {
+    return firestoreSync.updateCategory(id, data);
+  },
+
+  deleteCategory: async (id: string) => {
+    return firestoreSync.deleteCategory(id);
+  },
+
   // Products
   getProducts: async (search?: string, categoria?: string) => {
     return localStore.getProductsList(search, categoria);
@@ -281,12 +290,11 @@ export const api = {
     }
   },
 
-  // Mathematical Restock Analysis
+  // Restock Analysis
   getRestockAnalysis: async () => {
     try {
       return await apiRequest<{
         total_produtos_criticos: number;
-        total_unidades_sugeridas: number;
         items: {
           id: string;
           nome: string;
@@ -296,7 +304,6 @@ export const api = {
           localizacao: string;
           estoque_atual: number;
           estoque_minimo: number;
-          quantidade_sugerida: number;
           nivel_risco: 'CRITICO' | 'ALERTA' | 'ESTAVEL';
         }[];
         source: string;
@@ -332,6 +339,22 @@ export const api = {
         return localStore.getCustomerDemands();
       }
       throw err;
+    }
+  },
+
+  getMovements: async () => {
+    try {
+      return await apiRequest<Movement[]>('/api/movements');
+    } catch (err: any) {
+      return localStore.getMovements();
+    }
+  },
+
+  getDivergences: async () => {
+    try {
+      return await apiRequest<StockDivergenceRecord[]>('/api/divergences');
+    } catch (err: any) {
+      return localStore.getDivergences();
     }
   },
 
