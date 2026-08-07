@@ -251,7 +251,7 @@ export function analyzeSmartRestock(
     } else if (product.estoque === 0) {
       nivel_urgencia = 'CRITICO';
       motivos.push(diasZerado > 1 ? `Zerado há ${diasZerado} dias` : 'Estoque Zerado');
-    } else if (product.estoque <= minRequired) {
+    } else if (product.estoque < minRequired) {
       nivel_urgencia = 'ALERTA';
       motivos.push(`Abaixo do Mínimo (${product.estoque}/${minRequired} un)`);
     } else if (demandByKey > 0) {
@@ -266,7 +266,7 @@ export function analyzeSmartRestock(
     // Determine if item requires restock
     const needsRestock =
       !product.nao_relevante &&
-      (product.estoque <= minRequired || product.estoque <= 0 || demandByKey > 0);
+      (product.estoque < minRequired || product.estoque <= 0 || demandByKey > 0);
 
     if (needsRestock && nivel_urgencia !== 'NORMAL') {
       evaluatedItems.push({

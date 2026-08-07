@@ -555,7 +555,7 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
                             className={`px-2.5 py-1 rounded-lg text-xs font-bold inline-block ${
                               item.estoque <= 0
                                 ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                                : item.estoque <= item.estoque_minimo
+                                : item.estoque < item.estoque_minimo
                                 ? 'bg-amber-100 text-amber-800 border border-amber-200'
                                 : 'bg-blue-50 text-blue-700 border border-blue-200'
                             }`}
@@ -647,7 +647,7 @@ export const SalesPanel: React.FC<SalesPanelProps> = ({ initialExtraMode }) => {
                           className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
                             prod.estoque <= 0
                               ? 'bg-rose-100 text-rose-700'
-                              : prod.estoque <= prod.estoque_minimo
+                              : prod.estoque < prod.estoque_minimo
                               ? 'bg-amber-100 text-amber-800'
                               : 'bg-emerald-100 text-emerald-800'
                           }`}

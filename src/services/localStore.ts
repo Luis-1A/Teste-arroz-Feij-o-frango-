@@ -1461,7 +1461,7 @@ export const localStore = {
     const products = getProducts().filter(p => p.ativo);
     const totalItens = products.reduce((acc, p) => acc + p.estoque, 0);
     const produtosZerados = products.filter(p => p.estoque <= 0).length;
-    const produtosCriticos = products.filter(p => p.estoque > 0 && p.estoque <= p.estoque_minimo).length;
+    const produtosCriticos = products.filter(p => p.estoque > 0 && p.estoque < p.estoque_minimo).length;
 
     const movements = getMovements();
 
@@ -1487,7 +1487,7 @@ export const localStore = {
   },
 
   getOutOfStock: (): (Product & { prioridade: string; ultima_venda: string })[] => {
-    const products = getProducts().filter(p => p.ativo && p.estoque <= p.estoque_minimo);
+    const products = getProducts().filter(p => p.ativo && p.estoque < p.estoque_minimo);
     return products.map(p => ({
       ...p,
       prioridade: p.estoque <= 0 ? 'ALTA' : 'MEDIA',
@@ -1545,7 +1545,7 @@ export const localStore = {
   },
 
   getRestockAnalysis: () => {
-    const products = getProducts().filter(p => p.ativo && p.estoque <= p.estoque_minimo);
+    const products = getProducts().filter(p => p.ativo && p.estoque < p.estoque_minimo);
     const items = products.map(p => {
       return {
         id: p.id,
@@ -1570,7 +1570,7 @@ export const localStore = {
   getAIInsights: (): { insights: AIInsight[]; source: string } => {
     const products = getProducts().filter(p => p.ativo);
     const zerados = products.filter(p => p.estoque === 0);
-    const criticos = products.filter(p => p.estoque > 0 && p.estoque <= p.estoque_minimo);
+    const criticos = products.filter(p => p.estoque > 0 && p.estoque < p.estoque_minimo);
 
     const insights: AIInsight[] = [];
 

@@ -28,7 +28,7 @@ export const LowStock: React.FC<LowStockProps> = ({ onNavigateToEntry }) => {
     if (p.nao_relevante) {
       return p.estoque <= 0;
     }
-    return p.estoque <= (p.estoque_minimo || 5);
+    return p.estoque < (p.estoque_minimo || 5) || p.estoque <= 0;
   };
 
   const loadData = async () => {

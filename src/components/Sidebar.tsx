@@ -77,7 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     const unsubProds = firestoreSync.subscribeProducts((products) => {
       const lowStockItems = (products || []).filter(
-        (p) => p.ativo !== false && p.estoque <= (p.estoque_minimo || 5)
+        (p) => p.ativo !== false && p.estoque < (p.estoque_minimo || 5)
       );
       setLowStockCount(lowStockItems.length);
     });

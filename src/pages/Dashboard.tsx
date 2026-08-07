@@ -117,7 +117,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const totalProdutos = activeProducts.length;
 
     const estoqueBaixo = activeProducts.filter(
-      (p) => !p.nao_relevante && p.estoque > 0 && p.estoque <= (p.estoque_minimo || 5)
+      (p) => !p.nao_relevante && p.estoque > 0 && p.estoque < (p.estoque_minimo || 5)
     );
     const semEstoque = activeProducts.filter((p) => p.estoque <= 0);
     const estoqueNegativo = activeProducts.filter((p) => p.estoque < 0);
@@ -149,7 +149,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   // Compute Restock List grouped by category
   const restockByCategory = useMemo<Record<string, Product[]>>(() => {
-    const active = products.filter((p) => p.ativo !== false && p.estoque <= (p.estoque_minimo || 5));
+    const active = products.filter((p) => p.ativo !== false && p.estoque < (p.estoque_minimo || 5));
     const map: Record<string, Product[]> = {};
 
     active.forEach((p) => {

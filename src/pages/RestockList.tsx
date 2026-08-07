@@ -231,7 +231,7 @@ export const RestockList: React.FC<RestockListProps> = ({
     if (filterMode === 'outOfStock') {
       itemsToInclude = snapshot.items.filter(p => p.estoque <= 0);
     } else if (filterMode === 'lowStock') {
-      itemsToInclude = snapshot.items.filter(p => p.estoque > 0 && p.estoque <= p.estoque_minimo);
+      itemsToInclude = snapshot.items.filter(p => p.estoque > 0 && p.estoque < p.estoque_minimo);
     } else if (filterMode === 'category' && targetCatName) {
       itemsToInclude = snapshot.items.filter(p => (p.categoria || 'Outros') === targetCatName);
     }

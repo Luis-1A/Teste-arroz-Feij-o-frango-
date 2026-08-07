@@ -660,7 +660,7 @@ export const Products: React.FC = () => {
                         {prods.map((p) => {
                           const isZero = p.estoque === 0;
                           const isNegative = p.estoque < 0;
-                          const isLow = !p.nao_relevante && p.estoque > 0 && p.estoque <= (p.estoque_minimo || 5);
+                          const isLow = !p.nao_relevante && p.estoque > 0 && p.estoque < (p.estoque_minimo || 5);
 
                           return (
                             <div

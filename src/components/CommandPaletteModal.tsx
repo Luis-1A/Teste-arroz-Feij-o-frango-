@@ -192,7 +192,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                             className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                               p.estoque <= 0
                                 ? 'bg-rose-500/20 text-rose-400'
-                                : p.estoque <= p.estoque_minimo
+                                : p.estoque < p.estoque_minimo
                                 ? 'bg-amber-500/20 text-amber-300'
                                 : 'bg-emerald-500/20 text-emerald-400'
                             }`}
